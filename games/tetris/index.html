@@ -80,6 +80,36 @@
         <button type="button" data-control="down">加速</button>
         <button type="button" data-control="drop">落下</button>
       </section>
+
+      <div class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="instruction-title" data-instruction-modal>
+        <div class="instruction-card">
+          <p class="instruction-kicker">遊玩方式</p>
+          <h2 id="instruction-title">手機手勢也可以玩</h2>
+          <div class="instruction-list">
+            <div>
+              <strong>左右滑</strong>
+              <span>在棋盤上滑動，控制方塊左右移動。</span>
+            </div>
+            <div>
+              <strong>雙擊棋盤</strong>
+              <span>快速點兩下可以旋轉目前方塊。</span>
+            </div>
+            <div>
+              <strong>往下滑</strong>
+              <span>把目前方塊快速落到最下方。</span>
+            </div>
+            <div>
+              <strong>保留按鈕</strong>
+              <span>下方方向鍵仍可操作，也可切換手勢開關。</span>
+            </div>
+          </div>
+          <p class="instruction-note">遊戲畫面已鎖定滑動與放大，方便單手操作。</p>
+          <div class="instruction-actions">
+            <button type="button" data-instruction-start>開始遊戲</button>
+            <button type="button" data-instruction-close>先看看</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script src="../../shared/portal-return.js"></script>

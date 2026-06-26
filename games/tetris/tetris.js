@@ -14,6 +14,7 @@
   const levelEl = document.querySelector("[data-level]");
   const linesEl = document.querySelector("[data-lines]");
   const gameShell = document.querySelector(".tetris-shell");
+  const instructionModal = document.querySelector("[data-instruction-modal]");
   const storage = window.MicroglowStorage;
   const gameId = "microglow-tetris";
   const gameTitle = "微光俄羅斯方塊";
@@ -482,6 +483,15 @@
     }
   }
 
+  function isInstructionOpen() {
+    return Boolean(instructionModal && !instructionModal.hidden);
+  }
+
+  function closeInstruction(shouldStart) {
+    if (instructionModal) instructionModal.hidden = true;
+    if (shouldStart && !running) resetGame();
+  }
+
   function updateGestureButton() {
     const button = document.querySelector('[data-action="gesture"]');
     if (!button) return;
@@ -540,6 +550,10 @@
     const keys = ["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", " ", "p", "P", "Enter"];
     if (!keys.includes(event.key)) return;
     event.preventDefault();
+    if (isInstructionOpen()) {
+      if (event.key === "Enter" || event.key === " ") closeInstruction(true);
+      return;
+    }
     if ((event.key === "Enter" || event.key === " ") && !running) {
       resetGame();
       return;
@@ -554,6 +568,14 @@
 
   document.querySelectorAll("[data-action]").forEach((button) => {
     button.addEventListener("click", () => handleAction(button.dataset.action));
+  });
+
+  document.querySelector("[data-instruction-start]")?.addEventListener("click", () => {
+    closeInstruction(true);
+  });
+
+  document.querySelector("[data-instruction-close]")?.addEventListener("click", () => {
+    closeInstruction(false);
   });
 
   document.querySelectorAll("[data-control]").forEach((button) => {
