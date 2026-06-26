@@ -13,6 +13,7 @@
   const bestEl = document.querySelector("[data-best]");
   const levelEl = document.querySelector("[data-level]");
   const linesEl = document.querySelector("[data-lines]");
+  const gameShell = document.querySelector(".tetris-shell");
   const storage = window.MicroglowStorage;
   const gameId = "microglow-tetris";
   const gameTitle = "微光俄羅斯方塊";
@@ -498,4 +499,8 @@
       if (control === "drop") hardDrop();
     }, { passive: false });
   });
+
+  gameShell?.addEventListener("touchmove", (event) => {
+    event.preventDefault();
+  }, { passive: false });
 })();

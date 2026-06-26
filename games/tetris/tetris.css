@@ -288,14 +288,25 @@ body {
 }
 
 @media (max-width: 520px) {
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
-    overflow-x: hidden;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .tetris-shell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    height: 100dvh;
     width: min(100% - 18px, 1180px);
     padding-top: max(8px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
+    overflow: hidden;
   }
 
   .game-topbar {
@@ -334,7 +345,10 @@ body {
   }
 
   .game-layout {
-    gap: 8px;
+    align-content: start;
+    gap: 6px;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .board-wrap {
@@ -342,8 +356,8 @@ body {
   }
 
   #gameBoard {
-    width: min(100%, 230px, calc((100dvh - 238px) / 2));
-    min-width: 180px;
+    width: min(100%, 230px, calc((100dvh - 298px) / 2));
+    min-width: 160px;
   }
 
   .game-overlay {
@@ -352,7 +366,8 @@ body {
 
   .game-panel {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 6px;
+    min-height: 0;
   }
 
   .next-card,
@@ -379,11 +394,10 @@ body {
   }
 
   .touch-controls {
-    position: sticky;
-    bottom: max(8px, env(safe-area-inset-bottom));
+    position: static;
     z-index: 4;
     gap: 6px;
-    margin-top: 8px;
+    margin-top: 0;
     padding: 6px;
     border: 1px solid rgba(21, 39, 43, 0.12);
     border-radius: var(--radius);
@@ -403,7 +417,7 @@ body {
   }
 
   #gameBoard {
-    width: min(100%, 210px, calc((100dvh - 224px) / 2));
+    width: min(100%, 210px, calc((100dvh - 286px) / 2));
   }
 
   .touch-controls button {
