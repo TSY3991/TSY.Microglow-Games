@@ -95,12 +95,12 @@
 
     direction = queuedDirection;
     const head = snake[0];
-    const nextHead = {
+    const nextHead = wrapCell({
       x: head.x + direction.x,
       y: head.y + direction.y
-    };
+    });
 
-    if (hitsWall(nextHead) || hitsSnake(nextHead)) {
+    if (hitsSnake(nextHead)) {
       endGame();
       return;
     }
@@ -120,8 +120,11 @@
     scheduleTick();
   }
 
-  function hitsWall(cell) {
-    return cell.x < 0 || cell.x >= gridSize || cell.y < 0 || cell.y >= gridSize;
+  function wrapCell(cell) {
+    return {
+      x: (cell.x + gridSize) % gridSize,
+      y: (cell.y + gridSize) % gridSize
+    };
   }
 
   function hitsSnake(cell) {
@@ -344,6 +347,29 @@
     }
   }
 
+  function directionFromBoardPoint(event) {
+    const rect = boardCanvas.getBoundingClientRect();
+    const scale = gridSize / rect.width;
+    const target = {
+      x: Math.floor((event.clientX - rect.left) * scale),
+      y: Math.floor((event.clientY - rect.top) * scale)
+    };
+    const head = snake[0];
+    const dx = target.x - head.x;
+    const dy = target.y - head.y;
+
+    if (dx === 0 && dy === 0) return "";
+    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? "right" : "left";
+    return dy > 0 ? "down" : "up";
+  }
+
+  function steerFromBoardPoint(event) {
+    if (!running) startGame();
+    if (!running || paused) return;
+    const nextDirection = directionFromBoardPoint(event);
+    if (nextDirection) setDirection(nextDirection);
+  }
+
   document.addEventListener("keydown", (event) => {
     const directionName = directionFromKey(event.key);
     if (directionName) {
@@ -382,6 +408,7 @@
       x: event.clientX,
       y: event.clientY
     };
+    steerFromBoardPoint(event);
     try {
       boardCanvas.setPointerCapture?.(event.pointerId);
     } catch {
@@ -392,6 +419,7 @@
   boardCanvas.addEventListener("pointermove", (event) => {
     if (!touchStart) return;
     event.preventDefault();
+    steerFromBoardPoint(event);
   }, { passive: false });
 
   boardCanvas.addEventListener("pointerup", (event) => {
