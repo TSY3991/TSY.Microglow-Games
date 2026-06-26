@@ -1,0 +1,13 @@
+{
+  "id": "microglow-tetris",
+  "category": "game",
+  "categoryLabel": "小遊戲",
+  "title": "微光俄羅斯方塊",
+  "description": "經典方塊消除小遊戲，適合短時間挑戰反應與排列策略。",
+  "url": "https://tsy3991.github.io/microglow-tetris/",
+  "cta": "開始遊玩",
+  "keywords": "小遊戲 俄羅斯方塊 Tetris 方塊 消除 休閒 挑戰",
+  "tags": ["小遊戲", "方塊消除", "休閒挑戰", "本機紀錄"],
+  "featured": false,
+  "record": true
+}
