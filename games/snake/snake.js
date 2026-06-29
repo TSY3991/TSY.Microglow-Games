@@ -54,6 +54,7 @@
   let targetLength = 210;
   let running = false;
   let paused = false;
+  let hasControl = false;
   let recordedThisRun = false;
   let animationFrameId = 0;
   let lastTime = 0;
@@ -73,6 +74,7 @@
     targetLength = 210;
     score = 0;
     paused = false;
+    hasControl = false;
     recordedThisRun = false;
     distanceSincePoint = 0;
     snake = [];
@@ -122,13 +124,15 @@
     lastTime = time;
 
     if (!paused) {
-      moveSnake(delta);
-      updateParticles(delta);
-      eatFood();
-      if (hitsSelf()) {
-        endGame();
-        return;
+      if (hasControl) {
+        moveSnake(delta);
+        eatFood();
+        if (hitsSelf()) {
+          endGame();
+          return;
+        }
       }
+      updateParticles(delta);
       updateUi();
       draw();
     }
@@ -181,7 +185,7 @@
     const eatDistance = headRadius + foodRadius + 4;
     for (let index = foods.length - 1; index >= 0; index -= 1) {
       const food = foods[index];
-      if (distanceBetween(head, food) <= eatDistance) {
+      if (directDistanceBetween(head, food) <= eatDistance) {
         score += 10;
         targetLength += 34;
         spawnParticles(food.x, food.y, food.color);
@@ -193,7 +197,7 @@
   function hitsSelf() {
     if (snake.length < 42) return false;
     for (let index = 34; index < snake.length; index += 3) {
-      if (distanceBetween(head, snake[index]) < headRadius + bodyRadius * 0.72) {
+      if (directDistanceBetween(head, snake[index]) < headRadius + bodyRadius * 0.72) {
         return true;
       }
     }
@@ -233,12 +237,17 @@
 
   function createFood() {
     const palette = ["#ff5ebc", "#ffd84d", "#8df45f", "#2fd7ff"];
-    return {
-      x: 24 + Math.random() * (boardSize - 48),
-      y: 24 + Math.random() * (boardSize - 48),
-      color: palette[Math.floor(Math.random() * palette.length)],
-      pulse: Math.random() * Math.PI * 2
-    };
+    let food = null;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      food = {
+        x: 24 + Math.random() * (boardSize - 48),
+        y: 24 + Math.random() * (boardSize - 48),
+        color: palette[Math.floor(Math.random() * palette.length)],
+        pulse: Math.random() * Math.PI * 2
+      };
+      if (directDistanceBetween(food, head) > 72) return food;
+    }
+    return food;
   }
 
   function spawnParticles(x, y, color, count = 8) {
@@ -446,6 +455,7 @@
       y: clamp((clientY - rect.top) * (boardSize / rect.height), 0, boardSize)
     };
     if (!running) startGame();
+    hasControl = true;
   }
 
   function setKeyboardAngle(key) {
@@ -453,6 +463,7 @@
     if (!running) startGame();
     targetPoint = null;
     targetAngle = keys[key];
+    hasControl = true;
     return true;
   }
 
@@ -472,6 +483,10 @@
     const dx = shortestDelta(a.x, b.x);
     const dy = shortestDelta(a.y, b.y);
     return Math.hypot(dx, dy);
+  }
+
+  function directDistanceBetween(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
   }
 
   function normalizeAngle(value) {
