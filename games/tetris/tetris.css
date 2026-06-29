@@ -2,6 +2,7 @@ html,
 body {
   width: 100%;
   min-height: 100%;
+  min-height: var(--tetris-app-height, 100svh);
   overflow-x: hidden;
   overscroll-behavior: none;
   touch-action: manipulation;
@@ -443,54 +444,9 @@ body {
 }
 
 @media (max-width: 820px) {
-  body {
-    background:
-      radial-gradient(circle at 28% 8%, rgba(47, 215, 255, 0.16), transparent 26%),
-      linear-gradient(180deg, #0d2229 0 300px, #f4fbf6 300px 100%);
-  }
-
-  .game-topbar {
-    grid-template-columns: 1fr;
-    color: #ffffff;
-  }
-
-  .top-actions {
-    justify-content: start;
-  }
-
-  .return-nav {
-    align-items: stretch;
-  }
-
-  .compact-back,
-  .portal-return {
-    min-height: 42px;
-  }
-
-  .game-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .playfield {
-    grid-template-columns: minmax(0, 1fr) 104px;
-  }
-
-  .game-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .help-card {
-    grid-column: 1 / -1;
-  }
-
-  .touch-controls {
-    display: grid;
-  }
-}
-
-@media (max-width: 520px) {
   html {
     height: 100%;
+    height: var(--tetris-app-height, 100svh);
     overflow: hidden;
     touch-action: none;
   }
@@ -500,6 +456,207 @@ body {
     inset: 0;
     height: 100svh;
     height: 100dvh;
+    height: var(--tetris-app-height, 100svh);
+    overflow: hidden;
+    touch-action: none;
+    background:
+      radial-gradient(circle at 28% 8%, rgba(47, 215, 255, 0.16), transparent 26%),
+      linear-gradient(180deg, #0d2229 0 300px, #f4fbf6 300px 100%);
+  }
+
+  .tetris-shell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 5px;
+    height: 100svh;
+    height: 100dvh;
+    height: var(--tetris-app-height, 100svh);
+    width: min(100% - 18px, 1180px);
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    overflow: hidden;
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+
+  .game-topbar {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    margin-bottom: 5px;
+    color: #ffffff;
+  }
+
+  .top-actions {
+    justify-content: start;
+  }
+
+  .return-nav {
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .compact-back,
+  .portal-return {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
+  .game-topbar .eyebrow {
+    display: none;
+  }
+
+  .game-topbar h1 {
+    font-size: clamp(1.05rem, 5.2vw, 1.56rem);
+    line-height: 1.08;
+  }
+
+  .game-layout {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 5px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .playfield {
+    grid-template-columns: minmax(0, 1fr) 58px;
+    gap: 6px;
+    min-height: 0;
+  }
+
+  .board-wrap {
+    min-width: 0;
+    padding: 8px;
+  }
+
+  #gameBoard {
+    width: min(100%, 230px, calc((var(--tetris-app-height, 100svh) - 286px) / 2), calc(100vw - 100px));
+    min-width: 138px;
+    touch-action: none;
+  }
+
+  .game-overlay {
+    inset: 8px;
+  }
+
+  .game-panel {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    min-height: 0;
+  }
+
+  .help-card {
+    display: none;
+  }
+
+  .touch-controls {
+    display: grid;
+    position: static;
+    z-index: 4;
+    gap: 5px;
+    margin-top: 0;
+    padding: 5px;
+    border: 1px solid rgba(21, 39, 43, 0.12);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(12px);
+    touch-action: none;
+  }
+
+  .top-actions {
+    gap: 5px;
+  }
+
+  .top-actions button {
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+
+  .next-card {
+    display: grid;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 6px;
+  }
+
+  .next-heading {
+    gap: 2px;
+  }
+
+  .next-heading span {
+    font-size: 0.68rem;
+    line-height: 1.1;
+  }
+
+  .next-heading small {
+    display: none;
+  }
+
+  .next-stack {
+    gap: 5px;
+  }
+
+  .next-slot {
+    gap: 2px;
+    padding: 3px;
+    border-radius: 5px;
+  }
+
+  .next-slot canvas {
+    width: 42px;
+    border-radius: 5px;
+  }
+
+  .next-slot small {
+    font-size: 0.62rem;
+    line-height: 1;
+  }
+
+  .next-slot.is-locked::after {
+    font-size: 0.48rem;
+  }
+
+  .score-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .score-grid > div {
+    min-height: 42px;
+    padding: 6px 5px;
+  }
+
+  .score-grid span {
+    font-size: 0.66rem;
+  }
+
+  .score-grid strong {
+    font-size: 0.94rem;
+  }
+
+  .touch-controls button {
+    min-height: 42px;
+    padding: 0 2px;
+    font-size: 0.68rem;
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+@media (max-width: 520px) {
+  html {
+    height: 100%;
+    height: var(--tetris-app-height, 100svh);
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  body {
+    position: fixed;
+    inset: 0;
+    height: var(--tetris-app-height, 100svh);
     overflow: hidden;
     touch-action: none;
   }
@@ -508,8 +665,7 @@ body {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 6px;
-    height: 100svh;
-    height: 100dvh;
+    height: var(--tetris-app-height, 100svh);
     width: min(100% - 18px, 1180px);
     padding-top: max(8px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
@@ -572,7 +728,7 @@ body {
   }
 
   #gameBoard {
-    width: min(100%, 230px, calc((100dvh - 298px) / 2), calc(100vw - 100px));
+    width: min(100%, 230px, calc((var(--tetris-app-height, 100svh) - 298px) / 2), calc(100vw - 100px));
     min-width: 150px;
     touch-action: none;
   }
@@ -679,7 +835,7 @@ body {
   }
 
   .instruction-card {
-    max-height: calc(100dvh - 20px);
+    max-height: calc(var(--tetris-app-height, 100svh) - 20px);
     padding: 16px;
   }
 
@@ -717,7 +873,7 @@ body {
   }
 
   #gameBoard {
-    width: min(100%, 210px, calc((100dvh - 286px) / 2), calc(100vw - 88px));
+    width: min(100%, 210px, calc((var(--tetris-app-height, 100svh) - 286px) / 2), calc(100vw - 88px));
     min-width: 138px;
   }
 

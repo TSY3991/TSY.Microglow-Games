@@ -93,8 +93,17 @@
   updateGestureButton();
   updateSwapButton();
   bestEl.textContent = String(best);
+  syncViewportSize();
   draw();
   drawPreviews();
+
+  function syncViewportSize() {
+    const viewport = window.visualViewport;
+    const height = Math.floor(viewport?.height || window.innerHeight || document.documentElement.clientHeight);
+    const width = Math.floor(viewport?.width || window.innerWidth || document.documentElement.clientWidth);
+    document.documentElement.style.setProperty("--tetris-app-height", `${height}px`);
+    document.documentElement.style.setProperty("--tetris-app-width", `${width}px`);
+  }
 
   function createBoard() {
     return Array.from({ length: rows }, () => Array(columns).fill(null));
@@ -822,6 +831,13 @@
     }
     lastTouchEnd = now;
   }, { passive: false, capture: true });
+
+  window.addEventListener("resize", syncViewportSize);
+  window.addEventListener("orientationchange", () => {
+    window.setTimeout(syncViewportSize, 120);
+  });
+  window.visualViewport?.addEventListener("resize", syncViewportSize);
+  window.visualViewport?.addEventListener("scroll", syncViewportSize);
 
   ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
     document.addEventListener(eventName, (event) => {
