@@ -1,6 +1,4 @@
 (function () {
-  const gridSize = 16;
-  const cellSize = 30;
   const boardCanvas = document.querySelector("#snakeBoard");
   const context = boardCanvas.getContext("2d");
   const overlay = document.querySelector("[data-overlay]");
@@ -15,26 +13,51 @@
   const gameId = "microglow-snake";
   const gameTitle = "微光貪吃蛇";
   const portalStatsKey = "tsyMicroglowPortal.gameStats.v1";
+  const boardSize = boardCanvas.width;
+  const baseSpeed = 118;
+  const turnRate = 5.2;
+  const pointSpacing = 4.8;
+  const headRadius = 10;
+  const bodyRadius = 8;
+  const foodRadius = 6;
+  const foodCount = 18;
 
-  const directions = {
-    up: { x: 0, y: -1 },
-    down: { x: 0, y: 1 },
-    left: { x: -1, y: 0 },
-    right: { x: 1, y: 0 }
+  const keys = {
+    ArrowUp: -Math.PI / 2,
+    up: -Math.PI / 2,
+    w: -Math.PI / 2,
+    W: -Math.PI / 2,
+    ArrowDown: Math.PI / 2,
+    down: Math.PI / 2,
+    s: Math.PI / 2,
+    S: Math.PI / 2,
+    ArrowLeft: Math.PI,
+    left: Math.PI,
+    a: Math.PI,
+    A: Math.PI,
+    ArrowRight: 0,
+    right: 0,
+    d: 0,
+    D: 0
   };
 
+  let head = { x: boardSize / 2, y: boardSize / 2 };
   let snake = [];
-  let direction = directions.right;
-  let queuedDirection = directions.right;
-  let food = { x: 11, y: 8 };
+  let foods = [];
+  let particles = [];
+  let angle = 0;
+  let targetAngle = 0;
+  let targetPoint = null;
   let score = 0;
   let best = readBestScore();
   let plays = readPlays();
+  let targetLength = 210;
   let running = false;
   let paused = false;
   let recordedThisRun = false;
-  let tickId = 0;
-  let speed = 132;
+  let animationFrameId = 0;
+  let lastTime = 0;
+  let distanceSincePoint = 0;
   let touchStart = null;
   let lastTouchEnd = 0;
 
@@ -43,18 +66,25 @@
   draw();
 
   function resetState() {
-    snake = [
-      { x: 7, y: 8 },
-      { x: 6, y: 8 },
-      { x: 5, y: 8 }
-    ];
-    direction = directions.right;
-    queuedDirection = directions.right;
-    food = createFood();
+    head = { x: boardSize / 2, y: boardSize / 2 };
+    angle = 0;
+    targetAngle = 0;
+    targetPoint = null;
+    targetLength = 210;
     score = 0;
-    speed = 132;
     paused = false;
     recordedThisRun = false;
+    distanceSincePoint = 0;
+    snake = [];
+    for (let index = 0; index < targetLength / pointSpacing; index += 1) {
+      snake.push({
+        x: head.x - index * pointSpacing,
+        y: head.y,
+        hue: index
+      });
+    }
+    foods = Array.from({ length: foodCount }, createFood);
+    particles = [];
   }
 
   function startGame() {
@@ -69,79 +99,105 @@
     running = true;
     hideOverlay();
     updateUi();
-    draw();
-    scheduleTick();
+    lastTime = performance.now();
+    animationFrameId = requestAnimationFrame(update);
   }
 
   function restartGame() {
-    stopTick();
+    stopLoop();
     running = false;
     startGame();
   }
 
-  function scheduleTick() {
-    stopTick();
-    tickId = window.setTimeout(tick, speed);
-  }
-
-  function stopTick() {
-    if (tickId) {
-      window.clearTimeout(tickId);
-      tickId = 0;
+  function stopLoop() {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = 0;
     }
   }
 
-  function tick() {
-    if (!running || paused) return;
+  function update(time) {
+    if (!running) return;
+    const delta = Math.min(0.034, (time - lastTime) / 1000 || 0);
+    lastTime = time;
 
-    direction = queuedDirection;
-    const head = snake[0];
-    const nextHead = wrapCell({
-      x: head.x + direction.x,
-      y: head.y + direction.y
-    });
-
-    if (hitsSnake(nextHead)) {
-      endGame();
-      return;
+    if (!paused) {
+      moveSnake(delta);
+      updateParticles(delta);
+      eatFood();
+      if (hitsSelf()) {
+        endGame();
+        return;
+      }
+      updateUi();
+      draw();
     }
 
-    snake.unshift(nextHead);
+    animationFrameId = requestAnimationFrame(update);
+  }
 
-    if (nextHead.x === food.x && nextHead.y === food.y) {
-      score += 10;
-      speed = Math.max(76, speed - 2);
-      food = createFood();
-    } else {
+  function moveSnake(delta) {
+    updateTargetAngle();
+    angle = turnToward(angle, targetAngle, turnRate * delta);
+    const currentSpeed = baseSpeed + Math.min(42, score * 0.22);
+    const distance = currentSpeed * delta;
+    head.x = wrap(head.x + Math.cos(angle) * distance);
+    head.y = wrap(head.y + Math.sin(angle) * distance);
+    distanceSincePoint += distance;
+
+    if (distanceSincePoint >= pointSpacing) {
+      snake.unshift({
+        x: head.x,
+        y: head.y,
+        hue: score + snake.length
+      });
+      distanceSincePoint = 0;
+    } else if (snake[0]) {
+      snake[0] = { ...snake[0], x: head.x, y: head.y };
+    }
+
+    trimSnake();
+  }
+
+  function updateTargetAngle() {
+    if (!targetPoint) return;
+    targetAngle = Math.atan2(shortestDelta(targetPoint.y, head.y), shortestDelta(targetPoint.x, head.x));
+  }
+
+  function turnToward(current, target, maxTurn) {
+    const difference = normalizeAngle(target - current);
+    const turn = clamp(difference, -maxTurn, maxTurn);
+    return normalizeAngle(current + turn);
+  }
+
+  function trimSnake() {
+    const maxPoints = Math.max(12, Math.ceil(targetLength / pointSpacing));
+    while (snake.length > maxPoints) {
       snake.pop();
     }
-
-    updateUi();
-    draw();
-    scheduleTick();
   }
 
-  function wrapCell(cell) {
-    return {
-      x: (cell.x + gridSize) % gridSize,
-      y: (cell.y + gridSize) % gridSize
-    };
-  }
-
-  function hitsSnake(cell) {
-    return snake.some((part) => part.x === cell.x && part.y === cell.y);
-  }
-
-  function createFood() {
-    const emptyCells = [];
-    for (let y = 0; y < gridSize; y += 1) {
-      for (let x = 0; x < gridSize; x += 1) {
-        if (!snake.some((part) => part.x === x && part.y === y)) {
-          emptyCells.push({ x, y });
-        }
+  function eatFood() {
+    const eatDistance = headRadius + foodRadius + 4;
+    for (let index = foods.length - 1; index >= 0; index -= 1) {
+      const food = foods[index];
+      if (distanceBetween(head, food) <= eatDistance) {
+        score += 10;
+        targetLength += 34;
+        spawnParticles(food.x, food.y, food.color);
+        foods.splice(index, 1, createFood());
       }
     }
-    return emptyCells[Math.floor(Math.random() * emptyCells.length)] || { x: 0, y: 0 };
+  }
+
+  function hitsSelf() {
+    if (snake.length < 42) return false;
+    for (let index = 34; index < snake.length; index += 3) {
+      if (distanceBetween(head, snake[index]) < headRadius + bodyRadius * 0.72) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function endGame() {
@@ -149,7 +205,10 @@
     recordedThisRun = true;
     running = false;
     paused = false;
-    stopTick();
+    stopLoop();
+    snake.forEach((part, index) => {
+      if (index % 3 === 0) spawnParticles(part.x, part.y, index < 18 ? "#2fd7ff" : "#8df45f", 2);
+    });
     best = Math.max(best, score);
     plays = writePortalStats(score, best).plays;
     updateUi();
@@ -165,91 +224,129 @@
 
     paused = !paused;
     if (paused) {
-      stopTick();
       showOverlay("已暫停", "按空白鍵、繼續或開始按鈕回到遊戲", "繼續遊戲");
     } else {
       hideOverlay();
-      scheduleTick();
+      lastTime = performance.now();
     }
   }
 
-  function setDirection(nextName) {
-    const next = directions[nextName];
-    if (!next) return;
-    if (!running || paused) return;
-    if (next.x + direction.x === 0 && next.y + direction.y === 0) return;
-    queuedDirection = next;
+  function createFood() {
+    const palette = ["#ff5ebc", "#ffd84d", "#8df45f", "#2fd7ff"];
+    return {
+      x: 24 + Math.random() * (boardSize - 48),
+      y: 24 + Math.random() * (boardSize - 48),
+      color: palette[Math.floor(Math.random() * palette.length)],
+      pulse: Math.random() * Math.PI * 2
+    };
+  }
+
+  function spawnParticles(x, y, color, count = 8) {
+    for (let index = 0; index < count; index += 1) {
+      const particleAngle = Math.random() * Math.PI * 2;
+      const speed = 32 + Math.random() * 62;
+      particles.push({
+        x,
+        y,
+        vx: Math.cos(particleAngle) * speed,
+        vy: Math.sin(particleAngle) * speed,
+        life: 0.5 + Math.random() * 0.28,
+        maxLife: 0.78,
+        color
+      });
+    }
+  }
+
+  function updateParticles(delta) {
+    particles = particles.filter((particle) => {
+      particle.x = wrap(particle.x + particle.vx * delta);
+      particle.y = wrap(particle.y + particle.vy * delta);
+      particle.life -= delta;
+      return particle.life > 0;
+    });
   }
 
   function draw() {
     drawBackground();
-    drawFood();
-    drawSnake();
+    drawFoods();
+    drawSnakeTrail();
+    drawParticles();
   }
 
   function drawBackground() {
-    context.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
+    context.clearRect(0, 0, boardSize, boardSize);
     context.fillStyle = "#07171f";
-    context.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
-
-    context.strokeStyle = "rgba(141, 244, 95, 0.1)";
-    context.lineWidth = 1;
-    for (let index = 0; index <= gridSize; index += 1) {
-      const position = index * cellSize;
-      context.beginPath();
-      context.moveTo(position, 0);
-      context.lineTo(position, boardCanvas.height);
-      context.stroke();
-      context.beginPath();
-      context.moveTo(0, position);
-      context.lineTo(boardCanvas.width, position);
-      context.stroke();
+    context.fillRect(0, 0, boardSize, boardSize);
+    context.fillStyle = "rgba(141, 244, 95, 0.08)";
+    for (let index = 0; index < 70; index += 1) {
+      const x = (index * 71) % boardSize;
+      const y = (index * 43) % boardSize;
+      context.fillRect(x, y, 2, 2);
     }
   }
 
-  function drawSnake() {
-    snake.forEach((part, index) => {
-      const isHead = index === 0;
-      const color = isHead ? "#2fd7ff" : "#8df45f";
-      const inset = isHead ? 3 : 4;
-      const x = part.x * cellSize + inset;
-      const y = part.y * cellSize + inset;
-      const size = cellSize - inset * 2;
-
-      context.fillStyle = color;
-      context.shadowColor = color;
-      context.shadowBlur = isHead ? 16 : 10;
-      context.fillRect(x, y, size, size);
-      context.shadowBlur = 0;
-      context.fillStyle = "rgba(255, 255, 255, 0.24)";
-      context.fillRect(x + 4, y + 4, Math.max(4, size - 8), 4);
-      context.strokeStyle = "rgba(255, 255, 255, 0.3)";
-      context.lineWidth = 1;
-      context.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
+  function drawFoods() {
+    foods.forEach((food) => {
+      food.pulse += 0.035;
+      const radius = foodRadius + Math.sin(food.pulse) * 1.4;
+      drawGlowCircle(food.x, food.y, radius, food.color, 20);
+      context.fillStyle = "rgba(255, 255, 255, 0.42)";
+      context.beginPath();
+      context.arc(food.x - 2.5, food.y - 2.5, 2.2, 0, Math.PI * 2);
+      context.fill();
     });
   }
 
-  function drawFood() {
-    const centerX = food.x * cellSize + cellSize / 2;
-    const centerY = food.y * cellSize + cellSize / 2;
+  function drawSnakeTrail() {
+    for (let index = snake.length - 1; index >= 0; index -= 1) {
+      const part = snake[index];
+      const progress = 1 - index / Math.max(1, snake.length);
+      const radius = index === 0 ? headRadius : bodyRadius * (0.72 + progress * 0.32);
+      const color = index === 0 ? "#2fd7ff" : index < 12 ? "#54f1ff" : "#8df45f";
+      drawGlowCircle(part.x, part.y, radius, color, index === 0 ? 20 : 12);
+    }
 
-    context.fillStyle = "#ff5ebc";
-    context.shadowColor = "#ff5ebc";
-    context.shadowBlur = 18;
+    drawEyes();
+  }
+
+  function drawEyes() {
+    const eyeOffset = headRadius * 0.45;
+    const normal = angle + Math.PI / 2;
+    const frontX = head.x + Math.cos(angle) * 4;
+    const frontY = head.y + Math.sin(angle) * 4;
+    context.fillStyle = "#07242b";
+    [-1, 1].forEach((side) => {
+      const eyeX = frontX + Math.cos(normal) * eyeOffset * side;
+      const eyeY = frontY + Math.sin(normal) * eyeOffset * side;
+      context.beginPath();
+      context.arc(eyeX, eyeY, 2.2, 0, Math.PI * 2);
+      context.fill();
+    });
+  }
+
+  function drawParticles() {
+    particles.forEach((particle) => {
+      const alpha = Math.max(0, particle.life / particle.maxLife);
+      context.globalAlpha = alpha;
+      drawGlowCircle(particle.x, particle.y, 3.2, particle.color, 9);
+      context.globalAlpha = 1;
+    });
+  }
+
+  function drawGlowCircle(x, y, radius, color, blur) {
+    context.fillStyle = color;
+    context.shadowColor = color;
+    context.shadowBlur = blur;
     context.beginPath();
-    context.arc(centerX, centerY, cellSize * 0.32, 0, Math.PI * 2);
+    context.arc(x, y, radius, 0, Math.PI * 2);
     context.fill();
     context.shadowBlur = 0;
-    context.fillStyle = "rgba(255, 255, 255, 0.42)";
-    context.beginPath();
-    context.arc(centerX - 4, centerY - 4, 4, 0, Math.PI * 2);
-    context.fill();
   }
 
   function updateUi() {
     scoreEl.textContent = String(score);
     bestEl.textContent = String(best);
-    lengthEl.textContent = String(snake.length);
+    lengthEl.textContent = String(Math.max(3, Math.round(targetLength / 42)));
     playsEl.textContent = String(plays);
   }
 
@@ -325,14 +422,6 @@
     if (action === "restart") restartGame();
   }
 
-  function directionFromKey(key) {
-    if (key === "ArrowUp" || key === "w" || key === "W") return "up";
-    if (key === "ArrowDown" || key === "s" || key === "S") return "down";
-    if (key === "ArrowLeft" || key === "a" || key === "A") return "left";
-    if (key === "ArrowRight" || key === "d" || key === "D") return "right";
-    return "";
-  }
-
   function isSpaceKey(key) {
     return key === " " || key === "Space" || key === "Spacebar";
   }
@@ -350,46 +439,50 @@
     if (shouldStart && !running) startGame();
   }
 
-  function handleSwipe(start, end) {
-    if (!start) return;
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    if (Math.max(absX, absY) < 24) return;
-    if (absX > absY) {
-      setDirection(dx > 0 ? "right" : "left");
-    } else {
-      setDirection(dy > 0 ? "down" : "up");
-    }
-  }
-
-  function directionFromBoardPoint(event) {
+  function setTargetFromPoint(clientX, clientY) {
     const rect = boardCanvas.getBoundingClientRect();
-    const scale = gridSize / rect.width;
-    const target = {
-      x: Math.floor((event.clientX - rect.left) * scale),
-      y: Math.floor((event.clientY - rect.top) * scale)
+    targetPoint = {
+      x: clamp((clientX - rect.left) * (boardSize / rect.width), 0, boardSize),
+      y: clamp((clientY - rect.top) * (boardSize / rect.height), 0, boardSize)
     };
-    const head = snake[0];
-    const dx = target.x - head.x;
-    const dy = target.y - head.y;
-
-    if (dx === 0 && dy === 0) return "";
-    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? "right" : "left";
-    return dy > 0 ? "down" : "up";
+    if (!running) startGame();
   }
 
-  function steerFromBoardPoint(event) {
+  function setKeyboardAngle(key) {
+    if (!(key in keys)) return false;
     if (!running) startGame();
-    if (!running || paused) return;
-    const nextDirection = directionFromBoardPoint(event);
-    if (nextDirection) setDirection(nextDirection);
+    targetPoint = null;
+    targetAngle = keys[key];
+    return true;
+  }
+
+  function wrap(value) {
+    return (value + boardSize) % boardSize;
+  }
+
+  function shortestDelta(target, current) {
+    let delta = target - current;
+    if (Math.abs(delta) > boardSize / 2) {
+      delta -= Math.sign(delta) * boardSize;
+    }
+    return delta;
+  }
+
+  function distanceBetween(a, b) {
+    const dx = shortestDelta(a.x, b.x);
+    const dy = shortestDelta(a.y, b.y);
+    return Math.hypot(dx, dy);
+  }
+
+  function normalizeAngle(value) {
+    return Math.atan2(Math.sin(value), Math.cos(value));
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
   }
 
   document.addEventListener("keydown", (event) => {
-    const directionName = directionFromKey(event.key);
     if (isInstructionOpen()) {
       if (event.key === "Enter" || isSpaceKey(event.key)) {
         event.preventDefault();
@@ -402,9 +495,8 @@
       return;
     }
 
-    if (directionName) {
+    if (setKeyboardAngle(event.key)) {
       event.preventDefault();
-      setDirection(directionName);
       return;
     }
 
@@ -435,18 +527,14 @@
   document.querySelectorAll("[data-control]").forEach((button) => {
     button.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      setDirection(button.dataset.control);
+      setKeyboardAngle(button.dataset.control);
     }, { passive: false });
   });
 
   boardCanvas.addEventListener("pointerdown", (event) => {
     event.preventDefault();
-    touchStart = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY
-    };
-    steerFromBoardPoint(event);
+    touchStart = { pointerId: event.pointerId };
+    setTargetFromPoint(event.clientX, event.clientY);
     try {
       boardCanvas.setPointerCapture?.(event.pointerId);
     } catch {
@@ -455,15 +543,14 @@
   }, { passive: false });
 
   boardCanvas.addEventListener("pointermove", (event) => {
-    if (!touchStart) return;
+    if (!touchStart || event.pointerId !== touchStart.pointerId) return;
     event.preventDefault();
-    steerFromBoardPoint(event);
+    setTargetFromPoint(event.clientX, event.clientY);
   }, { passive: false });
 
   boardCanvas.addEventListener("pointerup", (event) => {
     if (!touchStart || event.pointerId !== touchStart.pointerId) return;
     event.preventDefault();
-    handleSwipe(touchStart, { x: event.clientX, y: event.clientY });
     try {
       boardCanvas.releasePointerCapture?.(event.pointerId);
     } catch {

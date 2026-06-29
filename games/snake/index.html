@@ -35,7 +35,7 @@
           <canvas id="snakeBoard" width="480" height="480" aria-label="貪吃蛇主遊戲區"></canvas>
           <div class="game-overlay" data-overlay>
             <strong data-overlay-title>準備開始</strong>
-            <span data-overlay-message>方向鍵或 WASD 移動，空白鍵開始 / 暫停</span>
+            <span data-overlay-message>按住棋盤滑行，或用方向鍵 / WASD 控制方向</span>
             <button type="button" data-action="overlay-start">開始遊戲</button>
           </div>
         </div>
@@ -62,8 +62,8 @@
 
           <div class="help-card">
             <h2>操作</h2>
-            <p>桌機：方向鍵或 WASD 移動，空白鍵開始 / 暫停，R 重新開始。</p>
-            <p>手機：按住或拖曳棋盤控制方向，也可以使用下方方向按鈕。</p>
+            <p>桌機：滑鼠按住棋盤導向，或用方向鍵 / WASD 控制方向，空白鍵暫停。</p>
+            <p>手機：按住或拖曳棋盤，蛇會平滑朝手指方向滑行。</p>
           </div>
         </aside>
       </section>
@@ -84,19 +84,19 @@
           <div class="instruction-list">
             <div>
               <strong>桌機操作</strong>
-              <span>方向鍵或 WASD 移動，空白鍵開始 / 暫停，R 重新開始。</span>
+              <span>滑鼠按住棋盤導向，或用方向鍵 / WASD 控制方向，空白鍵暫停，R 重新開始。</span>
             </div>
             <div>
               <strong>手機操作</strong>
-              <span>按住或拖曳棋盤，蛇會朝手指所在方向移動；下方方向鍵也可以操作。</span>
+              <span>按住或拖曳棋盤，蛇會平滑朝手指方向滑行；下方方向鍵也可以輔助操作。</span>
             </div>
             <div>
               <strong>邊界穿越</strong>
-              <span>碰到棋盤邊界不會結束，會從另一側出來。</span>
+              <span>碰到場地邊界不會結束，會從另一側滑出來。</span>
             </div>
             <div>
               <strong>分數目標</strong>
-              <span>吃到粉色能量點會加分、加長，撞到自己的身體才會結束。</span>
+              <span>吃到發光能量點會加分、加長，撞到自己的身體才會結束。</span>
             </div>
           </div>
           <p class="instruction-note">遊戲結束後可按「再玩一次」重新開始。</p>
