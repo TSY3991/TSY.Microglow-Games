@@ -14,7 +14,6 @@
   const bestEl = document.querySelector("[data-best]");
   const levelEl = document.querySelector("[data-level]");
   const linesEl = document.querySelector("[data-lines]");
-  const gameShell = document.querySelector(".tetris-shell");
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const storage = window.MicroglowStorage;
   const gameId = "microglow-tetris";
@@ -22,7 +21,11 @@
   const bestKey = "tetris.bestScore.v1";
   const gestureKey = "tetris.gesturesEnabled.v1";
   const portalStatsKey = "tsyMicroglowPortal.gameStats.v1";
+  let lastTouchStart = 0;
   let lastTouchEnd = 0;
+  let controlRepeatDelay = 0;
+  let controlRepeatInterval = 0;
+  let lastMoveTone = 0;
 
   const colors = {
     I: "#2fd7ff",
@@ -230,13 +233,23 @@
     if (collides(current)) gameOver();
   }
 
-  function move(offset) {
-    if (!canPlay()) return;
+  function move(offset, options = {}) {
+    const { redraw = true, sound = true } = options;
+    if (!canPlay()) return false;
     if (!collides(current, offset, 0)) {
       current.x += offset;
-      playTone(220, 0.025);
-      draw();
+      if (sound) playMoveTone();
+      if (redraw) draw();
+      return true;
     }
+    return false;
+  }
+
+  function playMoveTone() {
+    const now = Date.now();
+    if (now - lastMoveTone < 70) return;
+    lastMoveTone = now;
+    playTone(220, 0.025);
   }
 
   function softDrop() {
@@ -576,6 +589,36 @@
     });
   }
 
+  function performControl(control) {
+    if (!running) resetGame();
+    if (control === "left") move(-1);
+    if (control === "right") move(1);
+    if (control === "down") softDrop();
+    if (control === "rotate") rotatePiece();
+    if (control === "swap") swapWithNext();
+    if (control === "drop") hardDrop();
+  }
+
+  function startControlRepeat(control) {
+    stopControlRepeat();
+    performControl(control);
+    if (!["left", "right", "down"].includes(control)) return;
+    controlRepeatDelay = window.setTimeout(() => {
+      controlRepeatInterval = window.setInterval(() => performControl(control), control === "down" ? 48 : 58);
+    }, 135);
+  }
+
+  function stopControlRepeat() {
+    if (controlRepeatDelay) {
+      window.clearTimeout(controlRepeatDelay);
+      controlRepeatDelay = 0;
+    }
+    if (controlRepeatInterval) {
+      window.clearInterval(controlRepeatInterval);
+      controlRepeatInterval = 0;
+    }
+  }
+
   function ensureGestureGame() {
     if (!running) {
       resetGame();
@@ -584,43 +627,72 @@
     return !paused;
   }
 
-  function handleBoardGesture(start, end) {
-    if (!gesturesOn || !start || !ensureGestureGame()) return;
+  function handleBoardGestureMove(event) {
+    if (!gesturesOn || !gestureStart || !ensureGestureGame()) return;
 
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-    const elapsed = end.time - start.time;
-    const tapDistance = Math.hypot(dx, dy);
-    const isTap = tapDistance < 14 && elapsed < 260;
+    const dx = event.clientX - gestureStart.lastX;
+    const dy = event.clientY - gestureStart.lastY;
+    gestureStart.lastX = event.clientX;
+    gestureStart.lastY = event.clientY;
+    gestureStart.totalX = event.clientX - gestureStart.x;
+    gestureStart.totalY = event.clientY - gestureStart.y;
+    gestureStart.residualX += dx;
+    gestureStart.residualY += dy;
 
-    if (isTap) {
-      const tapGap = end.time - lastTap.time;
-      const tapMove = Math.hypot(end.x - lastTap.x, end.y - lastTap.y);
-      if (tapGap > 0 && tapGap < 320 && tapMove < 28) {
-        rotatePiece();
-        lastTap = { time: 0, x: 0, y: 0 };
-        return;
-      }
-      lastTap = { time: end.time, x: end.x, y: end.y };
-      return;
+    const absTotalX = Math.abs(gestureStart.totalX);
+    const absTotalY = Math.abs(gestureStart.totalY);
+    if (Math.hypot(gestureStart.totalX, gestureStart.totalY) > 10) {
+      gestureStart.moved = true;
     }
 
-    lastTap = { time: 0, x: 0, y: 0 };
-
-    if (dy > 34 && absY > absX * 1.18) {
+    if (
+      !gestureStart.hardDropped &&
+      gestureStart.totalY > 54 &&
+      absTotalY > absTotalX * 1.16
+    ) {
       hardDrop();
+      gestureStart.hardDropped = true;
       return;
     }
 
-    if (absX > 24 && absX > absY * 1.12) {
-      const direction = dx > 0 ? 1 : -1;
-      const steps = Math.min(3, Math.max(1, Math.round(absX / 44)));
+    if (Math.abs(gestureStart.residualX) >= 22 && Math.abs(gestureStart.residualX) > Math.abs(gestureStart.residualY) * 0.75) {
+      const direction = gestureStart.residualX > 0 ? 1 : -1;
+      const steps = Math.min(4, Math.floor(Math.abs(gestureStart.residualX) / 22));
+      let moved = false;
       for (let index = 0; index < steps; index += 1) {
-        move(direction);
+        moved = move(direction, { redraw: false, sound: false }) || moved;
+      }
+      gestureStart.residualX -= direction * steps * 22;
+      gestureStart.residualY *= 0.35;
+      if (moved) {
+        playMoveTone();
+        draw();
       }
     }
+  }
+
+  function handleBoardGestureEnd(end) {
+    if (!gesturesOn || !gestureStart) return;
+
+    const dx = end.x - gestureStart.x;
+    const dy = end.y - gestureStart.y;
+    const elapsed = end.time - gestureStart.time;
+    const tapDistance = Math.hypot(dx, dy);
+    const isTap = tapDistance < 14 && elapsed < 260 && !gestureStart.moved && !gestureStart.hardDropped;
+
+    if (!isTap) {
+      lastTap = { time: 0, x: 0, y: 0 };
+      return;
+    }
+
+    const tapGap = end.time - lastTap.time;
+    const tapMove = Math.hypot(end.x - lastTap.x, end.y - lastTap.y);
+    if (tapGap > 0 && tapGap < 300 && tapMove < 28 && ensureGestureGame()) {
+      rotatePiece();
+      lastTap = { time: 0, x: 0, y: 0 };
+      return;
+    }
+    lastTap = { time: end.time, x: end.x, y: end.y };
   }
 
   document.addEventListener("keydown", (event) => {
@@ -659,25 +731,39 @@
   document.querySelectorAll("[data-control]").forEach((button) => {
     button.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      const control = button.dataset.control;
-      if (!running) resetGame();
-      if (control === "left") move(-1);
-      if (control === "right") move(1);
-      if (control === "down") softDrop();
-      if (control === "rotate") rotatePiece();
-      if (control === "swap") swapWithNext();
-      if (control === "drop") hardDrop();
+      button.setPointerCapture?.(event.pointerId);
+      startControlRepeat(button.dataset.control);
     }, { passive: false });
+    ["pointerup", "pointercancel", "pointerleave", "lostpointercapture"].forEach((eventName) => {
+      button.addEventListener(eventName, stopControlRepeat);
+    });
   });
 
   boardCanvas.addEventListener("pointerdown", (event) => {
     if (!gesturesOn) return;
     event.preventDefault();
+    const now = Date.now();
+    const tapGap = now - lastTap.time;
+    const tapMove = Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y);
+    if (tapGap > 0 && tapGap < 300 && tapMove < 28) {
+      if (ensureGestureGame()) rotatePiece();
+      lastTap = { time: 0, x: 0, y: 0 };
+      gestureStart = null;
+      return;
+    }
     gestureStart = {
       pointerId: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      time: Date.now()
+      lastX: event.clientX,
+      lastY: event.clientY,
+      totalX: 0,
+      totalY: 0,
+      residualX: 0,
+      residualY: 0,
+      moved: false,
+      hardDropped: false,
+      time: now
     };
     try {
       boardCanvas.setPointerCapture?.(event.pointerId);
@@ -689,12 +775,13 @@
   boardCanvas.addEventListener("pointermove", (event) => {
     if (!gesturesOn || !gestureStart) return;
     event.preventDefault();
+    handleBoardGestureMove(event);
   }, { passive: false });
 
   boardCanvas.addEventListener("pointerup", (event) => {
     if (!gesturesOn || !gestureStart || event.pointerId !== gestureStart.pointerId) return;
     event.preventDefault();
-    handleBoardGesture(gestureStart, {
+    handleBoardGestureEnd({
       x: event.clientX,
       y: event.clientY,
       time: Date.now()
@@ -711,21 +798,30 @@
     gestureStart = null;
   });
 
-  gameShell?.addEventListener("touchmove", (event) => {
-    event.preventDefault();
-  }, { passive: false });
-
-  gameShell?.addEventListener("dblclick", (event) => {
-    event.preventDefault();
-  }, { passive: false });
-
-  gameShell?.addEventListener("touchend", (event) => {
+  document.addEventListener("touchstart", (event) => {
     const now = Date.now();
-    if (now - lastTouchEnd < 360) {
+    if (event.touches.length > 1) event.preventDefault();
+    if (now - lastTouchStart < 320 && !event.target.closest?.("a")) {
+      event.preventDefault();
+    }
+    lastTouchStart = now;
+  }, { passive: false, capture: true });
+
+  document.addEventListener("touchmove", (event) => {
+    if (event.target.closest?.(".tetris-shell")) event.preventDefault();
+  }, { passive: false, capture: true });
+
+  document.addEventListener("dblclick", (event) => {
+    if (!event.target.closest?.("a")) event.preventDefault();
+  }, { passive: false, capture: true });
+
+  document.addEventListener("touchend", (event) => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 360 && !event.target.closest?.("a")) {
       event.preventDefault();
     }
     lastTouchEnd = now;
-  }, { passive: false });
+  }, { passive: false, capture: true });
 
   ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
     document.addEventListener(eventName, (event) => {

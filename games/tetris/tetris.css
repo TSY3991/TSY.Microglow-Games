@@ -1,13 +1,21 @@
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background:
     radial-gradient(circle at 20% 12%, rgba(47, 215, 255, 0.18), transparent 28%),
     radial-gradient(circle at 84% 22%, rgba(255, 94, 188, 0.16), transparent 30%),
     linear-gradient(135deg, #0d2229 0%, #102f35 45%, #f6fff8 45.2%, #f4fbf6 100%);
-  overscroll-behavior: none;
-  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
-  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .tetris-shell {
@@ -52,6 +60,7 @@ body {
   font-size: 0.92rem;
   font-weight: 950;
   touch-action: manipulation;
+  -webkit-touch-callout: none;
 }
 
 .game-topbar .eyebrow {
@@ -85,6 +94,7 @@ body {
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .top-actions button,
@@ -147,6 +157,7 @@ body {
     inset 0 0 0 1px rgba(47, 215, 255, 0.2),
     0 0 28px rgba(47, 215, 255, 0.14);
   touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .game-overlay {
@@ -481,9 +492,13 @@ body {
   html {
     height: 100%;
     overflow: hidden;
+    touch-action: none;
   }
 
   body {
+    position: fixed;
+    inset: 0;
+    height: 100svh;
     height: 100dvh;
     overflow: hidden;
     touch-action: none;
@@ -493,12 +508,14 @@ body {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 6px;
+    height: 100svh;
     height: 100dvh;
     width: min(100% - 18px, 1180px);
     padding-top: max(8px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
     overflow: hidden;
     touch-action: none;
+    -webkit-touch-callout: none;
   }
 
   .game-topbar {
@@ -654,6 +671,7 @@ body {
     padding: 0 3px;
     font-size: 0.74rem;
     touch-action: none;
+    -webkit-touch-callout: none;
   }
 
   .instruction-modal {
