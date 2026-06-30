@@ -10,10 +10,12 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    linear-gradient(90deg, rgba(47, 215, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(rgba(255, 94, 188, 0.06) 1px, transparent 1px),
-    linear-gradient(135deg, #071219 0%, #0b2328 38%, #18223a 68%, #f8fff4 100%);
-  background-size: 34px 34px, 34px 34px, auto;
+    radial-gradient(circle at 32% -8%, rgba(155, 107, 255, 0.46), transparent 42%),
+    radial-gradient(circle at 82% 14%, rgba(255, 94, 188, 0.22), transparent 30%),
+    linear-gradient(90deg, rgba(47, 215, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(145deg, #0b0a24 0%, #17153a 42%, #07262c 100%);
+  background-size: auto, auto, 34px 34px, 34px 34px, auto;
   color: #eefcff;
   overscroll-behavior: none;
   touch-action: manipulation;
@@ -24,8 +26,8 @@ body::before {
   inset: 0;
   z-index: -1;
   background:
-    conic-gradient(from 140deg at 15% 18%, rgba(47, 215, 255, 0.18), transparent 22%, rgba(255, 216, 77, 0.1), transparent 48%),
-    conic-gradient(from 320deg at 84% 12%, rgba(255, 94, 188, 0.16), transparent 24%, rgba(141, 244, 95, 0.08), transparent 52%),
+    conic-gradient(from 140deg at 15% 18%, rgba(47, 215, 255, 0.13), transparent 22%, rgba(255, 216, 77, 0.08), transparent 48%),
+    conic-gradient(from 320deg at 84% 12%, rgba(255, 94, 188, 0.12), transparent 24%, rgba(141, 244, 95, 0.08), transparent 52%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 32%);
   content: "";
   pointer-events: none;
@@ -95,7 +97,9 @@ button {
 
 .game-topbar h1 {
   margin: 0;
-  color: #ffffff;
+  background: linear-gradient(90deg, #ffffff 0%, var(--cyan) 34%, var(--yellow) 66%, var(--pink) 100%);
+  background-clip: text;
+  color: transparent;
   font-size: clamp(2rem, 5.4vw, 3.7rem);
   font-weight: 950;
   line-height: 1;
@@ -141,7 +145,8 @@ button {
 
 .top-actions button {
   padding: 0 14px;
-  background: linear-gradient(135deg, rgba(13, 148, 136, 0.96), rgba(47, 215, 255, 0.84));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.7), rgba(47, 215, 255, 0.42));
   color: #ffffff;
   font-weight: 950;
   box-shadow:
@@ -152,6 +157,9 @@ button {
 .top-actions button:nth-child(2) {
   background: linear-gradient(135deg, var(--yellow), var(--pink));
   color: #1e1620;
+  box-shadow:
+    0 10px 28px rgba(255, 94, 188, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
 }
 
 .top-actions button:nth-child(3) {
@@ -184,7 +192,7 @@ button {
   padding: 16px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: var(--radius);
+  border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05)),
     linear-gradient(160deg, rgba(7, 18, 25, 0.92), rgba(9, 48, 58, 0.86) 58%, rgba(54, 33, 86, 0.76));
@@ -225,7 +233,7 @@ button {
   height: auto;
   margin: 0 auto;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: var(--radius);
+  border-radius: 12px;
   background: #071219;
   box-shadow:
     0 18px 38px rgba(0, 0, 0, 0.32),
@@ -244,7 +252,7 @@ button {
   gap: 12px;
   padding: 22px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius);
+  border-radius: 12px;
   background:
     linear-gradient(135deg, rgba(7, 18, 25, 0.9), rgba(9, 48, 58, 0.76)),
     rgba(7, 18, 25, 0.82);
@@ -284,7 +292,7 @@ button {
   gap: 14px;
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.17);
-  border-radius: var(--radius);
+  border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)),
     rgba(8, 24, 32, 0.72);
@@ -304,7 +312,7 @@ button {
 .challenge-card,
 .help-card {
   border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: var(--radius);
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -529,38 +537,174 @@ button {
 }
 
 @media (max-width: 860px) {
+  body {
+    align-items: center;
+    background:
+      radial-gradient(circle at 50% -12%, rgba(155, 107, 255, 0.62), transparent 44%),
+      radial-gradient(circle at 82% 8%, rgba(255, 94, 188, 0.2), transparent 34%),
+      linear-gradient(180deg, #0e0a24 0%, #1a1535 58%, #071d25 100%);
+  }
+
+  .gem-shell {
+    width: min(100% - 24px, 480px);
+    padding-top: 16px;
+  }
+
   .game-topbar {
     grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .return-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .back-link,
+  .portal-return {
+    justify-content: center;
+    min-height: 40px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .portal-return {
+    background: linear-gradient(135deg, rgba(47, 215, 255, 0.88), rgba(255, 216, 77, 0.88));
+  }
+
+  .game-topbar .eyebrow {
+    width: fit-content;
+    margin: 4px auto 6px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--cyan), #73f061);
+    color: #0e1630;
+    font-size: 0.72rem;
+    line-height: 1;
+    letter-spacing: 0.14em;
+  }
+
+  .game-topbar h1 {
+    font-size: clamp(1.55rem, 7vw, 2.15rem);
+    text-shadow: 0 0 14px rgba(47, 215, 255, 0.45);
   }
 
   .top-actions {
+    width: 100%;
+    max-width: 460px;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     justify-content: stretch;
+    margin: 0 auto;
   }
 
   .top-actions button {
     padding-inline: 8px;
+    min-height: 42px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.86rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
   .gem-layout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
   }
 
   .gem-panel {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: stretch;
+    display: contents;
   }
 
   .score-grid {
-    grid-column: 1 / -1;
+    order: -3;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .score-grid > div {
+    min-height: 62px;
+    padding: 8px 6px;
+    align-items: center;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.085);
+  }
+
+  .score-grid span {
+    font-size: 0.68rem;
+  }
+
+  .score-grid strong {
+    font-size: 1.28rem;
+  }
+
+  .challenge-card {
+    order: -2;
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.085);
+  }
+
+  .challenge-heading {
+    margin-bottom: 7px;
+  }
+
+  .target-track {
+    height: 9px;
+    margin-bottom: 7px;
+  }
+
+  .challenge-card p {
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .board-wrap {
+    order: -1;
+    width: 100%;
+    max-width: 460px;
+    align-self: center;
+    padding: 6px;
+    border-radius: 16px;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+      rgba(0, 0, 0, 0.25);
+  }
+
+  #gemBoard {
+    max-width: 100%;
+  }
+
+  .help-card {
+    order: 1;
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.085);
+  }
+
+  .help-card h2 {
+    font-size: 0.95rem;
+  }
+
+  .help-card p {
+    font-size: 0.82rem;
   }
 }
 
 @media (max-width: 540px) {
   .gem-shell {
-    width: min(100% - 18px, 520px);
-    padding-top: 14px;
+    width: min(100% - 20px, 460px);
+    padding-top: 10px;
+    padding-bottom: 18px;
   }
 
   .return-nav {
@@ -569,55 +713,56 @@ button {
 
   .back-link,
   .portal-return {
-    min-height: 36px;
-    padding-inline: 10px;
-    font-size: 0.84rem;
+    min-height: 34px;
+    padding-inline: 8px;
+    border-radius: 12px;
+    font-size: 0.78rem;
   }
 
   .game-topbar {
-    gap: 12px;
+    gap: 8px;
   }
 
   .game-topbar h1 {
-    font-size: clamp(1.8rem, 12vw, 2.65rem);
+    font-size: clamp(1.45rem, 8vw, 1.95rem);
   }
 
   .top-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 7px;
   }
 
   .top-actions button {
-    min-height: 40px;
-    font-size: 0.9rem;
-  }
-
-  .board-wrap {
-    padding: 10px;
-  }
-
-  .game-overlay {
-    inset: 10px;
-    padding: 16px;
-  }
-
-  .gem-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding: 10px;
+    min-height: 38px;
+    padding-inline: 4px;
+    font-size: 0.78rem;
   }
 
   .score-grid {
-    display: contents;
+    gap: 7px;
   }
 
   .score-grid > div {
-    min-height: 66px;
+    min-height: 54px;
+    padding: 7px 4px;
+  }
+
+  .score-grid span {
+    font-size: 0.64rem;
+  }
+
+  .score-grid strong {
+    font-size: 1.16rem;
   }
 
   .challenge-card,
   .help-card {
-    grid-column: 1 / -1;
-    padding: 12px;
+    padding: 10px;
+  }
+
+  .game-overlay {
+    inset: 6px;
+    padding: 16px;
   }
 
   .instruction-card {
@@ -631,12 +776,20 @@ button {
 }
 
 @media (max-width: 380px) {
+  .gem-shell {
+    width: min(100% - 14px, 460px);
+  }
+
   .top-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .top-actions button {
+    min-height: 36px;
+    font-size: 0.72rem;
   }
 
   .challenge-heading {
-    align-items: start;
-    flex-direction: column;
+    align-items: baseline;
   }
 }
