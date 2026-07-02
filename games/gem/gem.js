@@ -20,7 +20,7 @@
 
   const gameId = "microglow-gem";
   const gameTitle = "微光寶石";
-  const portalStatsKey = "tsyMicroglowPortal.gameStats.v1";
+  const portalStats = window.MicroglowGameStats;
 
   const COLS = 8;
   const ROWS = 8;
@@ -113,77 +113,27 @@
 
   /* ---------- portal stats ---------- */
 
-  function readPortalStats() {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(portalStatsKey) || "{}");
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-
-  function readGameStats() {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? stats.games : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : {};
-    return existing;
-  }
-
   function readBestScore() {
-    return Number(readGameStats().bestScore) || 0;
+    return Number(portalStats.readGame(gameId).bestScore) || 0;
   }
 
   function readPlays() {
-    return Number(readGameStats().plays) || 0;
+    return Number(portalStats.readGame(gameId).plays) || 0;
   }
 
   function readBestStars() {
-    return Number(readGameStats().bestStars) || 0;
+    return Number(portalStats.readGame(gameId).bestStars) || 0;
   }
 
   function ensurePortalStats() {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? { ...stats.games } : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : null;
-    if (existing && existing.title === gameTitle && "bestScore" in existing && "lastScore" in existing && "plays" in existing && "bestStars" in existing) {
-      return;
-    }
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: Number(existing?.bestScore) || 0,
-      lastScore: Number(existing?.lastScore) || 0,
-      plays: Number(existing?.plays) || 0,
-      bestStage: Number(existing?.bestStage) || 1,
-      bestStars: Number(existing?.bestStars) || 0,
-      updatedAt: existing?.updatedAt || new Date().toISOString()
-    };
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
+    portalStats.ensureGame(gameId, gameTitle, { bestStage: 1, bestStars: 0 });
   }
 
   function writePortalStats(lastScore, bestScore, bestStage, totalStarsThisRun) {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? { ...stats.games } : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : {};
-    const playCount = (Number(existing.plays) || 0) + 1;
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: Math.max(Number(existing.bestScore) || 0, bestScore),
-      lastScore,
-      plays: playCount,
-      bestStage: Math.max(Number(existing.bestStage) || 1, bestStage),
-      bestStars: Math.max(Number(existing.bestStars) || 0, totalStarsThisRun || 0),
-      updatedAt: new Date().toISOString()
-    };
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
-    return games[gameId];
+    return portalStats.recordRun(gameId, gameTitle, lastScore, bestScore, {
+      bestStage,
+      bestStars: totalStarsThisRun
+    });
   }
 
   /* ---------- board init ---------- */

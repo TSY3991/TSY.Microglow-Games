@@ -132,6 +132,8 @@ button {
     filter 160ms ease;
 }
 
+/* The sheen only plays on hover/focus — an always-on infinite animation kept
+   the compositor (and the phone) busy even while the game was idle. */
 .top-actions button::after,
 .game-overlay button::after,
 .instruction-actions button::after {
@@ -140,9 +142,17 @@ button {
   width: 48%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.62), transparent);
   transform: skewX(-18deg);
-  animation: gem-button-sheen 3.8s ease-in-out infinite;
   content: "";
   pointer-events: none;
+}
+
+.top-actions button:hover::after,
+.game-overlay button:hover::after,
+.instruction-actions button:hover::after,
+.top-actions button:focus-visible::after,
+.game-overlay button:focus-visible::after,
+.instruction-actions button:focus-visible::after {
+  animation: gem-button-sheen 1.4s ease-in-out;
 }
 
 .top-actions button {
@@ -313,11 +323,12 @@ button {
   border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)),
-    rgba(8, 24, 32, 0.72);
+    rgba(8, 24, 32, 0.88);
   box-shadow:
     0 22px 48px rgba(0, 0, 0, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(12px);
+  /* No backdrop-filter: the panel is always on screen, and a persistent blur
+     costs GPU time on every repaint. */
 }
 
 .score-grid {
@@ -412,11 +423,13 @@ button {
   transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Static highlight — the old infinite shine animation ran nonstop and drained
+   mobile batteries even on an idle board. */
 .target-track span::after {
   position: absolute;
-  inset: 0 -38%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
-  animation: gem-progress-shine 1.8s ease-in-out infinite;
+  inset: 0 auto 0 12%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
   content: "";
 }
 
@@ -553,13 +566,12 @@ button {
   }
 }
 
-@keyframes gem-progress-shine {
-  0% {
-    transform: translateX(-70%);
-  }
-
-  100% {
-    transform: translateX(70%);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -595,8 +607,7 @@ button {
     justify-content: center;
     min-height: 40px;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .portal-return {

@@ -19,12 +19,18 @@
   const gameId = "microglow-tetris";
   const gameTitle = "微光俄羅斯方塊";
   const gestureKey = "tetris.gesturesEnabled.v1";
-  const portalStatsKey = "tsyMicroglowPortal.gameStats.v1";
+  const portalStats = window.MicroglowGameStats;
   let lastTouchStart = 0;
   let lastTouchEnd = 0;
   let controlRepeatDelay = 0;
   let controlRepeatInterval = 0;
   let lastMoveTone = 0;
+  // Grid backgrounds and glowing blocks are baked to offscreen canvases once —
+  // per-frame shadowBlur and line-by-line grid strokes were the hottest part of
+  // the old render path on mobile.
+  const backgroundCache = new Map();
+  const blockSpriteCache = new Map();
+  const blockGlowPad = 12;
 
   const colors = {
     I: "#2fd7ff",
@@ -155,28 +161,30 @@
     lastTime = 0;
     running = true;
     paused = false;
+    lastTime = performance.now();
     if (collides(current)) {
       gameOver();
       return;
     }
     hideOverlay();
     updateUi();
+    draw();
     drawPreviews();
     updateSwapButton();
     animationFrameId = requestAnimationFrame(update);
   }
 
+  // The board only changes on input or a gravity tick, and every one of those
+  // paths calls draw() itself — so this loop just times gravity instead of
+  // repainting the whole board 60x/sec (the main battery drain on phones).
   function update(time = 0) {
-    if (!running) return;
+    if (!running || paused) return;
     const delta = time - lastTime;
     lastTime = time;
 
-    if (!paused) {
-      dropCounter += delta;
-      if (dropCounter > dropInterval) {
-        softDrop();
-      }
-      draw();
+    dropCounter += delta;
+    if (dropCounter > dropInterval) {
+      softDrop();
     }
 
     animationFrameId = requestAnimationFrame(update);
@@ -346,10 +354,15 @@
     if (!running) return;
     paused = !paused;
     if (paused) {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = 0;
+      }
       showOverlay("已暫停", "按暫停、P 或開始按鈕繼續", "繼續遊戲");
     } else {
       hideOverlay();
-      lastTime = 0;
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(update);
     }
   }
 
@@ -421,39 +434,60 @@
   }
 
   function drawBackground(context, width, height, size) {
-    context.fillStyle = "#07171f";
-    context.fillRect(0, 0, width, height);
-    context.strokeStyle = "rgba(47, 215, 255, 0.1)";
-    context.lineWidth = 1;
-    for (let x = 0; x <= width; x += size) {
-      context.beginPath();
-      context.moveTo(x, 0);
-      context.lineTo(x, height);
-      context.stroke();
+    const key = `${width}x${height}x${size}`;
+    let cached = backgroundCache.get(key);
+    if (!cached) {
+      cached = document.createElement("canvas");
+      cached.width = width;
+      cached.height = height;
+      const bg = cached.getContext("2d");
+      bg.fillStyle = "#07171f";
+      bg.fillRect(0, 0, width, height);
+      bg.strokeStyle = "rgba(47, 215, 255, 0.1)";
+      bg.lineWidth = 1;
+      bg.beginPath();
+      for (let x = 0; x <= width; x += size) {
+        bg.moveTo(x, 0);
+        bg.lineTo(x, height);
+      }
+      for (let y = 0; y <= height; y += size) {
+        bg.moveTo(0, y);
+        bg.lineTo(width, y);
+      }
+      bg.stroke();
+      backgroundCache.set(key, cached);
     }
-    for (let y = 0; y <= height; y += size) {
-      context.beginPath();
-      context.moveTo(0, y);
-      context.lineTo(width, y);
-      context.stroke();
-    }
+    context.drawImage(cached, 0, 0);
+  }
+
+  function getBlockSprite(color, size) {
+    const key = `${color}|${size}`;
+    let sprite = blockSpriteCache.get(key);
+    if (sprite) return sprite;
+    const inset = 2;
+    const blockSize = size - inset * 2;
+    sprite = document.createElement("canvas");
+    sprite.width = blockSize + blockGlowPad * 2;
+    sprite.height = blockSize + blockGlowPad * 2;
+    const spriteContext = sprite.getContext("2d");
+    spriteContext.fillStyle = color;
+    spriteContext.shadowColor = color;
+    spriteContext.shadowBlur = 12;
+    spriteContext.fillRect(blockGlowPad, blockGlowPad, blockSize, blockSize);
+    spriteContext.shadowBlur = 0;
+    spriteContext.fillStyle = "rgba(255, 255, 255, 0.24)";
+    spriteContext.fillRect(blockGlowPad + 3, blockGlowPad + 3, blockSize - 6, 4);
+    spriteContext.strokeStyle = "rgba(255, 255, 255, 0.3)";
+    spriteContext.lineWidth = 1;
+    spriteContext.strokeRect(blockGlowPad + 0.5, blockGlowPad + 0.5, blockSize - 1, blockSize - 1);
+    blockSpriteCache.set(key, sprite);
+    return sprite;
   }
 
   function drawBlock(context, x, y, color, size) {
     const inset = 2;
-    const px = x * size + inset;
-    const py = y * size + inset;
-    const blockSize = size - inset * 2;
-    context.fillStyle = color;
-    context.shadowColor = color;
-    context.shadowBlur = 12;
-    context.fillRect(px, py, blockSize, blockSize);
-    context.shadowBlur = 0;
-    context.fillStyle = "rgba(255, 255, 255, 0.24)";
-    context.fillRect(px + 3, py + 3, blockSize - 6, 4);
-    context.strokeStyle = "rgba(255, 255, 255, 0.3)";
-    context.lineWidth = 1;
-    context.strokeRect(px + 0.5, py + 0.5, blockSize - 1, blockSize - 1);
+    const sprite = getBlockSprite(color, size);
+    context.drawImage(sprite, x * size + inset - blockGlowPad, y * size + inset - blockGlowPad);
   }
 
   function updateUi() {
@@ -464,59 +498,16 @@
     updateSwapButton();
   }
 
-  function readPortalStats() {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(portalStatsKey) || "{}");
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-
   function writePortalStats(lastScore, bestScore) {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? stats.games : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : {};
-
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: Math.max(Number(existing.bestScore) || 0, bestScore),
-      lastScore,
-      plays: (Number(existing.plays) || 0) + 1,
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
+    return portalStats.recordRun(gameId, gameTitle, lastScore, bestScore);
   }
 
   function ensurePortalStats() {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? stats.games : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : null;
-    const existingBest = Number(existing?.bestScore) || 0;
-    const nextBest = Math.max(existingBest, best);
-
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: nextBest,
-      lastScore: Number(existing?.lastScore) || 0,
-      plays: Number(existing?.plays) || 0,
-      updatedAt: existing?.updatedAt || new Date().toISOString()
-    };
-
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
+    portalStats.ensureGame(gameId, gameTitle);
   }
 
   function readBestScore() {
-    return Number(readPortalStats().games?.[gameId]?.bestScore) || 0;
+    return Number(portalStats.readGame(gameId).bestScore) || 0;
   }
 
   function showOverlay(title, message, buttonText) {
@@ -831,6 +822,10 @@
     }
     lastTouchEnd = now;
   }, { passive: false, capture: true });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && running && !paused) togglePause();
+  });
 
   window.addEventListener("resize", syncViewportSize);
   window.addEventListener("orientationchange", () => {

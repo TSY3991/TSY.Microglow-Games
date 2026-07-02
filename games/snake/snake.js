@@ -12,7 +12,7 @@
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const gameId = "microglow-snake";
   const gameTitle = "微光貪吃蛇";
-  const portalStatsKey = "tsyMicroglowPortal.gameStats.v1";
+  const portalStats = window.MicroglowGameStats;
   const boardSize = boardCanvas.width;
   const baseSpeed = 118;
   const turnRate = 5.2;
@@ -62,6 +62,12 @@
   let distanceSincePoint = 0;
   let touchStart = null;
   let lastTouchEnd = 0;
+  let backgroundCanvas = null;
+  const glowSpriteCache = new Map();
+  const glowSpriteRadius = 16;
+  // Writing textContent forces a style recalc, so updateUi() skips values that
+  // haven't changed — this runs every animation frame.
+  const uiCache = {};
 
   resetState();
   updateUi();
@@ -158,7 +164,8 @@
       });
       distanceSincePoint = 0;
     } else if (snake[0]) {
-      snake[0] = { ...snake[0], x: head.x, y: head.y };
+      snake[0].x = head.x;
+      snake[0].y = head.y;
     }
 
     trimSnake();
@@ -229,10 +236,12 @@
 
     paused = !paused;
     if (paused) {
+      stopLoop();
       showOverlay("已暫停", "按空白鍵、繼續或開始按鈕回到遊戲", "繼續遊戲");
     } else {
       hideOverlay();
       lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(update);
     }
   }
 
@@ -288,16 +297,26 @@
     drawParticles();
   }
 
-  function drawBackground() {
-    context.clearRect(0, 0, boardSize, boardSize);
-    context.fillStyle = "#07171f";
-    context.fillRect(0, 0, boardSize, boardSize);
-    context.fillStyle = "rgba(141, 244, 95, 0.08)";
+  // The board fill and dot pattern never change, so they render once offscreen.
+  function getBackgroundCanvas() {
+    if (backgroundCanvas) return backgroundCanvas;
+    backgroundCanvas = document.createElement("canvas");
+    backgroundCanvas.width = boardSize;
+    backgroundCanvas.height = boardSize;
+    const bg = backgroundCanvas.getContext("2d");
+    bg.fillStyle = "#07171f";
+    bg.fillRect(0, 0, boardSize, boardSize);
+    bg.fillStyle = "rgba(141, 244, 95, 0.08)";
     for (let index = 0; index < 70; index += 1) {
       const x = (index * 71) % boardSize;
       const y = (index * 43) % boardSize;
-      context.fillRect(x, y, 2, 2);
+      bg.fillRect(x, y, 2, 2);
     }
+    return backgroundCanvas;
+  }
+
+  function drawBackground() {
+    context.drawImage(getBackgroundCanvas(), 0, 0);
   }
 
   function drawFoods() {
@@ -348,89 +367,63 @@
     });
   }
 
+  // Canvas shadowBlur is rasterized in software on many mobile GPUs, so drawing
+  // hundreds of glowing circles per frame made phones heat up. Instead each
+  // color/halo combination is baked once into a small sprite and blitted.
+  function getGlowSprite(color, blurRatio) {
+    const key = `${color}|${blurRatio}`;
+    let sprite = glowSpriteCache.get(key);
+    if (sprite) return sprite;
+    const baseBlur = glowSpriteRadius * blurRatio;
+    const pad = Math.ceil(glowSpriteRadius + baseBlur);
+    sprite = document.createElement("canvas");
+    sprite.width = pad * 2;
+    sprite.height = pad * 2;
+    const spriteContext = sprite.getContext("2d");
+    spriteContext.fillStyle = color;
+    spriteContext.shadowColor = color;
+    spriteContext.shadowBlur = baseBlur;
+    spriteContext.beginPath();
+    spriteContext.arc(pad, pad, glowSpriteRadius, 0, Math.PI * 2);
+    spriteContext.fill();
+    glowSpriteCache.set(key, sprite);
+    return sprite;
+  }
+
   function drawGlowCircle(x, y, radius, color, blur) {
-    context.fillStyle = color;
-    context.shadowColor = color;
-    context.shadowBlur = blur;
-    context.beginPath();
-    context.arc(x, y, radius, 0, Math.PI * 2);
-    context.fill();
-    context.shadowBlur = 0;
+    const blurRatio = Math.min(4, Math.max(0.5, Math.round((blur / radius) * 2) / 2));
+    const sprite = getGlowSprite(color, blurRatio);
+    const drawSize = sprite.width * (radius / glowSpriteRadius);
+    context.drawImage(sprite, x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
+  }
+
+  function setUiText(element, key, value) {
+    if (uiCache[key] === value) return;
+    uiCache[key] = value;
+    element.textContent = value;
   }
 
   function updateUi() {
-    scoreEl.textContent = String(score);
-    bestEl.textContent = String(best);
-    lengthEl.textContent = String(Math.max(3, Math.round(targetLength / 42)));
-    playsEl.textContent = String(plays);
-  }
-
-  function readPortalStats() {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(portalStatsKey) || "{}");
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-
-  function readSnakeStats() {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? stats.games : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : {};
-    return existing;
+    setUiText(scoreEl, "score", String(score));
+    setUiText(bestEl, "best", String(best));
+    setUiText(lengthEl, "length", String(Math.max(3, Math.round(targetLength / 42))));
+    setUiText(playsEl, "plays", String(plays));
   }
 
   function readBestScore() {
-    return Number(readSnakeStats().bestScore) || 0;
+    return Number(portalStats.readGame(gameId).bestScore) || 0;
   }
 
   function readPlays() {
-    return Number(readSnakeStats().plays) || 0;
+    return Number(portalStats.readGame(gameId).plays) || 0;
   }
 
   function ensurePortalStats() {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? { ...stats.games } : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : null;
-    if (existing && existing.title === gameTitle && "bestScore" in existing && "lastScore" in existing && "plays" in existing) {
-      return;
-    }
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: Number(existing?.bestScore) || 0,
-      lastScore: Number(existing?.lastScore) || 0,
-      plays: Number(existing?.plays) || 0,
-      updatedAt: existing?.updatedAt || new Date().toISOString()
-    };
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
+    portalStats.ensureGame(gameId, gameTitle);
   }
 
   function writePortalStats(lastScore, bestScore) {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? { ...stats.games } : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : {};
-    const playCount = (Number(existing.plays) || 0) + 1;
-
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: Math.max(Number(existing.bestScore) || 0, bestScore),
-      lastScore,
-      plays: playCount,
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
-
-    return games[gameId];
+    return portalStats.recordRun(gameId, gameTitle, lastScore, bestScore);
   }
 
   function showOverlay(title, message, buttonText) {
@@ -621,6 +614,10 @@
     document.addEventListener(eventName, (event) => {
       event.preventDefault();
     }, { passive: false });
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && running && !paused) togglePause();
   });
 
   window.addEventListener("pagehide", () => {

@@ -15,7 +15,7 @@
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const gameId = "microglow-downstairs";
   const gameTitle = "小朋友下樓梯";
-  const portalStatsKey = "tsyMicroglowPortal.gameStats.v1";
+  const portalStats = window.MicroglowGameStats;
   const width = boardCanvas.width;
   const height = boardCanvas.height;
   const playerWidth = 28;
@@ -48,6 +48,17 @@
   let activePointerSide = null;
   let targetAnnounced = false;
   let lastTouchEnd = 0;
+  // Offscreen caches: shadowBlur and gradient creation per frame were the main
+  // sources of phone heat, so all glowing art is baked once and blitted.
+  let skyCanvas = null;
+  let playerSprite = null;
+  let starSprite = null;
+  const platformSpriteCache = new Map();
+  const glowSpriteCache = new Map();
+  const spritePad = 20;
+  // updateUi() runs every animation frame; cached values let it skip DOM
+  // writes (textContent / style) when nothing changed.
+  const uiCache = {};
 
   resetState();
   updateUi();
@@ -114,25 +125,32 @@
   }
 
   function update(time) {
-    if (!running) return;
+    if (!running || paused) {
+      animationFrameId = 0;
+      return;
+    }
     const delta = Math.min(0.034, (time - lastTime) / 1000 || 0);
     lastTime = time;
 
-    if (!paused) {
-      elapsedTime += delta;
-      updateDifficulty();
-      moveWorld(delta);
-      movePlayer(delta);
-      collectStars();
-      updateParticles(delta);
-      removeOldObjects();
-      ensurePlatforms();
-      checkTargetReached();
-      checkGameOver();
-      updateUi();
-      draw();
-    }
+    elapsedTime += delta;
+    updateDifficulty();
+    moveWorld(delta);
+    movePlayer(delta);
+    collectStars();
+    updateParticles(delta);
+    removeOldObjects();
+    ensurePlatforms();
+    checkTargetReached();
+    checkGameOver();
+    updateUi();
+    draw();
 
+    // The work above may have paused (100-floor overlay) or ended the game —
+    // stop scheduling frames instead of spinning while an overlay is up.
+    if (!running || paused) {
+      animationFrameId = 0;
+      return;
+    }
     animationFrameId = requestAnimationFrame(update);
   }
 
@@ -261,7 +279,8 @@
 
   function spawnPlatform(y) {
     const widthRange = Math.max(74, 122 - floor * 0.7);
-    const platformWidth = Math.max(66, widthRange + Math.random() * 44);
+    // Quantized to 8px so platforms share a small set of cached sprites.
+    const platformWidth = Math.round(Math.max(66, widthRange + Math.random() * 44) / 8) * 8;
     const x = 18 + Math.random() * (width - platformWidth - 36);
     const roll = Math.random();
     const type = floor > 8 && roll > 0.86 ? "hazard" : "normal";
@@ -326,6 +345,7 @@
 
     paused = !paused;
     if (paused) {
+      stopLoop();
       releasePointerSide();
       keys.left = false;
       keys.right = false;
@@ -334,6 +354,7 @@
     } else {
       hideOverlay();
       lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(update);
     }
   }
 
@@ -371,13 +392,23 @@
     drawProgressHud();
   }
 
-  function drawBackground() {
-    const sky = context.createLinearGradient(0, 0, 0, height);
+  function getSkyCanvas() {
+    if (skyCanvas) return skyCanvas;
+    skyCanvas = document.createElement("canvas");
+    skyCanvas.width = width;
+    skyCanvas.height = height;
+    const bg = skyCanvas.getContext("2d");
+    const sky = bg.createLinearGradient(0, 0, 0, height);
     sky.addColorStop(0, "#e7fbff");
     sky.addColorStop(0.48, "#bdf2f4");
     sky.addColorStop(1, "#fff2bd");
-    context.fillStyle = sky;
-    context.fillRect(0, 0, width, height);
+    bg.fillStyle = sky;
+    bg.fillRect(0, 0, width, height);
+    return skyCanvas;
+  }
+
+  function drawBackground() {
+    context.drawImage(getSkyCanvas(), 0, 0);
 
     context.fillStyle = "rgba(13, 148, 136, 0.12)";
     for (let index = 0; index < 52; index += 1) {
@@ -388,139 +419,191 @@
 
     context.strokeStyle = "rgba(47, 215, 255, 0.16)";
     context.lineWidth = 1;
+    context.beginPath();
+    const lineOffset = (floor * 5) % 32;
     for (let y = -24; y < height; y += 32) {
-      context.beginPath();
-      context.moveTo(0, y + ((floor * 5) % 32));
-      context.lineTo(width, y + ((floor * 5) % 32));
-      context.stroke();
+      context.moveTo(0, y + lineOffset);
+      context.lineTo(width, y + lineOffset);
     }
+    context.stroke();
+  }
+
+  function getPlatformSprite(type, platformWidth) {
+    const key = `${type}|${platformWidth}`;
+    let sprite = platformSpriteCache.get(key);
+    if (sprite) return sprite;
+    sprite = document.createElement("canvas");
+    sprite.width = platformWidth + spritePad * 2;
+    sprite.height = platformHeight + spritePad * 2;
+    const sc = sprite.getContext("2d");
+    sc.translate(spritePad, spritePad);
+    const gradient = sc.createLinearGradient(0, 0, 0, platformHeight);
+    const topColor = type === "hazard" ? "#ff5ebc" : type === "start" ? "#8df45f" : "#2fd7ff";
+    const bottomColor = type === "hazard" ? "#ba285f" : "#0d9488";
+    gradient.addColorStop(0, topColor);
+    gradient.addColorStop(1, bottomColor);
+    sc.fillStyle = gradient;
+    sc.shadowColor = type === "hazard" ? "rgba(255, 94, 188, 0.5)" : "rgba(47, 215, 255, 0.46)";
+    sc.shadowBlur = 12;
+    roundRectPath(sc, 0, 0, platformWidth, platformHeight, 6);
+    sc.fill();
+    sc.shadowBlur = 0;
+
+    sc.fillStyle = "rgba(255, 255, 255, 0.46)";
+    roundRectPath(sc, 8, 3, Math.max(12, platformWidth - 16), 2, 2);
+    sc.fill();
+
+    if (type === "hazard") {
+      sc.fillStyle = "rgba(255, 255, 255, 0.8)";
+      for (let x = 10; x < platformWidth - 8; x += 18) {
+        sc.beginPath();
+        sc.moveTo(x, 2);
+        sc.lineTo(x + 7, platformHeight - 2);
+        sc.lineTo(x + 14, 2);
+        sc.fill();
+      }
+    }
+    platformSpriteCache.set(key, sprite);
+    return sprite;
   }
 
   function drawPlatforms() {
     platforms.forEach((platform) => {
-      const gradient = context.createLinearGradient(platform.x, platform.y, platform.x, platform.y + platformHeight);
-      const topColor = platform.type === "hazard" ? "#ff5ebc" : platform.type === "start" ? "#8df45f" : "#2fd7ff";
-      const bottomColor = platform.type === "hazard" ? "#ba285f" : platform.type === "start" ? "#0d9488" : "#0d9488";
-      gradient.addColorStop(0, topColor);
-      gradient.addColorStop(1, bottomColor);
-      context.fillStyle = gradient;
-      context.shadowColor = platform.type === "hazard" ? "rgba(255, 94, 188, 0.5)" : "rgba(47, 215, 255, 0.46)";
-      context.shadowBlur = 12;
-      roundRect(platform.x, platform.y, platform.width, platformHeight, 6);
-      context.fill();
-      context.shadowBlur = 0;
-
-      context.fillStyle = "rgba(255, 255, 255, 0.46)";
-      roundRect(platform.x + 8, platform.y + 3, Math.max(12, platform.width - 16), 2, 2);
-      context.fill();
-
-      if (platform.type === "hazard") {
-        context.fillStyle = "rgba(255, 255, 255, 0.8)";
-        for (let x = platform.x + 10; x < platform.x + platform.width - 8; x += 18) {
-          context.beginPath();
-          context.moveTo(x, platform.y + 2);
-          context.lineTo(x + 7, platform.y + platformHeight - 2);
-          context.lineTo(x + 14, platform.y + 2);
-          context.fill();
-        }
-      }
+      const sprite = getPlatformSprite(platform.type, platform.width);
+      context.drawImage(sprite, platform.x - spritePad, platform.y - spritePad);
     });
   }
 
+  function getStarSprite() {
+    if (starSprite) return starSprite;
+    starSprite = document.createElement("canvas");
+    starSprite.width = spritePad * 2 + 20;
+    starSprite.height = spritePad * 2 + 20;
+    const sc = starSprite.getContext("2d");
+    sc.translate(spritePad + 10, spritePad + 10);
+    sc.fillStyle = "#ffd84d";
+    sc.shadowColor = "#ffd84d";
+    sc.shadowBlur = 18;
+    sc.beginPath();
+    for (let point = 0; point < 10; point += 1) {
+      const radius = point % 2 === 0 ? 10 : 4.5;
+      const angle = -Math.PI / 2 + point * Math.PI / 5;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (point === 0) sc.moveTo(x, y);
+      else sc.lineTo(x, y);
+    }
+    sc.closePath();
+    sc.fill();
+    return starSprite;
+  }
+
   function drawStars() {
+    const sprite = getStarSprite();
+    const half = sprite.width / 2;
     stars.forEach((star) => {
       context.save();
       context.translate(star.x, star.y);
       context.rotate(star.spin);
-      context.fillStyle = "#ffd84d";
-      context.shadowColor = "#ffd84d";
-      context.shadowBlur = 18;
-      context.beginPath();
-      for (let point = 0; point < 10; point += 1) {
-        const radius = point % 2 === 0 ? 10 : 4.5;
-        const angle = -Math.PI / 2 + point * Math.PI / 5;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-        if (point === 0) context.moveTo(x, y);
-        else context.lineTo(x, y);
-      }
-      context.closePath();
-      context.fill();
+      context.drawImage(sprite, -half, -half);
       context.restore();
-      context.shadowBlur = 0;
     });
   }
 
+  function getPlayerSprite() {
+    if (playerSprite) return playerSprite;
+    playerSprite = document.createElement("canvas");
+    playerSprite.width = 34 + spritePad * 2;
+    playerSprite.height = 70 + spritePad * 2;
+    const sc = playerSprite.getContext("2d");
+    // Sprite origin matches the old translate(player.x, player.y) local space:
+    // art spans x −17..17 and y −33..27.
+    sc.translate(17 + spritePad, 33 + spritePad);
+
+    sc.fillStyle = "rgba(7, 36, 43, 0.26)";
+    sc.beginPath();
+    sc.ellipse(0, 22, 17, 5, 0, 0, Math.PI * 2);
+    sc.fill();
+
+    sc.fillStyle = "#eaffff";
+    sc.shadowColor = "rgba(47, 215, 255, 0.42)";
+    sc.shadowBlur = 12;
+    roundRectPath(sc, -13, -25, 26, 22, 8);
+    sc.fill();
+    sc.shadowBlur = 0;
+
+    sc.fillStyle = "#2fd7ff";
+    roundRectPath(sc, -12, -3, 24, 24, 7);
+    sc.fill();
+
+    sc.fillStyle = "#07343d";
+    roundRectPath(sc, -9, -20, 18, 11, 4);
+    sc.fill();
+
+    sc.fillStyle = "#8df45f";
+    sc.beginPath();
+    sc.arc(-4, -15, 1.8, 0, Math.PI * 2);
+    sc.arc(4, -15, 1.8, 0, Math.PI * 2);
+    sc.fill();
+
+    sc.strokeStyle = "#8df45f";
+    sc.lineWidth = 1.6;
+    sc.beginPath();
+    sc.moveTo(-4, -11);
+    sc.quadraticCurveTo(0, -8, 4, -11);
+    sc.stroke();
+
+    sc.strokeStyle = "#2fd7ff";
+    sc.lineWidth = 4;
+    sc.lineCap = "round";
+    sc.beginPath();
+    sc.moveTo(-9, 6);
+    sc.lineTo(-15, 15);
+    sc.moveTo(9, 6);
+    sc.lineTo(15, 15);
+    sc.stroke();
+
+    sc.fillStyle = "#ffd84d";
+    sc.beginPath();
+    sc.arc(0, -30, 3, 0, Math.PI * 2);
+    sc.fill();
+
+    return playerSprite;
+  }
+
   function drawPlayer() {
-    const x = player.x;
-    const y = player.y;
-    context.save();
-    context.translate(x, y);
+    const sprite = getPlayerSprite();
+    context.drawImage(sprite, player.x - 17 - spritePad, player.y - 33 - spritePad);
+  }
 
-    context.fillStyle = "rgba(7, 36, 43, 0.26)";
-    context.beginPath();
-    context.ellipse(0, 22, 17, 5, 0, 0, Math.PI * 2);
-    context.fill();
-
-    context.fillStyle = "#eaffff";
-    context.shadowColor = "rgba(47, 215, 255, 0.42)";
-    context.shadowBlur = 12;
-    roundRect(-13, -25, 26, 22, 8);
-    context.fill();
-
-    context.fillStyle = "#2fd7ff";
-    roundRect(-12, -3, 24, 24, 7);
-    context.fill();
-
-    context.fillStyle = "#07343d";
-    roundRect(-9, -20, 18, 11, 4);
-    context.fill();
-
-    context.fillStyle = "#8df45f";
-    context.beginPath();
-    context.arc(-4, -15, 1.8, 0, Math.PI * 2);
-    context.arc(4, -15, 1.8, 0, Math.PI * 2);
-    context.fill();
-
-    context.strokeStyle = "#8df45f";
-    context.lineWidth = 1.6;
-    context.beginPath();
-    context.moveTo(-4, -11);
-    context.quadraticCurveTo(0, -8, 4, -11);
-    context.stroke();
-
-    context.strokeStyle = "#2fd7ff";
-    context.lineWidth = 4;
-    context.lineCap = "round";
-    context.beginPath();
-    context.moveTo(-9, 6);
-    context.lineTo(-15, 15);
-    context.moveTo(9, 6);
-    context.lineTo(15, 15);
-    context.stroke();
-
-    context.fillStyle = "#ffd84d";
-    context.beginPath();
-    context.arc(0, -30, 3, 0, Math.PI * 2);
-    context.fill();
-
-    context.restore();
-    context.shadowBlur = 0;
+  function getGlowSprite(color) {
+    let sprite = glowSpriteCache.get(color);
+    if (sprite) return sprite;
+    const radius = 3.2;
+    const blur = 10;
+    const pad = Math.ceil(radius + blur);
+    sprite = document.createElement("canvas");
+    sprite.width = pad * 2;
+    sprite.height = pad * 2;
+    const sc = sprite.getContext("2d");
+    sc.fillStyle = color;
+    sc.shadowColor = color;
+    sc.shadowBlur = blur;
+    sc.beginPath();
+    sc.arc(pad, pad, radius, 0, Math.PI * 2);
+    sc.fill();
+    glowSpriteCache.set(color, sprite);
+    return sprite;
   }
 
   function drawParticles() {
     particles.forEach((particle) => {
       const alpha = Math.max(0, particle.life / particle.maxLife);
+      const sprite = getGlowSprite(particle.color);
       context.globalAlpha = alpha;
-      context.fillStyle = particle.color;
-      context.shadowColor = particle.color;
-      context.shadowBlur = 10;
-      context.beginPath();
-      context.arc(particle.x, particle.y, 3.2, 0, Math.PI * 2);
-      context.fill();
-      context.globalAlpha = 1;
-      context.shadowBlur = 0;
+      context.drawImage(sprite, particle.x - sprite.width / 2, particle.y - sprite.height / 2);
     });
+    context.globalAlpha = 1;
   }
 
   function drawProgressHud() {
@@ -539,95 +622,57 @@
     context.fillText(`100 層 ${floor}/${targetFloor}`, 24, 29);
   }
 
+  function roundRectPath(ctx, x, y, rectWidth, rectHeight, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + rectWidth - radius, y);
+    ctx.quadraticCurveTo(x + rectWidth, y, x + rectWidth, y + radius);
+    ctx.lineTo(x + rectWidth, y + rectHeight - radius);
+    ctx.quadraticCurveTo(x + rectWidth, y + rectHeight, x + rectWidth - radius, y + rectHeight);
+    ctx.lineTo(x + radius, y + rectHeight);
+    ctx.quadraticCurveTo(x, y + rectHeight, x, y + rectHeight - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
   function roundRect(x, y, rectWidth, rectHeight, radius) {
-    context.beginPath();
-    context.moveTo(x + radius, y);
-    context.lineTo(x + rectWidth - radius, y);
-    context.quadraticCurveTo(x + rectWidth, y, x + rectWidth, y + radius);
-    context.lineTo(x + rectWidth, y + rectHeight - radius);
-    context.quadraticCurveTo(x + rectWidth, y + rectHeight, x + rectWidth - radius, y + rectHeight);
-    context.lineTo(x + radius, y + rectHeight);
-    context.quadraticCurveTo(x, y + rectHeight, x, y + rectHeight - radius);
-    context.lineTo(x, y + radius);
-    context.quadraticCurveTo(x, y, x + radius, y);
-    context.closePath();
+    roundRectPath(context, x, y, rectWidth, rectHeight, radius);
+  }
+
+  function setUiText(element, key, value) {
+    if (uiCache[key] === value) return;
+    uiCache[key] = value;
+    element.textContent = value;
   }
 
   function updateUi() {
-    scoreEl.textContent = String(score);
-    bestEl.textContent = String(best);
-    floorEl.textContent = String(floor);
-    floorProgressEl.textContent = String(floor);
-    targetProgressEl.style.width = `${Math.min(100, floor)}%`;
-    playsEl.textContent = String(plays);
-  }
-
-  function readPortalStats() {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(portalStatsKey) || "{}");
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch {
-      return {};
+    setUiText(scoreEl, "score", String(score));
+    setUiText(bestEl, "best", String(best));
+    setUiText(floorEl, "floor", String(floor));
+    setUiText(floorProgressEl, "floorProgress", String(floor));
+    setUiText(playsEl, "plays", String(plays));
+    const progressWidth = `${Math.min(100, floor)}%`;
+    if (uiCache.progressWidth !== progressWidth) {
+      uiCache.progressWidth = progressWidth;
+      targetProgressEl.style.width = progressWidth;
     }
-  }
-
-  function readGameStats() {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? stats.games : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : {};
-    return existing;
   }
 
   function readBestScore() {
-    return Number(readGameStats().bestScore) || 0;
+    return Number(portalStats.readGame(gameId).bestScore) || 0;
   }
 
   function readPlays() {
-    return Number(readGameStats().plays) || 0;
+    return Number(portalStats.readGame(gameId).plays) || 0;
   }
 
   function ensurePortalStats() {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? { ...stats.games } : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : null;
-    if (existing && existing.title === gameTitle && "bestScore" in existing && "lastScore" in existing && "plays" in existing) {
-      return;
-    }
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: Number(existing?.bestScore) || 0,
-      lastScore: Number(existing?.lastScore) || 0,
-      plays: Number(existing?.plays) || 0,
-      updatedAt: existing?.updatedAt || new Date().toISOString()
-    };
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
+    portalStats.ensureGame(gameId, gameTitle);
   }
 
   function writePortalStats(lastScore, bestScore) {
-    const stats = readPortalStats();
-    const games = stats.games && typeof stats.games === "object" ? { ...stats.games } : {};
-    const existing = games[gameId] && typeof games[gameId] === "object" ? games[gameId] : {};
-    const playCount = (Number(existing.plays) || 0) + 1;
-
-    games[gameId] = {
-      title: gameTitle,
-      bestScore: Math.max(Number(existing.bestScore) || 0, bestScore),
-      lastScore,
-      plays: playCount,
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      window.localStorage.setItem(portalStatsKey, JSON.stringify({ ...stats, games }));
-    } catch {
-      // Ignore private-mode storage failures.
-    }
-
-    return games[gameId];
+    return portalStats.recordRun(gameId, gameTitle, lastScore, bestScore);
   }
 
   function showOverlay(title, message, buttonText) {
@@ -878,6 +923,10 @@
     window.addEventListener(eventName, (event) => {
       event.preventDefault();
     }, { passive: false });
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && running && !paused) togglePause();
   });
 
   window.addEventListener("pagehide", () => {

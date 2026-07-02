@@ -93,6 +93,8 @@ body::before {
     filter 160ms ease;
 }
 
+/* The sheen only plays on hover/focus — an always-on infinite animation kept
+   the compositor (and the phone) busy even while the game was idle. */
 .top-actions button::after,
 .game-overlay button::after,
 .instruction-actions button::after {
@@ -101,9 +103,17 @@ body::before {
   width: 48%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.62), transparent);
   transform: skewX(-18deg);
-  animation: microglow-sheen 3.8s ease-in-out infinite;
   content: "";
   pointer-events: none;
+}
+
+.top-actions button:hover::after,
+.game-overlay button:hover::after,
+.instruction-actions button:hover::after,
+.top-actions button:focus-visible::after,
+.game-overlay button:focus-visible::after,
+.instruction-actions button:focus-visible::after {
+  animation: microglow-sheen 1.4s ease-in-out;
 }
 
 .top-actions button,
@@ -204,7 +214,9 @@ body::before {
   box-shadow:
     0 18px 42px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(10px);
+  /* No backdrop-filter here: these cards are always visible, and a persistent
+     blur costs GPU time on every repaint — the near-opaque background reads
+     the same over the static page backdrop. */
 }
 
 .score-grid span,
@@ -259,6 +271,15 @@ body::before {
   48%,
   100% {
     transform: translateX(360%) skewX(-18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
