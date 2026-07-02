@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta
+      name="description"
+      content="TSY.Microglow 微光連珠對戰，拖曳任意路徑連接同色元素珠攻擊敵人，限時戰鬥累積分數與波數。"
+    >
+    <title>微光連珠對戰｜TSY.Microglow Games</title>
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="./orbs.css?v=20260702a">
+  </head>
+  <body>
+    <main class="orbs-shell">
+      <header class="game-topbar">
+        <nav class="return-nav" aria-label="返回連結">
+          <a class="back-link compact-back" href="../../">回遊戲大廳</a>
+          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>返回入口網站</a>
+        </nav>
+        <div>
+          <p class="eyebrow">Timed Orb Battle</p>
+          <h1>微光連珠對戰</h1>
+        </div>
+        <div class="top-actions" aria-label="遊戲控制">
+          <button type="button" data-action="instructions">玩法</button>
+          <button type="button" data-action="start">開始</button>
+          <button type="button" data-action="pause">暫停</button>
+          <button type="button" data-action="restart">重開</button>
+        </div>
+      </header>
+
+      <section class="orbs-layout" aria-label="微光連珠對戰遊戲區">
+        <div class="board-wrap">
+          <div class="combat-strip" aria-label="戰鬥狀態">
+            <div class="hp-card">
+              <div class="hp-heading">
+                <span>我方</span>
+                <strong data-player-hp>800/800</strong>
+              </div>
+              <div class="hp-track player-hp" aria-hidden="true">
+                <span data-player-hp-track></span>
+              </div>
+            </div>
+            <div class="hp-card">
+              <div class="hp-heading">
+                <span data-enemy-name>第 1 波・敵人</span>
+                <strong data-enemy-hp>0/0</strong>
+              </div>
+              <div class="hp-track enemy-hp" aria-hidden="true">
+                <span data-enemy-hp-track></span>
+              </div>
+            </div>
+          </div>
+          <canvas id="orbsBoard" width="372" height="310" aria-label="連珠盤面"></canvas>
+          <div class="game-overlay" data-overlay>
+            <strong data-overlay-title>準備開戰</strong>
+            <span data-overlay-message>拖曳任意路徑連接 3 顆以上同色元素珠攻擊敵人，時間耗盡或血量歸零則結束。</span>
+            <div class="overlay-actions">
+              <button type="button" data-action="overlay-start">開始遊戲</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="orbs-panel" aria-label="分數與狀態">
+          <div class="score-grid">
+            <div>
+              <span>分數</span>
+              <strong data-score>0</strong>
+            </div>
+            <div>
+              <span>最高分</span>
+              <strong data-best>0</strong>
+            </div>
+            <div>
+              <span>波數</span>
+              <strong data-wave>1</strong>
+            </div>
+            <div class="time-cell">
+              <span>剩餘時間</span>
+              <strong data-time>75</strong>
+            </div>
+            <div>
+              <span>遊玩</span>
+              <strong data-plays>0</strong>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <h2>操作</h2>
+            <p>桌機／手機：按住任一元素珠拖曳，路徑可任意轉彎，經過的珠子會跟著移動，放開手指結算本回合。</p>
+            <p>鍵盤：方向鍵移動游標，空白鍵拿起元素珠、再用方向鍵延伸路徑，空白鍵放下結算。</p>
+          </div>
+        </aside>
+      </section>
+
+      <div class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="instruction-title" data-instruction-modal hidden>
+        <div class="instruction-card">
+          <p class="instruction-kicker">遊玩方式</p>
+          <h2 id="instruction-title">限時連珠戰鬥</h2>
+          <div class="instruction-list">
+            <div>
+              <strong>拖曳連珠</strong>
+              <span>按住任一元素珠開始拖曳，路徑可上下左右斜向任意轉彎，經過的格子會跟著交換位置；放開手指結算本回合傷害。</span>
+            </div>
+            <div>
+              <strong>連段加成</strong>
+              <span>結算時若同時消掉多組連線，或消除後連鎖出新的 3 連，都會累計「連段數」，傷害會依連段數疊加倍率。</span>
+            </div>
+            <div>
+              <strong>回合制戰鬥</strong>
+              <span>每次放開手指視為一回合：造成傷害後，只要敵人還沒被擊倒，敵人就會立刻反擊扣血；純點擊不移動不算一回合。</span>
+            </div>
+            <div>
+              <strong>限時倒數</strong>
+              <span>總時間從 75 秒開始倒數，時間歸零或我方血量歸零即結束本局；擊敗敵人可以獲得額外時間。</span>
+            </div>
+            <div>
+              <strong>波數難度</strong>
+              <span>每擊敗一隻敵人就進入下一波，敵人血量與攻擊力會逐波提升，分數則以造成的總傷害累計。</span>
+            </div>
+          </div>
+          <p class="instruction-note">微光霓虹風，快節奏連珠對戰。</p>
+          <div class="instruction-actions">
+            <button type="button" data-instruction-start>開始遊戲</button>
+            <button type="button" data-instruction-close>先看看</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="../../shared/portal-return.js"></script>
+    <script src="../../shared/storage.js"></script>
+    <script src="../../shared/game-stats.js"></script>
+    <script src="./orbs.js?v=20260702a"></script>
+  </body>
+</html>
