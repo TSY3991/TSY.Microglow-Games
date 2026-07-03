@@ -78,6 +78,8 @@
   let timerHandle = 0;
   let backgroundCanvas = null;
   let stageEffectTimer = 0;
+  const cellAnimations = new Map();
+  const SWAP_ANIMATION_MS = 130;
   const orbSpriteCache = new Map();
 
   const uiCache = {};
@@ -132,7 +134,7 @@
           (c >= 2 && row[c - 1].color === color && row[c - 2].color === color) ||
           (r >= 2 && board[r - 1][c].color === color && board[r - 2][c].color === color)
         );
-        row.push({ color });
+        row.push({ color, id: crypto.randomUUID?.() || `${Date.now()}-${r}-${c}-${Math.random()}` });
       }
       board.push(row);
     }
@@ -204,7 +206,7 @@
         }
       }
       for (let r = writeR; r >= 0; r -= 1) {
-        board[r][c] = { color: randomColor() };
+        board[r][c] = { color: randomColor(), id: crypto.randomUUID?.() || `${Date.now()}-${r}-${c}-${Math.random()}` };
       }
     }
   }
@@ -233,6 +235,7 @@
     dragging = null;
     cursorVisible = false;
     keyboardHolding = false;
+    cellAnimations.clear();
     if (!running || paused || pathLength <= 0) {
       draw();
       return;
@@ -318,6 +321,7 @@
     dragging = null;
     particles = [];
     popups = [];
+    cellAnimations.clear();
     clearStageEffect();
     combatFloatsEl.replaceChildren();
     initBoard();
@@ -388,55 +392,91 @@
     backgroundCanvas.width = boardPxWidth;
     backgroundCanvas.height = boardPxHeight;
     const bg = backgroundCanvas.getContext("2d");
-    const glow = bg.createRadialGradient(
-      boardPxWidth * 0.3, boardPxHeight * 0.2, 10,
-      boardPxWidth * 0.5, boardPxHeight * 0.5, boardPxWidth * 0.9
-    );
-    glow.addColorStop(0, "rgba(47, 215, 255, 0.14)");
-    glow.addColorStop(1, "rgba(6, 18, 24, 0.98)");
-    bg.fillStyle = glow;
+    const base = bg.createLinearGradient(0, 0, 0, boardPxHeight);
+    base.addColorStop(0, "#241a34");
+    base.addColorStop(0.5, "#141123");
+    base.addColorStop(1, "#0a1320");
+    bg.fillStyle = base;
     bg.fillRect(0, 0, boardPxWidth, boardPxHeight);
-    bg.strokeStyle = "rgba(147, 244, 255, 0.12)";
-    bg.lineWidth = 1;
-    bg.beginPath();
-    for (let i = 0; i <= COLS; i += 1) {
-      bg.moveTo(i * CELL, 0);
-      bg.lineTo(i * CELL, boardPxHeight);
+
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        const x = c * CELL + 5;
+        const y = r * CELL + 5;
+        drawRoundRect(bg, x, y, CELL - 10, CELL - 10, 11);
+        bg.fillStyle = "rgba(0, 0, 0, 0.25)";
+        bg.fill();
+        bg.strokeStyle = "rgba(255, 225, 150, 0.12)";
+        bg.lineWidth = 1.2;
+        bg.stroke();
+      }
     }
-    for (let i = 0; i <= ROWS; i += 1) {
-      bg.moveTo(0, i * CELL);
-      bg.lineTo(boardPxWidth, i * CELL);
-    }
-    bg.stroke();
+
+    bg.strokeStyle = "rgba(255, 216, 120, 0.18)";
+    bg.lineWidth = 2;
+    bg.strokeRect(1, 1, boardPxWidth - 2, boardPxHeight - 2);
     return backgroundCanvas;
+  }
+
+  function drawRoundRect(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
   }
 
   function getOrbSprite(colorIndex) {
     let sprite = orbSpriteCache.get(colorIndex);
     if (sprite) return sprite;
     const color = COLORS[colorIndex];
-    const r = CELL * 0.36;
-    const pad = 16;
+    const size = CELL - 10;
+    const pad = 12;
     sprite = document.createElement("canvas");
-    sprite.width = r * 2 + pad * 2;
-    sprite.height = r * 2 + pad * 2;
+    sprite.width = size + pad * 2;
+    sprite.height = size + pad * 2;
     const sc = sprite.getContext("2d");
+    const x = pad;
+    const y = pad;
     const cx = sprite.width / 2;
     const cy = sprite.height / 2;
+    const r = size * 0.42;
+
     sc.shadowColor = color.glow;
-    sc.shadowBlur = 14;
-    const fill = sc.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+    sc.shadowBlur = 18;
+    drawRoundRect(sc, x, y, size, size, 13);
+    const fill = sc.createLinearGradient(x, y, x + size, y + size);
     fill.addColorStop(0, "#ffffff");
-    fill.addColorStop(0.24, color.fill);
-    fill.addColorStop(1, "rgba(5,18,24,0.7)");
+    fill.addColorStop(0.22, color.fill);
+    fill.addColorStop(0.78, color.fill);
+    fill.addColorStop(1, "rgba(11, 10, 22, 0.78)");
     sc.fillStyle = fill;
-    sc.beginPath();
-    sc.arc(cx, cy, r, 0, Math.PI * 2);
     sc.fill();
     sc.shadowBlur = 0;
-    sc.strokeStyle = "rgba(255,255,255,0.5)";
-    sc.lineWidth = 1.6;
+
+    const bevel = sc.createLinearGradient(x, y, x, y + size);
+    bevel.addColorStop(0, "rgba(255,255,255,0.42)");
+    bevel.addColorStop(0.48, "rgba(255,255,255,0.04)");
+    bevel.addColorStop(1, "rgba(0,0,0,0.32)");
+    drawRoundRect(sc, x + 2, y + 2, size - 4, size - 4, 11);
+    sc.fillStyle = bevel;
+    sc.fill();
+
+    drawRoundRect(sc, x + 1, y + 1, size - 2, size - 2, 12);
+    sc.strokeStyle = "rgba(255, 241, 190, 0.62)";
+    sc.lineWidth = 2;
     sc.stroke();
+    sc.strokeStyle = "rgba(0,0,0,0.28)";
+    sc.lineWidth = 1.2;
+    sc.stroke();
+
     drawOrbMark(sc, cx, cy, r, colorIndex);
     orbSpriteCache.set(colorIndex, sprite);
     return sprite;
@@ -507,9 +547,15 @@
         const gem = board[r][c];
         if (!gem) continue;
         const sprite = getOrbSprite(gem.color);
-        const x = c * CELL + CELL / 2 - sprite.width / 2;
-        const y = r * CELL + CELL / 2 - sprite.height / 2;
-        context.drawImage(sprite, x, y);
+        const position = getGemDrawPosition(gem, r, c);
+        context.save();
+        if (dragging && sameCell(dragging.path[dragging.path.length - 1], { r, c })) {
+          context.shadowColor = COLORS[gem.color].glow;
+          context.shadowBlur = 16;
+          context.globalAlpha = 0.98;
+        }
+        context.drawImage(sprite, position.x - sprite.width / 2, position.y - sprite.height / 2);
+        context.restore();
       }
     }
 
@@ -517,6 +563,23 @@
     if (cursorVisible) drawCursor();
     drawParticles();
     drawPopups();
+  }
+
+  function getGemDrawPosition(gem, r, c) {
+    const targetX = c * CELL + CELL / 2;
+    const targetY = r * CELL + CELL / 2;
+    const animation = cellAnimations.get(gem.id);
+    if (!animation) return { x: targetX, y: targetY };
+    const progress = Math.min(1, (performance.now() - animation.startedAt) / SWAP_ANIMATION_MS);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    if (progress >= 1) {
+      cellAnimations.delete(gem.id);
+      return { x: targetX, y: targetY };
+    }
+    return {
+      x: animation.fromX + (targetX - animation.fromX) * eased,
+      y: animation.fromY + (targetY - animation.fromY) * eased
+    };
   }
 
   function drawDragPath() {
@@ -622,7 +685,7 @@
   /* ---------- main loop (battery-conscious: idle stops rAF) ---------- */
 
   function needsContinuousRender() {
-    return Boolean(dragging) || particles.length > 0 || popups.length > 0;
+    return Boolean(dragging) || cellAnimations.size > 0 || particles.length > 0 || popups.length > 0;
   }
 
   function loop(time) {
@@ -679,9 +742,23 @@
   /* ---------- drag / swap mechanics ---------- */
 
   function swap(a, b) {
-    const tmp = board[a.r][a.c];
-    board[a.r][a.c] = board[b.r][b.c];
-    board[b.r][b.c] = tmp;
+    const gemA = board[a.r][a.c];
+    const gemB = board[b.r][b.c];
+    board[a.r][a.c] = gemB;
+    board[b.r][b.c] = gemA;
+    animateGemMove(gemA, a, b);
+    animateGemMove(gemB, b, a);
+  }
+
+  function animateGemMove(gem, from, to) {
+    if (!gem) return;
+    cellAnimations.set(gem.id, {
+      fromX: from.c * CELL + CELL / 2,
+      fromY: from.r * CELL + CELL / 2,
+      toX: to.c * CELL + CELL / 2,
+      toY: to.r * CELL + CELL / 2,
+      startedAt: performance.now()
+    });
   }
 
   function sameCell(a, b) {
