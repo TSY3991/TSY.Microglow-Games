@@ -32,11 +32,11 @@
   const boardPxHeight = ROWS * CELL;
 
   const COLORS = [
-    { id: 0, name: "fire", fill: "#ff5ebc", glow: "rgba(255, 94, 188, 0.55)", mark: "#fff3fb" },
-    { id: 1, name: "water", fill: "#2fd7ff", glow: "rgba(47, 215, 255, 0.55)", mark: "#e8fbff" },
-    { id: 2, name: "wood", fill: "#8df45f", glow: "rgba(141, 244, 95, 0.55)", mark: "#f1ffe8" },
-    { id: 3, name: "light", fill: "#ffd84d", glow: "rgba(255, 216, 77, 0.55)", mark: "#fff9d6" },
-    { id: 4, name: "dark", fill: "#9b6bff", glow: "rgba(155, 107, 255, 0.55)", mark: "#efe8ff" }
+    { id: 0, name: "fire", fill: "#f23a2e", glow: "rgba(255, 68, 55, 0.58)", mark: "#ffb4a9" },
+    { id: 1, name: "water", fill: "#2aa8ff", glow: "rgba(47, 215, 255, 0.55)", mark: "#dff7ff" },
+    { id: 2, name: "wood", fill: "#2fda55", glow: "rgba(141, 244, 95, 0.55)", mark: "#dbffd6" },
+    { id: 3, name: "light", fill: "#f4bd39", glow: "rgba(255, 216, 77, 0.55)", mark: "#fff2bc" },
+    { id: 4, name: "dark", fill: "#a324d7", glow: "rgba(155, 107, 255, 0.55)", mark: "#f1d8ff" }
   ];
 
   // `art` is the base filename in assets/monsters/ (no extension): the loader
@@ -509,12 +509,50 @@
     const rgb = hexToRgb(hex);
     return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
   }
+  function stonePoints(colorIndex) {
+    const shapes = [
+      [[-0.88, -0.4], [-0.58, -0.84], [-0.06, -0.94], [0.5, -0.82], [0.86, -0.42], [0.9, 0.2], [0.56, 0.72], [0.04, 0.92], [-0.58, 0.76], [-0.9, 0.18]],
+      [[-0.78, -0.72], [-0.18, -0.86], [0.58, -0.76], [0.86, -0.28], [0.76, 0.58], [0.3, 0.86], [-0.54, 0.76], [-0.88, 0.28]],
+      [[0, -0.96], [0.28, -0.6], [0.78, -0.56], [0.56, -0.1], [0.9, 0.28], [0.34, 0.36], [0.12, 0.88], [-0.24, 0.44], [-0.76, 0.56], [-0.54, 0.06], [-0.88, -0.34], [-0.36, -0.46]],
+      [[-0.58, -0.84], [0.52, -0.84], [0.84, -0.48], [0.78, 0.52], [0.34, 0.9], [-0.48, 0.82], [-0.84, 0.36], [-0.78, -0.46]],
+      [[-0.7, -0.78], [-0.08, -0.9], [0.66, -0.74], [0.9, -0.16], [0.64, 0.6], [0.12, 0.92], [-0.54, 0.76], [-0.88, 0.22]]
+    ];
+    return shapes[colorIndex] || shapes[0];
+  }
+
+  function traceStonePath(ctx, points, cx, cy, radius, scale = 1) {
+    const scaled = points.map(([x, y]) => ({ x: cx + x * radius * scale, y: cy + y * radius * scale }));
+    ctx.beginPath();
+    for (let i = 0; i < scaled.length; i += 1) {
+      const current = scaled[i];
+      const next = scaled[(i + 1) % scaled.length];
+      const mid = { x: (current.x + next.x) / 2, y: (current.y + next.y) / 2 };
+      if (i === 0) ctx.moveTo(mid.x, mid.y);
+      ctx.quadraticCurveTo(next.x, next.y, (next.x + scaled[(i + 2) % scaled.length].x) / 2, (next.y + scaled[(i + 2) % scaled.length].y) / 2);
+    }
+    ctx.closePath();
+  }
+
+  function drawFacet(ctx, cx, cy, radius, points, fill) {
+    ctx.beginPath();
+    points.forEach(([x, y], index) => {
+      const px = cx + x * radius;
+      const py = cy + y * radius;
+      if (index === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
   function getOrbSprite(colorIndex) {
     let sprite = orbSpriteCache.get(colorIndex);
     if (sprite) return sprite;
     const color = COLORS[colorIndex];
-    const radius = CELL * 0.415;
-    const pad = 18;
+    const radius = CELL * 0.41;
+    const pad = 17;
+    const points = stonePoints(colorIndex);
     sprite = document.createElement("canvas");
     sprite.width = Math.ceil(radius * 2 + pad * 2);
     sprite.height = Math.ceil(radius * 2 + pad * 2);
@@ -523,158 +561,127 @@
     const cy = sprite.height / 2;
 
     sc.save();
-    sc.scale(1, 0.42);
-    const shadow = sc.createRadialGradient(cx, (cy + radius * 1.15) / 0.42, radius * 0.2, cx, (cy + radius * 1.15) / 0.42, radius * 1.16);
-    shadow.addColorStop(0, "rgba(0,0,0,0.46)");
-    shadow.addColorStop(1, "rgba(0,0,0,0)");
+    sc.scale(1, 0.36);
+    const shadow = sc.createRadialGradient(cx, (cy + radius * 1.18) / 0.36, radius * 0.18, cx, (cy + radius * 1.18) / 0.36, radius * 1.08);
+    shadow.addColorStop(0, "rgba(0, 0, 0, 0.52)");
+    shadow.addColorStop(1, "rgba(0, 0, 0, 0)");
     sc.fillStyle = shadow;
     sc.beginPath();
-    sc.arc(cx, (cy + radius * 1.16) / 0.42, radius * 1.16, 0, Math.PI * 2);
+    sc.arc(cx, (cy + radius * 1.18) / 0.36, radius * 1.08, 0, Math.PI * 2);
     sc.fill();
     sc.restore();
 
-    const rim = sc.createRadialGradient(cx - radius * 0.28, cy - radius * 0.34, radius * 0.12, cx, cy, radius * 1.12);
-    rim.addColorStop(0, "rgba(255,255,255,0.72)");
-    rim.addColorStop(0.2, rgbaFromHex(color.fill, 0.92));
-    rim.addColorStop(0.72, rgbaFromHex(color.fill, 0.54));
-    rim.addColorStop(1, "rgba(4, 5, 11, 0.96)");
+    sc.save();
     sc.shadowColor = color.glow;
-    sc.shadowBlur = 18;
-    sc.fillStyle = rim;
-    sc.beginPath();
-    sc.arc(cx, cy, radius + 2.5, 0, Math.PI * 2);
+    sc.shadowBlur = 10;
+    traceStonePath(sc, points, cx, cy, radius, 1.03);
+    sc.fillStyle = "rgba(7, 7, 13, 0.92)";
     sc.fill();
-    sc.shadowBlur = 0;
+    sc.restore();
 
     sc.save();
-    sc.beginPath();
-    sc.arc(cx, cy, radius, 0, Math.PI * 2);
+    traceStonePath(sc, points, cx, cy, radius, 0.93);
     sc.clip();
-
-    const core = sc.createRadialGradient(cx - radius * 0.36, cy - radius * 0.42, radius * 0.05, cx + radius * 0.06, cy + radius * 0.08, radius * 1.04);
-    core.addColorStop(0, "rgba(255,255,255,0.92)");
-    core.addColorStop(0.16, rgbaFromHex(color.mark, 0.86));
-    core.addColorStop(0.38, rgbaFromHex(color.fill, 0.98));
-    core.addColorStop(0.68, rgbaFromHex(color.fill, 0.72));
-    core.addColorStop(1, "rgba(7, 7, 14, 0.92)");
-    sc.fillStyle = core;
+    const fill = sc.createRadialGradient(cx - radius * 0.35, cy - radius * 0.45, radius * 0.08, cx + radius * 0.12, cy + radius * 0.12, radius * 1.1);
+    fill.addColorStop(0, rgbaFromHex(color.mark, 0.94));
+    fill.addColorStop(0.24, rgbaFromHex(color.fill, 0.98));
+    fill.addColorStop(0.62, rgbaFromHex(color.fill, 0.78));
+    fill.addColorStop(1, "rgba(6, 7, 12, 0.86)");
+    sc.fillStyle = fill;
     sc.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
 
-    const facets = [
-      { points: [[-0.88, -0.2], [-0.28, -0.92], [0.08, -0.18]], fill: "rgba(255,255,255,0.18)" },
-      { points: [[0.08, -0.18], [0.5, -0.82], [0.88, -0.12], [0.36, 0.02]], fill: "rgba(255,255,255,0.12)" },
-      { points: [[-0.86, -0.12], [-0.18, 0.04], [-0.58, 0.74]], fill: "rgba(0,0,0,0.18)" },
-      { points: [[-0.16, 0.06], [0.38, 0.02], [0.7, 0.68], [-0.26, 0.82]], fill: "rgba(0,0,0,0.24)" },
-      { points: [[-0.2, -0.02], [0.14, -0.2], [0.42, 0.02], [0.08, 0.28]], fill: "rgba(255,255,255,0.16)" }
-    ];
-    for (const facet of facets) {
-      sc.beginPath();
-      facet.points.forEach(([x, y], index) => {
-        const px = cx + x * radius;
-        const py = cy + y * radius;
-        if (index === 0) sc.moveTo(px, py);
-        else sc.lineTo(px, py);
-      });
-      sc.closePath();
-      sc.fillStyle = facet.fill;
-      sc.fill();
-    }
+    drawFacet(sc, cx, cy, radius, [[-0.82, -0.24], [-0.34, -0.86], [0.06, -0.22], [-0.2, 0.08]], "rgba(255,255,255,0.24)");
+    drawFacet(sc, cx, cy, radius, [[0.08, -0.24], [0.58, -0.72], [0.82, -0.14], [0.32, 0.08]], "rgba(255,255,255,0.15)");
+    drawFacet(sc, cx, cy, radius, [[-0.78, -0.1], [-0.2, 0.12], [-0.58, 0.72], [-0.9, 0.22]], "rgba(0,0,0,0.2)");
+    drawFacet(sc, cx, cy, radius, [[-0.14, 0.12], [0.34, 0.04], [0.72, 0.58], [0.08, 0.82], [-0.28, 0.56]], "rgba(0,0,0,0.28)");
+    drawFacet(sc, cx, cy, radius, [[-0.16, -0.1], [0.14, -0.28], [0.42, -0.02], [0.1, 0.26]], "rgba(255,255,255,0.16)");
 
     sc.strokeStyle = "rgba(255,255,255,0.18)";
     sc.lineWidth = 1.2;
-    for (const angle of [-0.78, -0.24, 0.28, 0.82]) {
+    for (const angle of [-0.95, -0.35, 0.22, 0.78]) {
       sc.beginPath();
-      sc.moveTo(cx + Math.cos(angle) * radius * 0.18, cy + Math.sin(angle) * radius * 0.18);
-      sc.lineTo(cx + Math.cos(angle) * radius * 0.92, cy + Math.sin(angle) * radius * 0.92);
+      sc.moveTo(cx + Math.cos(angle) * radius * 0.16, cy + Math.sin(angle) * radius * 0.16);
+      sc.lineTo(cx + Math.cos(angle) * radius * 0.78, cy + Math.sin(angle) * radius * 0.78);
       sc.stroke();
     }
 
-    const gloss = sc.createRadialGradient(cx - radius * 0.34, cy - radius * 0.44, 0, cx - radius * 0.32, cy - radius * 0.42, radius * 0.62);
-    gloss.addColorStop(0, "rgba(255,255,255,0.74)");
-    gloss.addColorStop(0.38, "rgba(255,255,255,0.2)");
+    const gloss = sc.createRadialGradient(cx - radius * 0.42, cy - radius * 0.46, 0, cx - radius * 0.36, cy - radius * 0.4, radius * 0.5);
+    gloss.addColorStop(0, "rgba(255,255,255,0.5)");
     gloss.addColorStop(1, "rgba(255,255,255,0)");
     sc.fillStyle = gloss;
     sc.beginPath();
-    sc.ellipse(cx - radius * 0.22, cy - radius * 0.28, radius * 0.46, radius * 0.26, -0.55, 0, Math.PI * 2);
+    sc.ellipse(cx - radius * 0.24, cy - radius * 0.26, radius * 0.36, radius * 0.18, -0.62, 0, Math.PI * 2);
     sc.fill();
-
     sc.restore();
 
-    sc.save();
-    sc.globalAlpha = 0.62;
-    sc.shadowColor = "rgba(0,0,0,0.72)";
-    sc.shadowBlur = 5;
-    drawOrbMark(sc, cx, cy, radius * 0.62, colorIndex);
-    sc.restore();
+    drawOrbMark(sc, cx, cy, radius * 0.6, colorIndex);
 
-    sc.beginPath();
-    sc.arc(cx, cy, radius + 2.5, 0, Math.PI * 2);
-    sc.strokeStyle = "rgba(3, 4, 10, 0.76)";
-    sc.lineWidth = 4.5;
+    traceStonePath(sc, points, cx, cy, radius, 1.03);
+    sc.strokeStyle = "rgba(1, 3, 7, 0.96)";
+    sc.lineWidth = 4.4;
     sc.stroke();
-    sc.strokeStyle = "rgba(255, 232, 164, 0.64)";
-    sc.lineWidth = 1.4;
+    traceStonePath(sc, points, cx, cy, radius, 0.94);
+    sc.strokeStyle = "rgba(255, 245, 218, 0.34)";
+    sc.lineWidth = 1.3;
     sc.stroke();
 
     orbSpriteCache.set(colorIndex, sprite);
     return sprite;
   }
+
   function drawOrbMark(sc, cx, cy, r, colorIndex) {
     sc.save();
-    sc.strokeStyle = COLORS[colorIndex].mark;
-    sc.fillStyle = COLORS[colorIndex].mark;
-    sc.lineWidth = Math.max(3, r * 0.12);
     sc.lineCap = "round";
     sc.lineJoin = "round";
-    sc.shadowColor = "rgba(0,0,0,0.32)";
-    sc.shadowBlur = 2;
+    sc.shadowColor = "rgba(0, 0, 0, 0.54)";
+    sc.shadowBlur = 3;
+    sc.strokeStyle = "rgba(5, 8, 14, 0.72)";
+    sc.fillStyle = "rgba(5, 8, 14, 0.66)";
+    sc.lineWidth = Math.max(4, r * 0.18);
     if (colorIndex === 0) {
       sc.beginPath();
-      sc.moveTo(cx, cy - r * 0.52);
-      sc.bezierCurveTo(cx - r * 0.5, cy - r * 0.08, cx - r * 0.2, cy + r * 0.42, cx, cy + r * 0.48);
-      sc.bezierCurveTo(cx + r * 0.42, cy + r * 0.18, cx + r * 0.34, cy - r * 0.28, cx, cy - r * 0.52);
+      sc.moveTo(cx + r * 0.42, cy - r * 0.34);
+      sc.bezierCurveTo(cx + r * 0.05, cy - r * 0.52, cx - r * 0.5, cy - r * 0.26, cx - r * 0.5, cy + r * 0.12);
+      sc.bezierCurveTo(cx - r * 0.48, cy + r * 0.52, cx + r * 0.02, cy + r * 0.68, cx + r * 0.38, cy + r * 0.34);
+      sc.bezierCurveTo(cx + r * 0.06, cy + r * 0.42, cx - r * 0.18, cy + r * 0.16, cx - r * 0.06, cy - r * 0.08);
+      sc.bezierCurveTo(cx + r * 0.04, cy - r * 0.26, cx + r * 0.22, cy - r * 0.3, cx + r * 0.42, cy - r * 0.34);
       sc.fill();
     } else if (colorIndex === 1) {
       sc.beginPath();
-      sc.moveTo(cx - r * 0.5, cy + r * 0.04);
-      sc.bezierCurveTo(cx - r * 0.26, cy - r * 0.28, cx - r * 0.05, cy + r * 0.3, cx + r * 0.18, cy);
-      sc.bezierCurveTo(cx + r * 0.34, cy - r * 0.18, cx + r * 0.45, cy - r * 0.12, cx + r * 0.56, cy - r * 0.02);
+      sc.moveTo(cx - r * 0.5, cy + r * 0.16);
+      sc.bezierCurveTo(cx - r * 0.22, cy - r * 0.42, cx + r * 0.08, cy + r * 0.32, cx + r * 0.48, cy - r * 0.1);
       sc.stroke();
+      sc.lineWidth = Math.max(3, r * 0.13);
       sc.beginPath();
-      sc.moveTo(cx - r * 0.42, cy + r * 0.28);
-      sc.lineTo(cx + r * 0.42, cy + r * 0.28);
+      sc.moveTo(cx - r * 0.38, cy + r * 0.38);
+      sc.lineTo(cx + r * 0.4, cy + r * 0.38);
       sc.stroke();
     } else if (colorIndex === 2) {
       sc.beginPath();
-      sc.ellipse(cx, cy, r * 0.36, r * 0.55, Math.PI / 4, 0, Math.PI * 2);
+      sc.ellipse(cx, cy, r * 0.38, r * 0.62, Math.PI / 4, 0, Math.PI * 2);
       sc.fill();
-      sc.strokeStyle = "rgba(5,18,24,0.35)";
+      sc.strokeStyle = "rgba(255,255,255,0.14)";
       sc.lineWidth = 2;
       sc.beginPath();
-      sc.moveTo(cx - r * 0.18, cy + r * 0.2);
-      sc.lineTo(cx + r * 0.22, cy - r * 0.24);
+      sc.moveTo(cx - r * 0.2, cy + r * 0.28);
+      sc.lineTo(cx + r * 0.25, cy - r * 0.28);
       sc.stroke();
     } else if (colorIndex === 3) {
       sc.beginPath();
-      for (let i = 0; i < 8; i += 1) {
-        const angle = -Math.PI / 2 + i * Math.PI / 4;
-        const radius = i % 2 === 0 ? r * 0.56 : r * 0.24;
-        const x = cx + Math.cos(angle) * radius;
-        const y = cy + Math.sin(angle) * radius;
-        if (i === 0) sc.moveTo(x, y);
-        else sc.lineTo(x, y);
-      }
-      sc.closePath();
+      sc.arc(cx + r * 0.12, cy - r * 0.02, r * 0.46, Math.PI * 0.34, Math.PI * 1.68);
+      sc.bezierCurveTo(cx + r * 0.18, cy + r * 0.25, cx + r * 0.18, cy - r * 0.25, cx + r * 0.12, cy - r * 0.48);
       sc.fill();
     } else {
       sc.beginPath();
-      sc.arc(cx + r * 0.08, cy, r * 0.46, Math.PI * 0.32, Math.PI * 1.68);
-      sc.bezierCurveTo(cx + r * 0.18, cy + r * 0.26, cx + r * 0.18, cy - r * 0.26, cx + r * 0.08, cy - r * 0.46);
+      sc.moveTo(cx, cy + r * 0.52);
+      sc.bezierCurveTo(cx - r * 0.58, cy + r * 0.16, cx - r * 0.62, cy - r * 0.36, cx - r * 0.2, cy - r * 0.36);
+      sc.bezierCurveTo(cx - r * 0.02, cy - r * 0.36, cx, cy - r * 0.2, cx, cy - r * 0.2);
+      sc.bezierCurveTo(cx, cy - r * 0.2, cx + r * 0.02, cy - r * 0.36, cx + r * 0.2, cy - r * 0.36);
+      sc.bezierCurveTo(cx + r * 0.62, cy - r * 0.36, cx + r * 0.58, cy + r * 0.16, cx, cy + r * 0.52);
       sc.fill();
     }
     sc.restore();
   }
-
   function drawPushRipples() {
     if (!pushRipples.length) return;
     const now = performance.now();
@@ -754,7 +761,9 @@
       scale: 0.94 + Math.sin(progress * Math.PI) * 0.12,
       glow: Math.sin(progress * Math.PI) * 0.34
     };
-  }  function getHeldGem() {
+  }
+
+  function getHeldGem() {
     if (!dragging) return null;
     for (let r = 0; r < ROWS; r += 1) {
       for (let c = 0; c < COLS; c += 1) {
