@@ -67,7 +67,7 @@
   let running = false;
   let paused = false;
   let recordedThisRun = false;
-  let dragging = null; // { path: [{r,c}], pointerId }
+  let dragging = null; // { path: [{r,c}], pointerId, heldId, pointerX, pointerY }
   let cursor = { r: 2, c: 2 };
   let cursorVisible = false;
   let keyboardHolding = false;
@@ -437,47 +437,52 @@
     let sprite = orbSpriteCache.get(colorIndex);
     if (sprite) return sprite;
     const color = COLORS[colorIndex];
-    const size = CELL - 10;
-    const pad = 12;
+    const radius = CELL * 0.39;
+    const pad = 14;
     sprite = document.createElement("canvas");
-    sprite.width = size + pad * 2;
-    sprite.height = size + pad * 2;
+    sprite.width = radius * 2 + pad * 2;
+    sprite.height = radius * 2 + pad * 2;
     const sc = sprite.getContext("2d");
-    const x = pad;
-    const y = pad;
     const cx = sprite.width / 2;
     const cy = sprite.height / 2;
-    const r = size * 0.42;
+
+    sc.shadowColor = "rgba(0,0,0,0.5)";
+    sc.shadowBlur = 9;
+    sc.fillStyle = "rgba(0,0,0,0.48)";
+    sc.beginPath();
+    sc.arc(cx, cy + 3, radius + 2, 0, Math.PI * 2);
+    sc.fill();
 
     sc.shadowColor = color.glow;
-    sc.shadowBlur = 18;
-    drawRoundRect(sc, x, y, size, size, 13);
-    const fill = sc.createLinearGradient(x, y, x + size, y + size);
+    sc.shadowBlur = 16;
+    const fill = sc.createRadialGradient(cx - radius * 0.32, cy - radius * 0.38, radius * 0.08, cx, cy, radius);
     fill.addColorStop(0, "#ffffff");
-    fill.addColorStop(0.22, color.fill);
-    fill.addColorStop(0.78, color.fill);
-    fill.addColorStop(1, "rgba(11, 10, 22, 0.78)");
+    fill.addColorStop(0.18, color.mark);
+    fill.addColorStop(0.42, color.fill);
+    fill.addColorStop(0.82, color.fill);
+    fill.addColorStop(1, "rgba(14, 10, 24, 0.92)");
     sc.fillStyle = fill;
+    sc.beginPath();
+    sc.arc(cx, cy, radius, 0, Math.PI * 2);
     sc.fill();
+
     sc.shadowBlur = 0;
+    sc.strokeStyle = "rgba(8, 8, 16, 0.62)";
+    sc.lineWidth = 4;
+    sc.stroke();
+    sc.strokeStyle = "rgba(255, 244, 210, 0.55)";
+    sc.lineWidth = 1.6;
+    sc.stroke();
 
-    const bevel = sc.createLinearGradient(x, y, x, y + size);
-    bevel.addColorStop(0, "rgba(255,255,255,0.42)");
-    bevel.addColorStop(0.48, "rgba(255,255,255,0.04)");
-    bevel.addColorStop(1, "rgba(0,0,0,0.32)");
-    drawRoundRect(sc, x + 2, y + 2, size - 4, size - 4, 11);
-    sc.fillStyle = bevel;
+    const shine = sc.createRadialGradient(cx - radius * 0.34, cy - radius * 0.42, 0, cx - radius * 0.34, cy - radius * 0.42, radius * 0.62);
+    shine.addColorStop(0, "rgba(255,255,255,0.72)");
+    shine.addColorStop(1, "rgba(255,255,255,0)");
+    sc.fillStyle = shine;
+    sc.beginPath();
+    sc.arc(cx - radius * 0.22, cy - radius * 0.28, radius * 0.52, 0, Math.PI * 2);
     sc.fill();
 
-    drawRoundRect(sc, x + 1, y + 1, size - 2, size - 2, 12);
-    sc.strokeStyle = "rgba(255, 241, 190, 0.62)";
-    sc.lineWidth = 2;
-    sc.stroke();
-    sc.strokeStyle = "rgba(0,0,0,0.28)";
-    sc.lineWidth = 1.2;
-    sc.stroke();
-
-    drawOrbMark(sc, cx, cy, r, colorIndex);
+    drawOrbMark(sc, cx, cy, radius * 0.88, colorIndex);
     orbSpriteCache.set(colorIndex, sprite);
     return sprite;
   }
@@ -546,20 +551,17 @@
       for (let c = 0; c < COLS; c += 1) {
         const gem = board[r][c];
         if (!gem) continue;
+        if (dragging && dragging.heldId === gem.id && !keyboardHolding) continue;
         const sprite = getOrbSprite(gem.color);
         const position = getGemDrawPosition(gem, r, c);
-        context.save();
-        if (dragging && sameCell(dragging.path[dragging.path.length - 1], { r, c })) {
-          context.shadowColor = COLORS[gem.color].glow;
-          context.shadowBlur = 16;
-          context.globalAlpha = 0.98;
-        }
         context.drawImage(sprite, position.x - sprite.width / 2, position.y - sprite.height / 2);
-        context.restore();
       }
     }
 
-    if (dragging) drawDragPath();
+    if (dragging) {
+      drawDragPath();
+      drawHeldOrb();
+    }
     if (cursorVisible) drawCursor();
     drawParticles();
     drawPopups();
@@ -581,11 +583,36 @@
       y: animation.fromY + (targetY - animation.fromY) * eased
     };
   }
+  function getHeldGem() {
+    if (!dragging) return null;
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        const gem = board[r][c];
+        if (gem && gem.id === dragging.heldId) return gem;
+      }
+    }
+    return null;
+  }
+
+  function drawHeldOrb() {
+    if (!dragging || keyboardHolding) return;
+    const gem = getHeldGem();
+    if (!gem) return;
+    const sprite = getOrbSprite(gem.color);
+    const x = Number.isFinite(dragging.pointerX) ? dragging.pointerX : dragging.path[dragging.path.length - 1].c * CELL + CELL / 2;
+    const y = Number.isFinite(dragging.pointerY) ? dragging.pointerY : dragging.path[dragging.path.length - 1].r * CELL + CELL / 2;
+    context.save();
+    context.globalAlpha = 0.98;
+    context.shadowColor = COLORS[gem.color].glow;
+    context.shadowBlur = 24;
+    context.translate(x, y);
+    context.scale(1.08, 1.08);
+    context.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+    context.restore();
+  }
 
   function drawDragPath() {
     context.save();
-    context.strokeStyle = "rgba(255,255,255,0.55)";
-    context.lineWidth = 4;
     context.lineCap = "round";
     context.lineJoin = "round";
     context.beginPath();
@@ -595,14 +622,29 @@
       if (index === 0) context.moveTo(x, y);
       else context.lineTo(x, y);
     });
+    if (!keyboardHolding && Number.isFinite(dragging.pointerX) && Number.isFinite(dragging.pointerY)) {
+      context.lineTo(dragging.pointerX, dragging.pointerY);
+    }
+    context.strokeStyle = "rgba(47, 215, 255, 0.24)";
+    context.lineWidth = 12;
+    context.shadowColor = "rgba(47, 215, 255, 0.72)";
+    context.shadowBlur = 18;
+    context.stroke();
+    context.strokeStyle = "rgba(255, 244, 210, 0.92)";
+    context.lineWidth = 3;
+    context.shadowColor = "rgba(255, 216, 120, 0.58)";
+    context.shadowBlur = 7;
     context.stroke();
     context.restore();
 
     const last = dragging.path[dragging.path.length - 1];
-    context.strokeStyle = "rgba(255,255,255,0.9)";
+    context.save();
+    context.strokeStyle = "rgba(255, 216, 120, 0.96)";
     context.lineWidth = 3;
-    context.setLineDash([]);
-    context.strokeRect(last.c * CELL + 3, last.r * CELL + 3, CELL - 6, CELL - 6);
+    context.shadowColor = "rgba(255, 216, 120, 0.7)";
+    context.shadowBlur = 10;
+    context.strokeRect(last.c * CELL + 4, last.r * CELL + 4, CELL - 8, CELL - 8);
+    context.restore();
   }
 
   function drawCursor() {
@@ -808,14 +850,20 @@
     }
   }
 
-  function getCellFromPointer(event) {
+  function getPointerPosition(event) {
     const rect = boardCanvas.getBoundingClientRect();
-    const x = (event.clientX - rect.left) * (boardPxWidth / rect.width);
-    const y = (event.clientY - rect.top) * (boardPxHeight / rect.height);
-    const c = Math.floor(x / CELL);
-    const r = Math.floor(y / CELL);
+    return {
+      x: (event.clientX - rect.left) * (boardPxWidth / rect.width),
+      y: (event.clientY - rect.top) * (boardPxHeight / rect.height)
+    };
+  }
+
+  function getCellFromPointer(event) {
+    const point = getPointerPosition(event);
+    const c = Math.floor(point.x / CELL);
+    const r = Math.floor(point.y / CELL);
     if (!inBounds(r, c)) return null;
-    return { r, c };
+    return { r, c, pointerX: point.x, pointerY: point.y };
   }
 
   boardCanvas.addEventListener("pointerdown", (event) => {
@@ -823,7 +871,8 @@
     const cell = getCellFromPointer(event);
     if (!cell) return;
     event.preventDefault();
-    dragging = { path: [cell], pointerId: event.pointerId };
+    const heldGem = board[cell.r][cell.c];
+    dragging = { path: [{ r: cell.r, c: cell.c }], pointerId: event.pointerId, heldId: heldGem.id, pointerX: cell.pointerX, pointerY: cell.pointerY };
     cursorVisible = false;
     try { boardCanvas.setPointerCapture?.(event.pointerId); } catch {
       // Ignore pointer capture failures from interrupted gestures.
@@ -837,7 +886,15 @@
     if (!running || paused) { dragging = null; return; }
     event.preventDefault();
     const cell = getCellFromPointer(event);
-    if (cell) dragTo(cell);
+    if (cell) {
+      dragging.pointerX = cell.pointerX;
+      dragging.pointerY = cell.pointerY;
+      dragTo({ r: cell.r, c: cell.c });
+    } else {
+      const point = getPointerPosition(event);
+      dragging.pointerX = point.x;
+      dragging.pointerY = point.y;
+    }
     draw();
   }, { passive: false });
 
@@ -894,7 +951,8 @@
     else if (key === " " || key === "Enter") {
       if (!keyboardHolding) {
         keyboardHolding = true;
-        dragging = { path: [{ r: cursor.r, c: cursor.c }], pointerId: -1 };
+        const heldGem = board[cursor.r][cursor.c];
+        dragging = { path: [{ r: cursor.r, c: cursor.c }], pointerId: -1, heldId: heldGem.id, pointerX: null, pointerY: null };
       } else {
         finalizeTurn(dragging ? dragging.path.length - 1 : 0);
       }
