@@ -14,6 +14,11 @@
   const enemyHpEl = document.querySelector("[data-enemy-hp]");
   const enemyHpTrack = document.querySelector("[data-enemy-hp-track]");
   const enemyNameEl = document.querySelector("[data-enemy-name]");
+  const enemyStageEl = document.querySelector("[data-enemy-stage]");
+  const enemyImageEl = document.querySelector("[data-enemy-image]");
+  const enemyBadgeEl = document.querySelector("[data-enemy-badge]");
+  const enemyAtkEl = document.querySelector("[data-enemy-atk]");
+  const combatFloatsEl = document.querySelector("[data-combat-floats]");
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const portalStats = window.MicroglowGameStats;
 
@@ -27,14 +32,22 @@
   const boardPxHeight = ROWS * CELL;
 
   const COLORS = [
-    { id: 0, name: "fire", fill: "#ff5ebc", glow: "rgba(255, 94, 188, 0.55)" },
-    { id: 1, name: "water", fill: "#2fd7ff", glow: "rgba(47, 215, 255, 0.55)" },
-    { id: 2, name: "wood", fill: "#8df45f", glow: "rgba(141, 244, 95, 0.55)" },
-    { id: 3, name: "light", fill: "#ffd84d", glow: "rgba(255, 216, 77, 0.55)" },
-    { id: 4, name: "dark", fill: "#9b6bff", glow: "rgba(155, 107, 255, 0.55)" }
+    { id: 0, name: "fire", fill: "#ff5ebc", glow: "rgba(255, 94, 188, 0.55)", mark: "#fff3fb" },
+    { id: 1, name: "water", fill: "#2fd7ff", glow: "rgba(47, 215, 255, 0.55)", mark: "#e8fbff" },
+    { id: 2, name: "wood", fill: "#8df45f", glow: "rgba(141, 244, 95, 0.55)", mark: "#f1ffe8" },
+    { id: 3, name: "light", fill: "#ffd84d", glow: "rgba(255, 216, 77, 0.55)", mark: "#fff9d6" },
+    { id: 4, name: "dark", fill: "#9b6bff", glow: "rgba(155, 107, 255, 0.55)", mark: "#efe8ff" }
   ];
 
-  const ENEMY_NAMES = ["濁光史萊姆", "微光哨兵", "霓虹守衛", "脈衝魔像", "幻影守門者", "深淵行者", "共鳴巨獸"];
+  const ENEMIES = [
+    { name: "濁光史萊姆", art: "slime.svg" },
+    { name: "微光哨兵", art: "sentinel.svg" },
+    { name: "霓虹守衛", art: "guardian.svg" },
+    { name: "脈衝魔像", art: "golem.svg" },
+    { name: "幻影守門者", art: "phantom.svg" },
+    { name: "深淵行者", art: "abyss.svg" },
+    { name: "共鳴巨獸", art: "beast.svg" }
+  ];
 
   const BASE_ORB_DAMAGE = 16;
   const COMBO_BONUS = 0.18;
@@ -64,6 +77,7 @@
   let lastTime = 0;
   let timerHandle = 0;
   let backgroundCanvas = null;
+  let stageEffectTimer = 0;
   const orbSpriteCache = new Map();
 
   const uiCache = {};
@@ -125,10 +139,10 @@
   }
 
   function makeEnemy(waveNumber) {
-    const name = ENEMY_NAMES[(waveNumber - 1) % ENEMY_NAMES.length];
+    const template = ENEMIES[(waveNumber - 1) % ENEMIES.length];
     const hp = 120 + (waveNumber - 1) * 55;
     const atk = 24 + (waveNumber - 1) * 4;
-    return { name, hp, maxHp: hp, atk };
+    return { ...template, hp, maxHp: hp, atk };
   }
 
   function timeBonusForWave(waveNumber) {
@@ -240,8 +254,11 @@
   function dealDamageToEnemy(damage, comboCount) {
     score += damage;
     enemy.hp = Math.max(0, enemy.hp - damage);
+    playStageEffect("is-hit");
+    floatCombatText(`${comboCount > 1 ? `COMBO x${comboCount} ` : ""}-${damage}`, "damage");
     announce(`${comboCount > 1 ? `連段 x${comboCount} ` : ""}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, "#ffd84d");
     if (enemy.hp <= 0) {
+      floatCombatText("擊破", "break");
       wave += 1;
       timeLeft = Math.min(MAX_TIME, timeLeft + timeBonusForWave(wave));
       enemy = makeEnemy(wave);
@@ -251,6 +268,8 @@
 
   function enemyAttack() {
     playerHp = Math.max(0, playerHp - enemy.atk);
+    playStageEffect("is-attack");
+    floatCombatText(`-${enemy.atk}`, "attack");
     announce(`-${enemy.atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
   }
 
@@ -299,6 +318,8 @@
     dragging = null;
     particles = [];
     popups = [];
+    clearStageEffect();
+    combatFloatsEl.replaceChildren();
     initBoard();
     hideOverlay();
     updateUi();
@@ -329,6 +350,7 @@
     paused = false;
     stopTimer();
     stopLoop();
+    clearStageEffect();
     const result = writePortalStats(score, Math.max(best, score), Math.max(bestWave, wave));
     plays = result.plays;
     best = result.bestScore;
@@ -415,10 +437,67 @@
     sc.strokeStyle = "rgba(255,255,255,0.5)";
     sc.lineWidth = 1.6;
     sc.stroke();
+    drawOrbMark(sc, cx, cy, r, colorIndex);
     orbSpriteCache.set(colorIndex, sprite);
     return sprite;
   }
 
+
+  function drawOrbMark(sc, cx, cy, r, colorIndex) {
+    sc.save();
+    sc.strokeStyle = COLORS[colorIndex].mark;
+    sc.fillStyle = COLORS[colorIndex].mark;
+    sc.lineWidth = Math.max(3, r * 0.12);
+    sc.lineCap = "round";
+    sc.lineJoin = "round";
+    sc.shadowColor = "rgba(0,0,0,0.32)";
+    sc.shadowBlur = 2;
+    if (colorIndex === 0) {
+      sc.beginPath();
+      sc.moveTo(cx, cy - r * 0.52);
+      sc.bezierCurveTo(cx - r * 0.5, cy - r * 0.08, cx - r * 0.2, cy + r * 0.42, cx, cy + r * 0.48);
+      sc.bezierCurveTo(cx + r * 0.42, cy + r * 0.18, cx + r * 0.34, cy - r * 0.28, cx, cy - r * 0.52);
+      sc.fill();
+    } else if (colorIndex === 1) {
+      sc.beginPath();
+      sc.moveTo(cx - r * 0.5, cy + r * 0.04);
+      sc.bezierCurveTo(cx - r * 0.26, cy - r * 0.28, cx - r * 0.05, cy + r * 0.3, cx + r * 0.18, cy);
+      sc.bezierCurveTo(cx + r * 0.34, cy - r * 0.18, cx + r * 0.45, cy - r * 0.12, cx + r * 0.56, cy - r * 0.02);
+      sc.stroke();
+      sc.beginPath();
+      sc.moveTo(cx - r * 0.42, cy + r * 0.28);
+      sc.lineTo(cx + r * 0.42, cy + r * 0.28);
+      sc.stroke();
+    } else if (colorIndex === 2) {
+      sc.beginPath();
+      sc.ellipse(cx, cy, r * 0.36, r * 0.55, Math.PI / 4, 0, Math.PI * 2);
+      sc.fill();
+      sc.strokeStyle = "rgba(5,18,24,0.35)";
+      sc.lineWidth = 2;
+      sc.beginPath();
+      sc.moveTo(cx - r * 0.18, cy + r * 0.2);
+      sc.lineTo(cx + r * 0.22, cy - r * 0.24);
+      sc.stroke();
+    } else if (colorIndex === 3) {
+      sc.beginPath();
+      for (let i = 0; i < 8; i += 1) {
+        const angle = -Math.PI / 2 + i * Math.PI / 4;
+        const radius = i % 2 === 0 ? r * 0.56 : r * 0.24;
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        if (i === 0) sc.moveTo(x, y);
+        else sc.lineTo(x, y);
+      }
+      sc.closePath();
+      sc.fill();
+    } else {
+      sc.beginPath();
+      sc.arc(cx + r * 0.08, cy, r * 0.46, Math.PI * 0.32, Math.PI * 1.68);
+      sc.bezierCurveTo(cx + r * 0.18, cy + r * 0.26, cx + r * 0.18, cy - r * 0.26, cx + r * 0.08, cy - r * 0.46);
+      sc.fill();
+    }
+    sc.restore();
+  }
   function draw() {
     context.clearRect(0, 0, boardPxWidth, boardPxHeight);
     context.drawImage(getBackgroundCanvas(), 0, 0);
@@ -571,6 +650,32 @@
     }
   }
 
+
+  function clearStageEffect() {
+    if (stageEffectTimer) {
+      window.clearTimeout(stageEffectTimer);
+      stageEffectTimer = 0;
+    }
+    enemyStageEl.classList.remove("is-hit", "is-attack", "is-defeated");
+  }
+
+  function playStageEffect(className, duration = 430) {
+    clearStageEffect();
+    enemyStageEl.classList.add(className);
+    stageEffectTimer = window.setTimeout(() => {
+      enemyStageEl.classList.remove(className);
+      stageEffectTimer = 0;
+    }, duration);
+  }
+
+  function floatCombatText(text, type) {
+    const item = document.createElement("span");
+    item.textContent = text;
+    if (type === "attack") item.className = "is-attack";
+    if (type === "break") item.className = "is-break";
+    combatFloatsEl.append(item);
+    window.setTimeout(() => item.remove(), 950);
+  }
   /* ---------- drag / swap mechanics ---------- */
 
   function swap(a, b) {
@@ -810,6 +915,11 @@
       setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${enemy.name}`);
       setUiText(enemyHpEl, "enemyHp", `${Math.max(0, enemy.hp)}/${enemy.maxHp}`);
       setBarWidth(enemyHpTrack, "enemyHpPct", (enemy.hp / enemy.maxHp) * 100);
+      setUiText(enemyBadgeEl, "enemyBadge", enemy.name);
+      setUiText(enemyAtkEl, "enemyAtk", `ATK ${enemy.atk}`);
+      const artSrc = `./assets/monsters/${enemy.art}`;
+      if (enemyImageEl.getAttribute("src") !== artSrc) enemyImageEl.setAttribute("src", artSrc);
+      if (enemyImageEl.alt !== `${enemy.name} 敵人圖像`) enemyImageEl.alt = `${enemy.name} 敵人圖像`;
     }
   }
 

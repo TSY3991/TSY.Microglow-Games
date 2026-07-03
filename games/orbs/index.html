@@ -52,10 +52,18 @@
               </div>
             </div>
           </div>
+          <div class="enemy-stage" data-enemy-stage aria-label="敵人舞台">
+            <div class="enemy-aura" aria-hidden="true"></div>
+            <img data-enemy-image src="./assets/monsters/slime.svg" alt="第 1 波敵人">
+            <div class="enemy-shadow" aria-hidden="true"></div>
+            <div class="enemy-badge" data-enemy-badge>濁光史萊姆</div>
+            <div class="enemy-attack" data-enemy-atk>ATK 24</div>
+            <div class="combat-floats" data-combat-floats aria-hidden="true"></div>
+          </div>
           <canvas id="orbsBoard" width="372" height="310" aria-label="連珠盤面"></canvas>
           <div class="game-overlay" data-overlay>
             <strong data-overlay-title>準備開戰</strong>
-            <span data-overlay-message>拖曳任意路徑連接 3 顆以上同色元素珠攻擊敵人，時間耗盡或血量歸零則結束。</span>
+            <span data-overlay-message>拖曳一顆元素珠移動位置，放手後結算 3 顆以上同色珠攻擊敵人，時間耗盡或血量歸零則結束。</span>
             <div class="overlay-actions">
               <button type="button" data-action="overlay-start">開始遊戲</button>
             </div>
@@ -101,7 +109,7 @@
           <div class="instruction-list">
             <div>
               <strong>拖曳連珠</strong>
-              <span>按住任一元素珠開始拖曳，路徑可上下左右斜向任意轉彎，經過的格子會跟著交換位置；放開手指結算本回合傷害。</span>
+              <span>按住任一元素珠開始拖曳，經過的格子會跟著交換位置；放開手指後，盤面上 3 顆以上橫直相連的同色珠會消除並轉成傷害。</span>
             </div>
             <div>
               <strong>連段加成</strong>
@@ -120,7 +128,7 @@
               <span>每擊敗一隻敵人就進入下一波，敵人血量與攻擊力會逐波提升，分數則以造成的總傷害累計。</span>
             </div>
           </div>
-          <p class="instruction-note">微光霓虹風，快節奏連珠對戰。</p>
+          <p class="instruction-note">微光霓虹風，轉珠、連段、怪物受擊與反擊會形成一回合戰鬥節奏。</p>
           <div class="instruction-actions">
             <button type="button" data-instruction-start>開始遊戲</button>
             <button type="button" data-instruction-close>先看看</button>
