@@ -73,23 +73,23 @@
 
         <aside class="orbs-panel" aria-label="分數與狀態">
           <div class="score-grid">
-            <div>
+            <div class="score-primary">
               <span>分數</span>
               <strong data-score>0</strong>
             </div>
-            <div>
+            <div class="score-secondary">
               <span>最高分</span>
               <strong data-best>0</strong>
             </div>
-            <div>
+            <div class="score-primary">
               <span>波數</span>
               <strong data-wave>1</strong>
             </div>
-            <div class="time-cell">
-              <span>剩餘時間</span>
+            <div class="time-cell score-primary">
+              <span>時間</span>
               <strong data-time>75</strong>
             </div>
-            <div>
+            <div class="score-secondary">
               <span>遊玩</span>
               <strong data-plays>0</strong>
             </div>
@@ -122,7 +122,7 @@
             </div>
             <div>
               <strong>限時倒數</strong>
-              <span>總時間從 75 秒開始倒數，時間歸零或我方血量歸零即結束本局；擊敗敵人可以獲得額外時間。</span>
+              <span>每一波都有 75 秒倒數，擊敗敵人會重置下一波的時間；時間歸零或我方血量歸零即結束本局。</span>
             </div>
             <div>
               <strong>波數難度</strong>

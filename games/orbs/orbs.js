@@ -68,7 +68,6 @@
   const COMBO_BONUS = 0.18;
   const PLAYER_MAX_HP = 800;
   const START_TIME = 75;
-  const MAX_TIME = 99;
 
   let board = [];
   let score = 0;
@@ -94,6 +93,7 @@
   let timerHandle = 0;
   let backgroundCanvas = null;
   let stageEffectTimer = 0;
+  let stageFollowupTimer = 0;
   const cellAnimations = new Map();
   const SWAP_ANIMATION_MS = 230;
   const orbSpriteCache = new Map();
@@ -108,7 +108,7 @@
   initBoard();
   updateUi();
   draw();
-  showOverlay("準備開戰", "拖曳任意路徑連接 3 顆以上同色元素珠攻擊敵人，時間耗盡或血量歸零則結束。", "開始遊戲");
+  showOverlay("準備開戰", "拖曳任意路徑連接 3 顆以上同色元素珠攻擊敵人；每一波 75 秒，擊破後倒數重置。", "開始遊戲");
 
   /* ---------- portal stats ---------- */
 
@@ -179,9 +179,6 @@
     enemyImageEl.setAttribute("src", enemyArtSrc(match[1]));
   });
 
-  function timeBonusForWave(waveNumber) {
-    return Math.max(4, 9 - Math.floor(waveNumber / 6));
-  }
 
   /* ---------- match detection & resolution ---------- */
 
@@ -327,10 +324,13 @@
     announce(`${comboCount > 1 ? `連段 x${comboCount} ` : ""}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, "#ffd84d");
     if (enemy.hp <= 0) {
       floatCombatText("擊破", "break");
+      playStageEffect("is-break", 560);
       wave += 1;
-      timeLeft = Math.min(MAX_TIME, timeLeft + timeBonusForWave(wave));
+      timeLeft = START_TIME;
       enemy = makeEnemy(wave);
-      announce("擊破！下一波來襲", boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
+      updateTimerUi();
+      queueStageEffect("is-spawn", 220, 620);
+      announce("擊破！倒數重置，下一波來襲", boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
       return true;
     }
     return false;
@@ -395,6 +395,7 @@
     hideOverlay();
     updateUi();
     draw();
+    playStageEffect("is-spawn", 620);
     startTimer();
     wake();
   }
@@ -966,7 +967,11 @@
       window.clearTimeout(stageEffectTimer);
       stageEffectTimer = 0;
     }
-    enemyStageEl.classList.remove("is-hit", "is-attack", "is-defeated");
+    if (stageFollowupTimer) {
+      window.clearTimeout(stageFollowupTimer);
+      stageFollowupTimer = 0;
+    }
+    enemyStageEl.classList.remove("is-hit", "is-attack", "is-defeated", "is-break", "is-spawn");
   }
 
   function playStageEffect(className, duration = 430) {
@@ -976,6 +981,16 @@
       enemyStageEl.classList.remove(className);
       stageEffectTimer = 0;
     }, duration);
+  }
+
+  function queueStageEffect(className, delay = 0, duration = 430) {
+    if (stageFollowupTimer) {
+      window.clearTimeout(stageFollowupTimer);
+    }
+    stageFollowupTimer = window.setTimeout(() => {
+      stageFollowupTimer = 0;
+      playStageEffect(className, duration);
+    }, delay);
   }
 
   function floatCombatText(text, type) {
