@@ -42,6 +42,18 @@
   // `art` is the base filename in assets/monsters/ (no extension): the loader
   // tries the Codex-generated .webp first and falls back to the bundled .svg
   // placeholder, so new art drops in without code changes.
+  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "light.webp", "dark.webp"];
+  const orbArtImages = ORB_ART_FILES.map((file) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = `./assets/orbs/${file}`;
+    image.addEventListener("load", () => {
+      orbSpriteCache.clear();
+      draw();
+      wake();
+    });
+    return image;
+  });
   const ENEMIES = [
     { name: "濁光史萊姆", art: "slime" },
     { name: "微光哨兵", art: "sentinel" },
@@ -550,6 +562,19 @@
     let sprite = orbSpriteCache.get(colorIndex);
     if (sprite) return sprite;
     const color = COLORS[colorIndex];
+    const artImage = orbArtImages[colorIndex];
+    if (artImage?.complete && artImage.naturalWidth > 0) {
+      sprite = document.createElement("canvas");
+      const size = CELL + 14;
+      sprite.width = size;
+      sprite.height = size;
+      const sc = sprite.getContext("2d");
+      sc.imageSmoothingEnabled = true;
+      sc.imageSmoothingQuality = "high";
+      sc.drawImage(artImage, 0, 0, size, size);
+      orbSpriteCache.set(colorIndex, sprite);
+      return sprite;
+    }
     const radius = CELL * 0.41;
     const pad = 17;
     const points = stonePoints(colorIndex);
