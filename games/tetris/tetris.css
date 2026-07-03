@@ -34,11 +34,6 @@ body {
   color: #ffffff;
 }
 
-.compact-back {
-  position: static;
-  width: fit-content;
-}
-
 .return-nav {
   position: relative;
   z-index: 10;
