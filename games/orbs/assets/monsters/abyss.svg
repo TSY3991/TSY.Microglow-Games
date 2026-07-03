@@ -1,1 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-labelledby="title desc"><title id="title">Abyss Walker</title><desc id="desc">Original dark abyss monster for Microglow Orbs.</desc><defs><radialGradient id="body" cx="42%" cy="30%" r="76%"><stop offset="0" stop-color="#e9ddff"/><stop offset=".32" stop-color="#9b6bff"/><stop offset="1" stop-color="#251048"/></radialGradient><filter id="glow" x="-24%" y="-24%" width="148%" height="148%"><feGaussianBlur stdDeviation="7" result="blur"/><feColorMatrix in="blur" values="0 0 0 0 .62 0 0 0 0 .42 0 0 0 0 1 0 0 0 .78 0"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="120" cy="188" rx="72" ry="14" fill="#080716" opacity=".55"/><path d="M59 65c20 5 39 21 50 45-24-7-48-20-68-40z" fill="#2fd7ff" opacity=".75" stroke="#c5f6ff" stroke-width="4"/><path d="M181 65c-20 5-39 21-50 45 24-7 48-20 68-40z" fill="#2fd7ff" opacity=".75" stroke="#c5f6ff" stroke-width="4"/><path filter="url(#glow)" d="M45 133c0-54 33-92 75-92s75 38 75 92c0 44-27 63-75 63s-75-19-75-63z" fill="url(#body)" stroke="#d8ccff" stroke-width="5"/><path d="M80 96c14-19 27-27 40-27 15 0 29 9 40 27-28-10-52-10-80 0z" fill="#d7c8ff" opacity=".5"/><path d="M82 129l28-11 28 11 24-11" fill="none" stroke="#0d0920" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="101" cy="127" r="5" fill="#ffd84d"/><circle cx="143" cy="127" r="5" fill="#ffd84d"/><path d="M102 159c10-7 27-7 37 0" fill="none" stroke="#0d0920" stroke-width="7" stroke-linecap="round"/><path d="M63 163l-33 19 10-47" fill="#1a0d35" stroke="#baa5ff" stroke-width="4"/><path d="M177 163l33 19-10-47" fill="#1a0d35" stroke="#baa5ff" stroke-width="4"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-labelledby="title desc">
+  <title id="title">Abyss Warlord</title>
+  <desc id="desc">Original dark RPG enemy for Microglow Orbs.</desc>
+  <defs>
+    <radialGradient id="core" cx="42%" cy="25%" r="78%">
+      <stop offset="0" stop-color="#efe8ff"/>
+      <stop offset=".34" stop-color="#4d287e"/>
+      <stop offset="1" stop-color="#12081f"/>
+    </radialGradient>
+    <filter id="aura" x="-28%" y="-28%" width="156%" height="156%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feColorMatrix in="blur" values="0 0 0 0 0.42 0 0 0 0 0.22 0 0 0 0 0.72 0 0 0 .72 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <ellipse cx="120" cy="190" rx="76" ry="14" fill="#020307" opacity=".68"/>
+  <path d="M40 93 22 58 70 76 92 38 111 79M200 93l18-35-48 18-22-38-19 41" fill="#0c0616" stroke="#b48cff" stroke-width="5" stroke-linejoin="round"/>
+  <path filter="url(#aura)" d="M120 28 151 55 178 88 190 136 170 178 120 198 70 178 50 136 62 88 89 55z" fill="url(#core)" stroke="#b48cff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M72 86 94 54 108 91 120 42 133 91 148 54 169 86 154 74 137 110 120 77 103 110 86 74z" fill="#12081f" stroke="#b48cff" stroke-width="4" stroke-linejoin="round" opacity=".95"/>
+  <path d="M58 128 25 111 43 153 20 176 67 163" fill="#12081f" stroke="#b48cff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M182 128 215 111 197 153 220 176 173 163" fill="#12081f" stroke="#b48cff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M82 106 108 115 82 124 67 116z" fill="#ffd84d" stroke="#12070b" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M158 106 132 115 158 124 173 116z" fill="#ffd84d" stroke="#12070b" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M84 145 105 139 120 149 135 139 156 145" fill="none" stroke="#08070c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M91 158 106 149 120 163 134 149 149 158" fill="none" stroke="#b48cff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".66"/>
+  <path d="M82 77 116 90 158 77" fill="none" stroke="#efe8ff" stroke-width="4" stroke-linecap="round" opacity=".28"/>
+  <path d="M78 176 62 202 101 187" fill="#12081f" stroke="#b48cff" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M162 176 178 202 139 187" fill="#12081f" stroke="#b48cff" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M70 134c11-18 22-29 36-36M170 134c-11-18-22-29-36-36" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".16"/>
+</svg>

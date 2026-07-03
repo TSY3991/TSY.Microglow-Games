@@ -1,1 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-labelledby="title desc"><title id="title">Microglow Sentinel</title><desc id="desc">Original floating sentinel monster for Microglow Orbs.</desc><defs><linearGradient id="armor" x1="52" y1="32" x2="184" y2="188" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f9fbff"/><stop offset=".34" stop-color="#69d9ff"/><stop offset="1" stop-color="#3553d8"/></linearGradient><filter id="glow" x="-22%" y="-22%" width="144%" height="144%"><feGaussianBlur stdDeviation="5" result="blur"/><feColorMatrix in="blur" values="0 0 0 0 .18 0 0 0 0 .78 0 0 0 0 1 0 0 0 .72 0"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="120" cy="188" rx="60" ry="12" fill="#071e35" opacity=".5"/><path filter="url(#glow)" d="M120 32l67 44-18 87-49 31-49-31-18-87 67-44z" fill="url(#armor)" stroke="#c9f5ff" stroke-width="5"/><path d="M74 82l46-30 46 30-13 63-33 22-33-22-13-63z" fill="#09213e" opacity=".45"/><path d="M82 96h76l-10 45-28 18-28-18-10-45z" fill="#102f64"/><path d="M79 86l-28-18-14 26 32 22" fill="#43cfff" stroke="#bcefff" stroke-width="4"/><path d="M161 86l28-18 14 26-32 22" fill="#43cfff" stroke="#bcefff" stroke-width="4"/><rect x="92" y="109" width="56" height="20" rx="10" fill="#041625"/><circle cx="105" cy="119" r="5" fill="#ffd84d"/><circle cx="135" cy="119" r="5" fill="#ffd84d"/><path d="M100 145h40" stroke="#9be9ff" stroke-width="6" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-labelledby="title desc">
+  <title id="title">Iron Sentinel</title>
+  <desc id="desc">Original dark RPG enemy for Microglow Orbs.</desc>
+  <defs>
+    <radialGradient id="core" cx="42%" cy="25%" r="78%">
+      <stop offset="0" stop-color="#f3f6ff"/>
+      <stop offset=".34" stop-color="#6f7f91"/>
+      <stop offset="1" stop-color="#171d28"/>
+    </radialGradient>
+    <filter id="aura" x="-28%" y="-28%" width="156%" height="156%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feColorMatrix in="blur" values="0 0 0 0 0.55 0 0 0 0 0.62 0 0 0 0 0.72 0 0 0 .72 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <ellipse cx="120" cy="190" rx="76" ry="14" fill="#020307" opacity=".68"/>
+  <path d="M42 86 18 55 67 64M198 86l24-31-49 9" fill="#111722" stroke="#d7e4ff" stroke-width="5" stroke-linejoin="round"/>
+  <path filter="url(#aura)" d="M120 28 151 55 178 88 190 136 170 178 120 198 70 178 50 136 62 88 89 55z" fill="url(#core)" stroke="#d7e4ff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M72 86 94 54 108 91 120 42 133 91 148 54 169 86 154 74 137 110 120 77 103 110 86 74z" fill="#171d28" stroke="#d7e4ff" stroke-width="4" stroke-linejoin="round" opacity=".95"/>
+  <path d="M58 128 25 111 43 153 20 176 67 163" fill="#171d28" stroke="#d7e4ff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M182 128 215 111 197 153 220 176 173 163" fill="#171d28" stroke="#d7e4ff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M82 106 108 115 82 124 67 116z" fill="#ff5e4d" stroke="#12070b" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M158 106 132 115 158 124 173 116z" fill="#ff5e4d" stroke="#12070b" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M84 145 105 139 120 149 135 139 156 145" fill="none" stroke="#08070c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M91 158 106 149 120 163 134 149 149 158" fill="none" stroke="#d7e4ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".66"/>
+  <path d="M82 77 116 90 158 77" fill="none" stroke="#f3f6ff" stroke-width="4" stroke-linecap="round" opacity=".28"/>
+  <path d="M78 176 62 202 101 187" fill="#171d28" stroke="#d7e4ff" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M162 176 178 202 139 187" fill="#171d28" stroke="#d7e4ff" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M70 134c11-18 22-29 36-36M170 134c-11-18-22-29-36-36" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".16"/>
+</svg>

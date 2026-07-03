@@ -1,1 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-labelledby="title desc"><title id="title">Pulse Golem</title><desc id="desc">Original crystal golem monster for Microglow Orbs.</desc><defs><linearGradient id="rock" x1="62" y1="31" x2="178" y2="190" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f5ffe6"/><stop offset=".35" stop-color="#9df56c"/><stop offset="1" stop-color="#2c7442"/></linearGradient><filter id="glow" x="-22%" y="-22%" width="144%" height="144%"><feGaussianBlur stdDeviation="5" result="blur"/><feColorMatrix in="blur" values="0 0 0 0 .52 0 0 0 0 .96 0 0 0 0 .37 0 0 0 .72 0"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><ellipse cx="120" cy="190" rx="72" ry="13" fill="#0b231b" opacity=".5"/><path d="M56 95l26-47 32 17-21 50z" fill="#b9ff7c" stroke="#ebffd8" stroke-width="5"/><path d="M184 95l-26-47-32 17 21 50z" fill="#b9ff7c" stroke="#ebffd8" stroke-width="5"/><path filter="url(#glow)" d="M67 99l53-61 53 61-18 86H85L67 99z" fill="url(#rock)" stroke="#e6ffd8" stroke-width="5"/><path d="M84 111h72l-10 52H94z" fill="#083524" opacity=".42"/><path d="M91 121l20-12 17 12 21-12" fill="none" stroke="#dcffd0" stroke-width="5" stroke-linecap="round" opacity=".75"/><rect x="86" y="132" width="26" height="13" rx="6" fill="#061b18"/><rect x="128" y="132" width="26" height="13" rx="6" fill="#061b18"/><path d="M104 164h32" stroke="#06241b" stroke-width="8" stroke-linecap="round"/><path d="M57 141l-28 16 8-45 29 10z" fill="#59d768" stroke="#dcffd0" stroke-width="4"/><path d="M183 141l28 16-8-45-29 10z" fill="#59d768" stroke="#dcffd0" stroke-width="4"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-labelledby="title desc">
+  <title id="title">Molten Golem</title>
+  <desc id="desc">Original dark RPG enemy for Microglow Orbs.</desc>
+  <defs>
+    <radialGradient id="core" cx="42%" cy="25%" r="78%">
+      <stop offset="0" stop-color="#fff0c9"/>
+      <stop offset=".34" stop-color="#a45725"/>
+      <stop offset="1" stop-color="#32120c"/>
+    </radialGradient>
+    <filter id="aura" x="-28%" y="-28%" width="156%" height="156%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feColorMatrix in="blur" values="0 0 0 0 0.90 0 0 0 0 0.39 0 0 0 0 0.16 0 0 0 .72 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <ellipse cx="120" cy="190" rx="76" ry="14" fill="#020307" opacity=".68"/>
+  <path d="M58 96 38 70 62 38 98 67M182 96l20-26-24-32-36 29" fill="#220c08" stroke="#ffb45d" stroke-width="5" stroke-linejoin="round"/>
+  <path filter="url(#aura)" d="M120 28 151 55 178 88 190 136 170 178 120 198 70 178 50 136 62 88 89 55z" fill="url(#core)" stroke="#ffb45d" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M72 86 94 54 108 91 120 42 133 91 148 54 169 86 154 74 137 110 120 77 103 110 86 74z" fill="#32120c" stroke="#ffb45d" stroke-width="4" stroke-linejoin="round" opacity=".95"/>
+  <path d="M58 128 25 111 43 153 20 176 67 163" fill="#32120c" stroke="#ffb45d" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M182 128 215 111 197 153 220 176 173 163" fill="#32120c" stroke="#ffb45d" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M82 106 108 115 82 124 67 116z" fill="#ffd84d" stroke="#12070b" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M158 106 132 115 158 124 173 116z" fill="#ffd84d" stroke="#12070b" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M84 145 105 139 120 149 135 139 156 145" fill="none" stroke="#08070c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M91 158 106 149 120 163 134 149 149 158" fill="none" stroke="#ffb45d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".66"/>
+  <path d="M82 77 116 90 158 77" fill="none" stroke="#fff0c9" stroke-width="4" stroke-linecap="round" opacity=".28"/>
+  <path d="M78 176 62 202 101 187" fill="#32120c" stroke="#ffb45d" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M162 176 178 202 139 187" fill="#32120c" stroke="#ffb45d" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M70 134c11-18 22-29 36-36M170 134c-11-18-22-29-36-36" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".16"/>
+</svg>

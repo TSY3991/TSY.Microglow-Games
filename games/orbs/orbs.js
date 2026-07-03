@@ -73,13 +73,14 @@
   let keyboardHolding = false;
   let particles = [];
   let popups = [];
+  let pushRipples = [];
   let animationFrameId = 0;
   let lastTime = 0;
   let timerHandle = 0;
   let backgroundCanvas = null;
   let stageEffectTimer = 0;
   const cellAnimations = new Map();
-  const SWAP_ANIMATION_MS = 130;
+  const SWAP_ANIMATION_MS = 230;
   const orbSpriteCache = new Map();
 
   const uiCache = {};
@@ -433,61 +434,130 @@
     ctx.closePath();
   }
 
+  function hexToRgb(hex) {
+    const clean = hex.replace("#", "");
+    const value = Number.parseInt(clean, 16);
+    return {
+      r: (value >> 16) & 255,
+      g: (value >> 8) & 255,
+      b: value & 255
+    };
+  }
+
+  function rgbaFromHex(hex, alpha) {
+    const rgb = hexToRgb(hex);
+    return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+  }
   function getOrbSprite(colorIndex) {
     let sprite = orbSpriteCache.get(colorIndex);
     if (sprite) return sprite;
     const color = COLORS[colorIndex];
-    const radius = CELL * 0.39;
-    const pad = 14;
+    const radius = CELL * 0.415;
+    const pad = 18;
     sprite = document.createElement("canvas");
-    sprite.width = radius * 2 + pad * 2;
-    sprite.height = radius * 2 + pad * 2;
+    sprite.width = Math.ceil(radius * 2 + pad * 2);
+    sprite.height = Math.ceil(radius * 2 + pad * 2);
     const sc = sprite.getContext("2d");
     const cx = sprite.width / 2;
     const cy = sprite.height / 2;
 
-    sc.shadowColor = "rgba(0,0,0,0.5)";
-    sc.shadowBlur = 9;
-    sc.fillStyle = "rgba(0,0,0,0.48)";
+    sc.save();
+    sc.scale(1, 0.42);
+    const shadow = sc.createRadialGradient(cx, (cy + radius * 1.15) / 0.42, radius * 0.2, cx, (cy + radius * 1.15) / 0.42, radius * 1.16);
+    shadow.addColorStop(0, "rgba(0,0,0,0.46)");
+    shadow.addColorStop(1, "rgba(0,0,0,0)");
+    sc.fillStyle = shadow;
     sc.beginPath();
-    sc.arc(cx, cy + 3, radius + 2, 0, Math.PI * 2);
+    sc.arc(cx, (cy + radius * 1.16) / 0.42, radius * 1.16, 0, Math.PI * 2);
     sc.fill();
+    sc.restore();
 
+    const rim = sc.createRadialGradient(cx - radius * 0.28, cy - radius * 0.34, radius * 0.12, cx, cy, radius * 1.12);
+    rim.addColorStop(0, "rgba(255,255,255,0.72)");
+    rim.addColorStop(0.2, rgbaFromHex(color.fill, 0.92));
+    rim.addColorStop(0.72, rgbaFromHex(color.fill, 0.54));
+    rim.addColorStop(1, "rgba(4, 5, 11, 0.96)");
     sc.shadowColor = color.glow;
-    sc.shadowBlur = 16;
-    const fill = sc.createRadialGradient(cx - radius * 0.32, cy - radius * 0.38, radius * 0.08, cx, cy, radius);
-    fill.addColorStop(0, "#ffffff");
-    fill.addColorStop(0.18, color.mark);
-    fill.addColorStop(0.42, color.fill);
-    fill.addColorStop(0.82, color.fill);
-    fill.addColorStop(1, "rgba(14, 10, 24, 0.92)");
-    sc.fillStyle = fill;
+    sc.shadowBlur = 18;
+    sc.fillStyle = rim;
+    sc.beginPath();
+    sc.arc(cx, cy, radius + 2.5, 0, Math.PI * 2);
+    sc.fill();
+    sc.shadowBlur = 0;
+
+    sc.save();
     sc.beginPath();
     sc.arc(cx, cy, radius, 0, Math.PI * 2);
-    sc.fill();
+    sc.clip();
 
-    sc.shadowBlur = 0;
-    sc.strokeStyle = "rgba(8, 8, 16, 0.62)";
-    sc.lineWidth = 4;
-    sc.stroke();
-    sc.strokeStyle = "rgba(255, 244, 210, 0.55)";
-    sc.lineWidth = 1.6;
-    sc.stroke();
+    const core = sc.createRadialGradient(cx - radius * 0.36, cy - radius * 0.42, radius * 0.05, cx + radius * 0.06, cy + radius * 0.08, radius * 1.04);
+    core.addColorStop(0, "rgba(255,255,255,0.92)");
+    core.addColorStop(0.16, rgbaFromHex(color.mark, 0.86));
+    core.addColorStop(0.38, rgbaFromHex(color.fill, 0.98));
+    core.addColorStop(0.68, rgbaFromHex(color.fill, 0.72));
+    core.addColorStop(1, "rgba(7, 7, 14, 0.92)");
+    sc.fillStyle = core;
+    sc.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
 
-    const shine = sc.createRadialGradient(cx - radius * 0.34, cy - radius * 0.42, 0, cx - radius * 0.34, cy - radius * 0.42, radius * 0.62);
-    shine.addColorStop(0, "rgba(255,255,255,0.72)");
-    shine.addColorStop(1, "rgba(255,255,255,0)");
-    sc.fillStyle = shine;
+    const facets = [
+      { points: [[-0.88, -0.2], [-0.28, -0.92], [0.08, -0.18]], fill: "rgba(255,255,255,0.18)" },
+      { points: [[0.08, -0.18], [0.5, -0.82], [0.88, -0.12], [0.36, 0.02]], fill: "rgba(255,255,255,0.12)" },
+      { points: [[-0.86, -0.12], [-0.18, 0.04], [-0.58, 0.74]], fill: "rgba(0,0,0,0.18)" },
+      { points: [[-0.16, 0.06], [0.38, 0.02], [0.7, 0.68], [-0.26, 0.82]], fill: "rgba(0,0,0,0.24)" },
+      { points: [[-0.2, -0.02], [0.14, -0.2], [0.42, 0.02], [0.08, 0.28]], fill: "rgba(255,255,255,0.16)" }
+    ];
+    for (const facet of facets) {
+      sc.beginPath();
+      facet.points.forEach(([x, y], index) => {
+        const px = cx + x * radius;
+        const py = cy + y * radius;
+        if (index === 0) sc.moveTo(px, py);
+        else sc.lineTo(px, py);
+      });
+      sc.closePath();
+      sc.fillStyle = facet.fill;
+      sc.fill();
+    }
+
+    sc.strokeStyle = "rgba(255,255,255,0.18)";
+    sc.lineWidth = 1.2;
+    for (const angle of [-0.78, -0.24, 0.28, 0.82]) {
+      sc.beginPath();
+      sc.moveTo(cx + Math.cos(angle) * radius * 0.18, cy + Math.sin(angle) * radius * 0.18);
+      sc.lineTo(cx + Math.cos(angle) * radius * 0.92, cy + Math.sin(angle) * radius * 0.92);
+      sc.stroke();
+    }
+
+    const gloss = sc.createRadialGradient(cx - radius * 0.34, cy - radius * 0.44, 0, cx - radius * 0.32, cy - radius * 0.42, radius * 0.62);
+    gloss.addColorStop(0, "rgba(255,255,255,0.74)");
+    gloss.addColorStop(0.38, "rgba(255,255,255,0.2)");
+    gloss.addColorStop(1, "rgba(255,255,255,0)");
+    sc.fillStyle = gloss;
     sc.beginPath();
-    sc.arc(cx - radius * 0.22, cy - radius * 0.28, radius * 0.52, 0, Math.PI * 2);
+    sc.ellipse(cx - radius * 0.22, cy - radius * 0.28, radius * 0.46, radius * 0.26, -0.55, 0, Math.PI * 2);
     sc.fill();
 
-    drawOrbMark(sc, cx, cy, radius * 0.88, colorIndex);
+    sc.restore();
+
+    sc.save();
+    sc.globalAlpha = 0.62;
+    sc.shadowColor = "rgba(0,0,0,0.72)";
+    sc.shadowBlur = 5;
+    drawOrbMark(sc, cx, cy, radius * 0.62, colorIndex);
+    sc.restore();
+
+    sc.beginPath();
+    sc.arc(cx, cy, radius + 2.5, 0, Math.PI * 2);
+    sc.strokeStyle = "rgba(3, 4, 10, 0.76)";
+    sc.lineWidth = 4.5;
+    sc.stroke();
+    sc.strokeStyle = "rgba(255, 232, 164, 0.64)";
+    sc.lineWidth = 1.4;
+    sc.stroke();
+
     orbSpriteCache.set(colorIndex, sprite);
     return sprite;
   }
-
-
   function drawOrbMark(sc, cx, cy, r, colorIndex) {
     sc.save();
     sc.strokeStyle = COLORS[colorIndex].mark;
@@ -543,9 +613,30 @@
     }
     sc.restore();
   }
+
+  function drawPushRipples() {
+    if (!pushRipples.length) return;
+    const now = performance.now();
+    pushRipples = pushRipples.filter((ripple) => now - ripple.startedAt < 260);
+    for (const ripple of pushRipples) {
+      const progress = Math.min(1, (now - ripple.startedAt) / 260);
+      const alpha = (1 - progress) * 0.48;
+      context.save();
+      context.strokeStyle = ripple.color;
+      context.globalAlpha = alpha;
+      context.lineWidth = 2 + progress * 3;
+      context.shadowColor = ripple.color;
+      context.shadowBlur = 12;
+      context.beginPath();
+      context.arc(ripple.x, ripple.y, CELL * (0.28 + progress * 0.2), 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+    }
+  }
   function draw() {
     context.clearRect(0, 0, boardPxWidth, boardPxHeight);
     context.drawImage(getBackgroundCanvas(), 0, 0);
+    drawPushRipples();
 
     for (let r = 0; r < ROWS; r += 1) {
       for (let c = 0; c < COLS; c += 1) {
@@ -554,7 +645,19 @@
         if (dragging && dragging.heldId === gem.id && !keyboardHolding) continue;
         const sprite = getOrbSprite(gem.color);
         const position = getGemDrawPosition(gem, r, c);
-        context.drawImage(sprite, position.x - sprite.width / 2, position.y - sprite.height / 2);
+        context.save();
+        if (position.glow) {
+          context.globalAlpha = Math.min(0.35, position.glow);
+          context.fillStyle = COLORS[gem.color].glow;
+          context.beginPath();
+          context.arc(position.x, position.y, CELL * 0.43, 0, Math.PI * 2);
+          context.fill();
+          context.globalAlpha = 1;
+        }
+        context.translate(position.x, position.y);
+        context.scale(position.scale || 1, position.scale || 1);
+        context.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+        context.restore();
       }
     }
 
@@ -571,19 +674,26 @@
     const targetX = c * CELL + CELL / 2;
     const targetY = r * CELL + CELL / 2;
     const animation = cellAnimations.get(gem.id);
-    if (!animation) return { x: targetX, y: targetY };
-    const progress = Math.min(1, (performance.now() - animation.startedAt) / SWAP_ANIMATION_MS);
-    const eased = 1 - Math.pow(1 - progress, 3);
+    if (!animation) return { x: targetX, y: targetY, scale: 1, glow: 0 };
+    const duration = animation.duration || SWAP_ANIMATION_MS;
+    const progress = Math.min(1, (performance.now() - animation.startedAt) / duration);
+    const eased = 1 - Math.pow(1 - progress, 4);
+    const dx = targetX - animation.fromX;
+    const dy = targetY - animation.fromY;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const push = Math.sin(progress * Math.PI) * 5.5;
+    const settle = progress > 0.72 ? Math.sin((progress - 0.72) / 0.28 * Math.PI) * 2.5 : 0;
     if (progress >= 1) {
       cellAnimations.delete(gem.id);
-      return { x: targetX, y: targetY };
+      return { x: targetX, y: targetY, scale: 1, glow: 0 };
     }
     return {
-      x: animation.fromX + (targetX - animation.fromX) * eased,
-      y: animation.fromY + (targetY - animation.fromY) * eased
+      x: animation.fromX + dx * eased + (dx / distance) * push - (dx / distance) * settle,
+      y: animation.fromY + dy * eased + (dy / distance) * push - (dy / distance) * settle,
+      scale: 0.94 + Math.sin(progress * Math.PI) * 0.12,
+      glow: Math.sin(progress * Math.PI) * 0.34
     };
-  }
-  function getHeldGem() {
+  }  function getHeldGem() {
     if (!dragging) return null;
     for (let r = 0; r < ROWS; r += 1) {
       for (let c = 0; c < COLS; c += 1) {
@@ -606,7 +716,7 @@
     context.shadowColor = COLORS[gem.color].glow;
     context.shadowBlur = 24;
     context.translate(x, y);
-    context.scale(1.08, 1.08);
+    context.scale(1.16, 1.16);
     context.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
     context.restore();
   }
@@ -727,7 +837,7 @@
   /* ---------- main loop (battery-conscious: idle stops rAF) ---------- */
 
   function needsContinuousRender() {
-    return Boolean(dragging) || cellAnimations.size > 0 || particles.length > 0 || popups.length > 0;
+    return Boolean(dragging) || cellAnimations.size > 0 || pushRipples.length > 0 || particles.length > 0 || popups.length > 0;
   }
 
   function loop(time) {
@@ -799,7 +909,8 @@
       fromY: from.r * CELL + CELL / 2,
       toX: to.c * CELL + CELL / 2,
       toY: to.r * CELL + CELL / 2,
-      startedAt: performance.now()
+      startedAt: performance.now(),
+      duration: SWAP_ANIMATION_MS
     });
   }
 
