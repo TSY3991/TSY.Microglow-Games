@@ -39,14 +39,17 @@
     { id: 4, name: "dark", fill: "#9b6bff", glow: "rgba(155, 107, 255, 0.55)", mark: "#efe8ff" }
   ];
 
+  // `art` is the base filename in assets/monsters/ (no extension): the loader
+  // tries the Codex-generated .webp first and falls back to the bundled .svg
+  // placeholder, so new art drops in without code changes.
   const ENEMIES = [
-    { name: "濁光史萊姆", art: "slime.svg" },
-    { name: "微光哨兵", art: "sentinel.svg" },
-    { name: "霓虹守衛", art: "guardian.svg" },
-    { name: "脈衝魔像", art: "golem.svg" },
-    { name: "幻影守門者", art: "phantom.svg" },
-    { name: "深淵行者", art: "abyss.svg" },
-    { name: "共鳴巨獸", art: "beast.svg" }
+    { name: "濁光史萊姆", art: "slime" },
+    { name: "微光哨兵", art: "sentinel" },
+    { name: "霓虹守衛", art: "guardian" },
+    { name: "脈衝魔像", art: "golem" },
+    { name: "幻影守門者", art: "phantom" },
+    { name: "深淵行者", art: "abyss" },
+    { name: "共鳴巨獸", art: "beast" }
   ];
 
   const BASE_ORB_DAMAGE = 16;
@@ -147,6 +150,22 @@
     const atk = 24 + (waveNumber - 1) * 4;
     return { ...template, hp, maxHp: hp, atk };
   }
+
+  // Remembers which extension actually exists per art key ("webp" preferred,
+  // "svg" fallback) so a missing webp only 404s once, not every wave.
+  const artExtCache = new Map();
+
+  function enemyArtSrc(artKey) {
+    return `./assets/monsters/${artKey}.${artExtCache.get(artKey) || "webp"}`;
+  }
+
+  enemyImageEl?.addEventListener("error", () => {
+    const src = enemyImageEl.getAttribute("src") || "";
+    const match = src.match(/([a-z0-9_-]+)\.webp$/i);
+    if (!match) return;
+    artExtCache.set(match[1], "svg");
+    enemyImageEl.setAttribute("src", enemyArtSrc(match[1]));
+  });
 
   function timeBonusForWave(waveNumber) {
     return Math.max(4, 9 - Math.floor(waveNumber / 6));
@@ -1163,7 +1182,7 @@
       setBarWidth(enemyHpTrack, "enemyHpPct", (enemy.hp / enemy.maxHp) * 100);
       setUiText(enemyBadgeEl, "enemyBadge", enemy.name);
       setUiText(enemyAtkEl, "enemyAtk", `ATK ${enemy.atk}`);
-      const artSrc = `./assets/monsters/${enemy.art}`;
+      const artSrc = enemyArtSrc(enemy.art);
       if (enemyImageEl.getAttribute("src") !== artSrc) enemyImageEl.setAttribute("src", artSrc);
       if (enemyImageEl.alt !== `${enemy.name} 敵人圖像`) enemyImageEl.alt = `${enemy.name} 敵人圖像`;
     }
