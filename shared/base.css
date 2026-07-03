@@ -104,10 +104,6 @@ p {
 }
 
 .back-link {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  z-index: 10;
   display: inline-flex;
   min-height: 38px;
   align-items: center;
@@ -120,6 +116,15 @@ p {
   font-weight: 900;
   pointer-events: auto;
   touch-action: manipulation;
+}
+
+/* Only the lobby's floating badge is absolutely positioned; in-game
+   .compact-back links flow inside their return-nav row. */
+.back-link:not(.compact-back) {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 10;
 }
 
 .hero-copy {

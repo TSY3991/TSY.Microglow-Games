@@ -16,7 +16,6 @@
   const starsEl = document.querySelector("[data-stars]");
   const overlaySecondary = document.querySelector("[data-overlay-secondary]");
   const instructionModal = document.querySelector("[data-instruction-modal]");
-  const storage = window.MicroglowStorage;
 
   const gameId = "microglow-gem";
   const gameTitle = "微光寶石";

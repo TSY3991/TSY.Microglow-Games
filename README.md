@@ -19,7 +19,9 @@ Games/
   index.html
   shared/
     base.css
-    storage.js
+    gem-game-theme.css
+    game-stats.js
+    portal-return.js
   games/
     tetris/
       index.html
@@ -50,7 +52,7 @@ Games/
 - `games/tetris/`: 霓虹方塊俄羅斯，支援鍵盤、手機觸控、本機最高分、下一顆預覽、等級、暫停與音效切換。
 - `games/snake/`: 微光貪吃蛇，支援鍵盤、手機觸控、本機最高分、玩法彈窗與暫停。
 - `games/downstairs/`: 小朋友下樓梯，支援鍵盤、手機觸控、本機最高分、玩法彈窗與暫停。
-- `games/gem/`: 微光寶石，支援交換式 match-3、關卡目標、本機最高分、玩法彈窗與暫停。
+- `games/gem/`: 微光寶石，支援交換式 match-3、步數限制、全 15 關難度曲線、星級評分、特殊寶石組合技與本機最高分。
 - `games/orbs/`: 微光連珠對戰，支援拖曳轉珠、連段傷害、怪物 SVG 圖像、受擊/反擊演出、波數與本機紀錄。
 
 ## Portal Integration

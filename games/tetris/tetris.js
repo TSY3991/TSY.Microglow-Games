@@ -15,7 +15,6 @@
   const levelEl = document.querySelector("[data-level]");
   const linesEl = document.querySelector("[data-lines]");
   const instructionModal = document.querySelector("[data-instruction-modal]");
-  const storage = window.MicroglowStorage;
   const gameId = "microglow-tetris";
   const gameTitle = "微光俄羅斯方塊";
   const gestureKey = "tetris.gesturesEnabled.v1";
