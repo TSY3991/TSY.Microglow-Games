@@ -231,6 +231,35 @@
     }
   }
 
+  // Counts distinct same-color connected clusters within a matched set (must
+  // run before eliminateCells mutates the board) — this is what "combo"
+  // means per the in-game instructions: simultaneous separate match groups
+  // AND cascade chains from gravity refills both add to the combo count.
+  function countMatchGroups(matched) {
+    const visited = new Set();
+    let groups = 0;
+    for (const key of matched) {
+      if (visited.has(key)) continue;
+      groups += 1;
+      const queue = [key];
+      while (queue.length) {
+        const current = queue.pop();
+        if (visited.has(current)) continue;
+        visited.add(current);
+        const [r, c] = current.split(",").map(Number);
+        const color = board[r][c].color;
+        const neighbours = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
+        for (const [nr, nc] of neighbours) {
+          const neighbourKey = `${nr},${nc}`;
+          if (matched.has(neighbourKey) && !visited.has(neighbourKey) && board[nr]?.[nc]?.color === color) {
+            queue.push(neighbourKey);
+          }
+        }
+      }
+    }
+    return groups;
+  }
+
   // Runs the full chain synchronously (no per-step animation delay) so a
   // finished turn always resolves before the enemy counterattacks — this also
   // keeps the core combat logic independent of requestAnimationFrame timing.
@@ -240,7 +269,7 @@
     for (;;) {
       const matches = findMatches();
       if (!matches.size) break;
-      comboCount += 1;
+      comboCount += countMatchGroups(matches);
       totalDamage += matches.size * BASE_ORB_DAMAGE;
       eliminateCells(matches);
       applyGravityAndRefill();
@@ -262,10 +291,14 @@
     }
 
     const result = resolveBoard();
+    let enemyDefeated = false;
     if (result.totalDamage > 0) {
-      dealDamageToEnemy(result.totalDamage, result.comboCount);
+      enemyDefeated = dealDamageToEnemy(result.totalDamage, result.comboCount);
     }
-    if (running && enemy && enemy.hp > 0) {
+    // Skip the counterattack on the turn that lands the killing blow — the
+    // freshly-spawned next-wave enemy shouldn't get a free hit before the
+    // player has even seen it.
+    if (running && enemy && !enemyDefeated) {
       enemyAttack();
     }
     checkEnd();
@@ -286,7 +319,9 @@
       timeLeft = Math.min(MAX_TIME, timeLeft + timeBonusForWave(wave));
       enemy = makeEnemy(wave);
       announce("擊破！下一波來襲", boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
+      return true;
     }
+    return false;
   }
 
   function enemyAttack() {
@@ -389,9 +424,16 @@
       startGame();
       return;
     }
+    if (!paused && dragging) {
+      // Auto-pause (tab hidden) or the pause button firing mid-drag must
+      // settle the swaps already made as a real turn instead of discarding
+      // them — otherwise the board can be left in a matched-but-unresolved
+      // state, or repeatedly interrupted to dodge the counterattack.
+      finalizeTurn(dragging.path.length - 1);
+      if (!running) return; // resolving the turn ended the game (HP hit 0)
+    }
     paused = !paused;
     if (paused) {
-      dragging = null;
       cursorVisible = false;
       stopLoop();
       stopTimer();
@@ -996,11 +1038,24 @@
     return { r, c, pointerX: point.x, pointerY: point.y };
   }
 
+  // Any interruption mid-drag (second pointer, cancelled gesture, tab hide,
+  // switching to keyboard input) must resolve the swaps already made rather
+  // than silently discard them — otherwise a matched board can sit unresolved
+  // (confusing after a stray touch) or, worse, be repeatedly set up and
+  // abandoned to dodge the enemy's counterattack entirely.
+  function settleActiveDrag() {
+    if (!dragging) return true;
+    const pathLength = dragging.path.length - 1;
+    finalizeTurn(pathLength);
+    return running && !paused;
+  }
+
   boardCanvas.addEventListener("pointerdown", (event) => {
     if (!running || paused) return;
     const cell = getCellFromPointer(event);
     if (!cell) return;
     event.preventDefault();
+    if (!settleActiveDrag()) return;
     const heldGem = board[cell.r][cell.c];
     dragging = { path: [{ r: cell.r, c: cell.c }], pointerId: event.pointerId, heldId: heldGem.id, pointerX: cell.pointerX, pointerY: cell.pointerY };
     cursorVisible = false;
@@ -1013,7 +1068,7 @@
 
   boardCanvas.addEventListener("pointermove", (event) => {
     if (!dragging || event.pointerId !== dragging.pointerId) return;
-    if (!running || paused) { dragging = null; return; }
+    if (!running || paused) { settleActiveDrag(); return; }
     event.preventDefault();
     const cell = getCellFromPointer(event);
     if (cell) {
@@ -1037,8 +1092,8 @@
     finalizeTurn(dragging.path.length - 1);
   }, { passive: false });
 
-  boardCanvas.addEventListener("pointercancel", () => {
-    if (dragging) finalizeTurn(0);
+  boardCanvas.addEventListener("pointercancel", (event) => {
+    if (dragging && event.pointerId === dragging.pointerId) settleActiveDrag();
   });
 
   /* ---------- keyboard input ---------- */
@@ -1080,6 +1135,7 @@
     else if (key === "ArrowRight") cursor = { r: cursor.r, c: Math.min(COLS - 1, cursor.c + 1) };
     else if (key === " " || key === "Enter") {
       if (!keyboardHolding) {
+        if (!settleActiveDrag()) return;
         keyboardHolding = true;
         const heldGem = board[cursor.r][cursor.c];
         dragging = { path: [{ r: cursor.r, c: cursor.c }], pointerId: -1, heldId: heldGem.id, pointerX: null, pointerY: null };
@@ -1164,6 +1220,7 @@
 
   function updateTimerUi() {
     setUiText(timeEl, "time", String(Math.max(0, timeLeft)));
+    timeEl?.classList.toggle("is-low", timeLeft <= 10);
   }
 
   function updateUi() {
