@@ -17,6 +17,7 @@
   const enemyHpCardEl = document.querySelector("[data-enemy-hp-card]");
   const enemyNameEl = document.querySelector("[data-enemy-name]");
   const enemyStageEl = document.querySelector("[data-enemy-stage]");
+  const battleStageEl = document.querySelector(".battle-stage");
   const enemyImageEl = document.querySelector("[data-enemy-image]");
   const enemyBadgeEl = document.querySelector("[data-enemy-badge]");
   const enemyAtkEl = document.querySelector("[data-enemy-atk]");
@@ -100,6 +101,9 @@
   const TIER_LABELS = ["", "・強化", "・精英", "・王者"];
   const TIER_HP_MULT = [1, 1.35, 1.8, 2.35];
   const TIER_ATK_MULT = [1, 1.3, 1.65, 2.05];
+  const COMBAT_PROJECTILE_MS = 300;
+  const REDUCED_MOTION_PROJECTILE_MS = 70;
+  const reducedMotionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 
   let board = [];
   let score = 0;
@@ -131,6 +135,7 @@
   let stageFollowupTimer = 0;
   let playerEffectTimer = 0;
   let storyToastTimer = 0;
+  const delayedCombatTimers = new Set();
   const cellAnimations = new Map();
   const SWAP_ANIMATION_MS = 230;
   const orbSpriteCache = new Map();
@@ -516,10 +521,16 @@
     // Skip the counterattack on the turn that lands the killing blow — the
     // freshly-spawned next-wave enemy shouldn't get a free hit before the
     // player has even seen it.
+    let enemyImpactDelay = 0;
     if (running && enemy && !enemyDefeated) {
-      enemyAttack();
+      enemyImpactDelay = enemyAttack();
     }
-    checkEnd();
+    if (playerHp <= 0 && enemyImpactDelay > 0) {
+      paused = true;
+      scheduleCombatTimeout(() => checkEnd(), enemyImpactDelay + 70);
+    } else {
+      checkEnd();
+    }
     updateUi();
     draw();
     wake();
@@ -528,19 +539,22 @@
   function dealDamageToEnemy(damage, comboCount) {
     score += damage;
     enemy.hp = Math.max(0, enemy.hp - damage);
-    playStageEffect("is-hit");
+    const impactDelay = launchCombatProjectile(playerStageEl, enemyStageEl, "player");
     playPlayerEffect("is-attack");
+    if (enemy.hp > 0) {
+      scheduleStageEffect("is-hit", impactDelay, 360);
+    }
     floatCombatText(`${comboCount > 1 ? `COMBO x${comboCount} ` : ""}-${damage}`, "damage");
     announce(`${comboCount > 1 ? `連段 x${comboCount} ` : ""}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, "#ffd84d");
     if (enemy.hp <= 0) {
       floatCombatText("擊破", "break");
-      playStageEffect("is-break", 560);
+      scheduleStageEffect("is-break", impactDelay, 560);
       wave += 1;
       const clearedTier = enemy.tier;
       enemy = makeEnemy(wave);
       timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
-      queueStageEffect("is-spawn", 220, 620);
+      scheduleStageEffect("is-spawn", impactDelay + 280, 620);
       if (enemy.tier > clearedTier) showStoryToast(TIER_STORY_LINES[enemy.tier] || "深層訊號正在增幅，新的威脅已經接近。", 2600);
       const timeNote = clearedTier > 0 ? `倒數重置為 ${timeLeft} 秒` : "倒數重置";
       announce(`擊破！${timeNote}，下一波來襲`, boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
@@ -567,10 +581,15 @@
   function enemyAttack() {
     playerHp = Math.max(0, playerHp - enemy.atk);
     playStageEffect("is-attack");
-    playPlayerEffect("is-hit");
+    const impactDelay = launchCombatProjectile(enemyStageEl, playerStageEl, "enemy");
+    scheduleCombatTimeout(() => {
+      if (!running) return;
+      playPlayerEffect("is-hit");
+      floatPlayerText(`-${enemy.atk}`, "is-hit");
+      announce(`-${enemy.atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
+    }, impactDelay);
     floatCombatText(`-${enemy.atk}`, "attack");
-    floatPlayerText(`-${enemy.atk}`, "is-hit");
-    announce(`-${enemy.atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
+    return impactDelay;
   }
 
   function checkEnd() {
@@ -620,6 +639,7 @@
     particles = [];
     popups = [];
     cellAnimations.clear();
+    clearCombatProjectiles();
     clearStageEffect();
     combatFloatsEl.replaceChildren();
     initBoard();
@@ -650,6 +670,7 @@
     paused = false;
     stopTimer();
     stopLoop();
+    clearCombatProjectiles();
     clearStageEffect();
     const { progress } = recordFinishedRun(true);
     updateUi();
@@ -1208,6 +1229,68 @@
       stageFollowupTimer = 0;
     }
     enemyStageEl.classList.remove("is-hit", "is-attack", "is-defeated", "is-break", "is-spawn");
+  }
+  function combatImpactDelay() {
+    return reducedMotionQuery?.matches ? REDUCED_MOTION_PROJECTILE_MS : COMBAT_PROJECTILE_MS;
+  }
+
+  function scheduleCombatTimeout(callback, delay) {
+    const timer = window.setTimeout(() => {
+      delayedCombatTimers.delete(timer);
+      callback();
+    }, Math.max(0, delay));
+    delayedCombatTimers.add(timer);
+    return timer;
+  }
+
+  function clearCombatProjectiles() {
+    delayedCombatTimers.forEach((timer) => window.clearTimeout(timer));
+    delayedCombatTimers.clear();
+    battleStageEl?.querySelectorAll(".combat-projectile, .combat-impact").forEach((node) => node.remove());
+  }
+
+  function scheduleStageEffect(className, delay = 0, duration = 430) {
+    scheduleCombatTimeout(() => {
+      if (!running) return;
+      playStageEffect(className, duration);
+    }, delay);
+  }
+
+  function launchCombatProjectile(fromEl, toEl, variant = "player") {
+    const delay = combatImpactDelay();
+    if (!battleStageEl || !fromEl || !toEl) return delay;
+    const stageRect = battleStageEl.getBoundingClientRect();
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
+    if (!stageRect.width || !stageRect.height || !fromRect.width || !toRect.width) return delay;
+
+    const startX = fromRect.left - stageRect.left + fromRect.width * 0.5;
+    const startY = fromRect.top - stageRect.top + fromRect.height * 0.46;
+    const endX = toRect.left - stageRect.left + toRect.width * 0.5;
+    const endY = toRect.top - stageRect.top + toRect.height * 0.46;
+
+    const projectile = document.createElement("i");
+    projectile.className = `combat-projectile is-${variant}`;
+    projectile.setAttribute("aria-hidden", "true");
+    projectile.style.left = `${startX}px`;
+    projectile.style.top = `${startY}px`;
+    projectile.style.setProperty("--fx-dx", `${endX - startX}px`);
+    projectile.style.setProperty("--fx-dy", `${endY - startY}px`);
+    projectile.style.setProperty("--fx-duration", `${delay}ms`);
+    battleStageEl.append(projectile);
+
+    scheduleCombatTimeout(() => {
+      projectile.remove();
+      const impact = document.createElement("i");
+      impact.className = `combat-impact is-${variant}`;
+      impact.setAttribute("aria-hidden", "true");
+      impact.style.left = `${endX}px`;
+      impact.style.top = `${endY}px`;
+      battleStageEl.append(impact);
+      scheduleCombatTimeout(() => impact.remove(), reducedMotionQuery?.matches ? 80 : 280);
+    }, delay);
+
+    return delay;
   }
 
   function playStageEffect(className, duration = 430) {

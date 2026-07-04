@@ -383,6 +383,9 @@ button {
 
 .battle-stage {
   /* Shrinks before the board when viewport height is tight. */
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
   flex: 0 4 286px;
   min-height: 104px;
   margin-bottom: 14px;
@@ -401,6 +404,101 @@ button {
   font-size: 0.68rem;
   font-weight: 950;
   letter-spacing: 0.05em;
+}
+
+.combat-projectile,
+.combat-impact {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
+
+.combat-projectile {
+  --fx-dx: 0px;
+  --fx-dy: 0px;
+  --fx-duration: 300ms;
+  width: clamp(30px, 8.8vw, 42px);
+  height: clamp(12px, 3.7vw, 18px);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 78% 50%, rgba(255, 255, 255, 0.98) 0 12%, rgba(47, 215, 255, 0.98) 21%, rgba(47, 215, 255, 0.34) 42%, transparent 66%),
+    linear-gradient(90deg, transparent 0%, rgba(47, 215, 255, 0.1) 16%, rgba(47, 215, 255, 0.72) 60%, rgba(255, 255, 255, 0.96) 100%);
+  box-shadow:
+    0 0 10px rgba(47, 215, 255, 0.95),
+    0 0 26px rgba(47, 215, 255, 0.55);
+  filter: saturate(1.35);
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: combat-projectile-flight var(--fx-duration) cubic-bezier(0.18, 0.84, 0.18, 1) forwards;
+}
+
+.combat-projectile::before,
+.combat-projectile::after {
+  position: absolute;
+  inset: 50% auto auto 58%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0 12%, #bff8ff 19%, rgba(47, 215, 255, 0.82) 42%, transparent 70%);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.combat-projectile::after {
+  inset: -42% auto auto 8%;
+  width: 58%;
+  height: 184%;
+  background: radial-gradient(ellipse, rgba(47, 215, 255, 0.3), transparent 68%);
+  filter: blur(3px);
+}
+
+.combat-projectile.is-enemy {
+  background:
+    radial-gradient(circle at 22% 50%, rgba(255, 255, 255, 0.98) 0 12%, rgba(255, 94, 188, 0.98) 21%, rgba(155, 107, 255, 0.34) 42%, transparent 66%),
+    linear-gradient(270deg, transparent 0%, rgba(255, 94, 188, 0.1) 16%, rgba(255, 94, 188, 0.74) 60%, rgba(255, 255, 255, 0.96) 100%);
+  box-shadow:
+    0 0 10px rgba(255, 94, 188, 0.95),
+    0 0 26px rgba(155, 107, 255, 0.62);
+}
+
+.combat-projectile.is-enemy::before {
+  left: 42%;
+  background: radial-gradient(circle, #ffffff 0 12%, #ffd6ec 20%, rgba(255, 94, 188, 0.86) 42%, transparent 70%);
+}
+
+.combat-projectile.is-enemy::after {
+  left: 34%;
+  background: radial-gradient(ellipse, rgba(255, 94, 188, 0.32), transparent 68%);
+}
+
+.combat-impact {
+  width: clamp(46px, 12vw, 64px);
+  height: clamp(46px, 12vw, 64px);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.94) 0 8%, rgba(47, 215, 255, 0.62) 14%, rgba(47, 215, 255, 0.18) 34%, transparent 64%);
+  box-shadow: 0 0 28px rgba(47, 215, 255, 0.58);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: combat-impact-burst 280ms ease-out forwards;
+}
+
+.combat-impact::before {
+  position: absolute;
+  inset: 15%;
+  border: 2px solid rgba(238, 252, 255, 0.72);
+  border-radius: inherit;
+  content: "";
+}
+
+.combat-impact.is-enemy {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.96) 0 8%, rgba(255, 94, 188, 0.62) 14%, rgba(155, 107, 255, 0.22) 34%, transparent 64%);
+  box-shadow: 0 0 28px rgba(255, 94, 188, 0.58);
 }
 
 .player-stage,
@@ -1059,6 +1157,41 @@ button {
   }
 }
 
+@keyframes combat-projectile-flight {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.58) rotate(-12deg);
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  78% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.18;
+    transform: translate(calc(-50% + var(--fx-dx)), calc(-50% + var(--fx-dy))) scale(1.04) rotate(16deg);
+  }
+}
+
+@keyframes combat-impact-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.34);
+  }
+
+  34% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.26);
+  }
+}
 @keyframes enemy-idle {
   0%,
   100% {
