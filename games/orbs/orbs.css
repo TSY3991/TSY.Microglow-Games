@@ -246,10 +246,102 @@ button {
 }
 
 .hp-card {
+  position: relative;
   padding: 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(255, 232, 164, 0.08), rgba(5, 8, 14, 0.62));
+}
+
+.hp-card.is-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hp-card-body {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.player-avatar {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+}
+
+.player-avatar-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(47, 215, 255, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(47, 215, 255, 0.4);
+}
+
+.player-avatar-core {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--cyan), var(--teal));
+  box-shadow: 0 0 12px rgba(47, 215, 255, 0.65);
+  transform: rotate(45deg);
+  transition: filter 160ms ease;
+  animation: player-avatar-idle 3.2s ease-in-out infinite;
+}
+
+.player-avatar.is-attack .player-avatar-core {
+  animation: player-avatar-attack 380ms ease;
+}
+
+.player-avatar.is-hit .player-avatar-core {
+  animation: player-avatar-hit 360ms ease;
+}
+
+.player-avatar.is-hit .player-avatar-ring {
+  animation: player-avatar-hit-ring 360ms ease;
+}
+
+.player-avatar.is-heal .player-avatar-core {
+  animation: player-avatar-heal 620ms ease;
+}
+
+.player-avatar.is-heal .player-avatar-ring {
+  animation: player-avatar-heal-ring 620ms ease;
+}
+
+.combat-floats.is-player {
+  position: absolute;
+  inset: -6px -6px auto auto;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.combat-floats.is-player span {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(5, 14, 19, 0.72);
+  font-size: 0.86rem;
+  font-weight: 950;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.36);
+  transform: translate(0, -50%);
+  animation: combat-float-player 850ms ease forwards;
+}
+
+.combat-floats.is-player span.is-hit {
+  color: var(--pink);
+}
+
+.combat-floats.is-player span.is-heal {
+  color: var(--teal);
 }
 
 .hp-card .hp-heading {
@@ -373,6 +465,20 @@ button {
   animation: enemy-idle 2.4s ease-in-out infinite;
 }
 
+/* Tiers reuse the same 7 monster arts but recolor + reframe them (hue-rotate
+   plus a tinted glow) so wave 8+ doesn't look identical to wave 1. */
+.enemy-stage img.tier-1 {
+  filter: contrast(1.3) saturate(1.05) brightness(0.9) hue-rotate(35deg) drop-shadow(0 32px 24px rgba(0, 0, 0, 0.68)) drop-shadow(0 0 24px rgba(141, 244, 95, 0.34));
+}
+
+.enemy-stage img.tier-2 {
+  filter: contrast(1.34) saturate(1.15) brightness(0.9) hue-rotate(200deg) drop-shadow(0 32px 24px rgba(0, 0, 0, 0.68)) drop-shadow(0 0 26px rgba(47, 215, 255, 0.4));
+}
+
+.enemy-stage img.tier-3 {
+  filter: contrast(1.4) saturate(1.3) brightness(0.94) hue-rotate(300deg) drop-shadow(0 32px 24px rgba(0, 0, 0, 0.68)) drop-shadow(0 0 30px rgba(255, 94, 188, 0.48));
+}
+
 .enemy-shadow {
   position: absolute;
   z-index: 1;
@@ -410,6 +516,21 @@ button {
   right: 10px;
   bottom: 10px;
   color: var(--yellow);
+}
+
+.enemy-badge.tier-1 {
+  border-color: rgba(141, 244, 95, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 10px rgba(141, 244, 95, 0.35);
+}
+
+.enemy-badge.tier-2 {
+  border-color: rgba(47, 215, 255, 0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 10px rgba(47, 215, 255, 0.4);
+}
+
+.enemy-badge.tier-3 {
+  border-color: rgba(255, 94, 188, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 12px rgba(255, 94, 188, 0.5);
 }
 
 .combat-floats {
@@ -987,6 +1108,97 @@ button {
     transform: translate(-50%, -52px) scale(1.08);
   }
 }
+
+@keyframes combat-float-player {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.8);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(0, -30px) scale(1.05);
+  }
+}
+
+@keyframes player-avatar-idle {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.18);
+  }
+}
+
+@keyframes player-avatar-attack {
+  0%,
+  100% {
+    transform: rotate(45deg) scale(1);
+  }
+
+  40% {
+    filter: brightness(1.6) drop-shadow(0 0 10px rgba(47, 215, 255, 0.85));
+    transform: rotate(45deg) scale(1.28);
+  }
+}
+
+@keyframes player-avatar-hit {
+  0%,
+  100% {
+    transform: rotate(45deg) translateX(0);
+  }
+
+  25% {
+    filter: brightness(1.5) drop-shadow(0 0 10px rgba(255, 94, 188, 0.8));
+    transform: rotate(45deg) translateX(-4px);
+  }
+
+  60% {
+    transform: rotate(45deg) translateX(3px);
+  }
+}
+
+@keyframes player-avatar-hit-ring {
+  0% {
+    border-color: rgba(255, 94, 188, 0.9);
+    transform: scale(0.9);
+  }
+
+  100% {
+    border-color: rgba(47, 215, 255, 0.5);
+    transform: scale(1);
+  }
+}
+
+@keyframes player-avatar-heal {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  45% {
+    filter: brightness(1.7) drop-shadow(0 0 14px rgba(141, 244, 95, 0.85));
+  }
+}
+
+@keyframes player-avatar-heal-ring {
+  0% {
+    border-color: rgba(141, 244, 95, 0.9);
+    transform: scale(0.85);
+  }
+
+  100% {
+    border-color: rgba(47, 215, 255, 0.5);
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

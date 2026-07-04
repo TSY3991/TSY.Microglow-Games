@@ -19,6 +19,8 @@
   const enemyBadgeEl = document.querySelector("[data-enemy-badge]");
   const enemyAtkEl = document.querySelector("[data-enemy-atk]");
   const combatFloatsEl = document.querySelector("[data-combat-floats]");
+  const playerAvatarEl = document.querySelector("[data-player-avatar]");
+  const playerFloatsEl = document.querySelector("[data-combat-floats-player]");
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const portalStats = window.MicroglowGameStats;
 
@@ -68,6 +70,14 @@
   const COMBO_BONUS = 0.18;
   const PLAYER_MAX_HP = 800;
   const START_TIME = 75;
+  // Every full loop through the 7 monster arts bumps the tier, so wave 8+
+  // reuses the same art (recolored via CSS) but hits meaningfully harder
+  // instead of just repeating the wave-1 numbers with a small linear bump.
+  const TIER_SIZE = ENEMIES.length;
+  const TIER_LABELS = ["", "・強化", "・精英", "・王者"];
+  const TIER_HP_MULT = [1, 1.35, 1.8, 2.35];
+  const TIER_ATK_MULT = [1, 1.3, 1.65, 2.05];
+  const HEAL_ON_CLEAR_RATIO = 0.12;
 
   let board = [];
   let score = 0;
@@ -94,6 +104,7 @@
   let backgroundCanvas = null;
   let stageEffectTimer = 0;
   let stageFollowupTimer = 0;
+  let playerEffectTimer = 0;
   const cellAnimations = new Map();
   const SWAP_ANIMATION_MS = 230;
   const orbSpriteCache = new Map();
@@ -212,10 +223,20 @@
   }
 
   function makeEnemy(waveNumber) {
-    const template = ENEMIES[(waveNumber - 1) % ENEMIES.length];
-    const hp = 120 + (waveNumber - 1) * 55;
-    const atk = 24 + (waveNumber - 1) * 4;
-    return { ...template, hp, maxHp: hp, atk };
+    const template = ENEMIES[(waveNumber - 1) % TIER_SIZE];
+    const tier = Math.min(TIER_LABELS.length - 1, Math.floor((waveNumber - 1) / TIER_SIZE));
+    const baseHp = 120 + (waveNumber - 1) * 55;
+    const baseAtk = 24 + (waveNumber - 1) * 4;
+    const hp = Math.round(baseHp * TIER_HP_MULT[tier]);
+    const atk = Math.round(baseAtk * TIER_ATK_MULT[tier]);
+    const name = `${template.name}${TIER_LABELS[tier]}`;
+    return { ...template, name, hp, maxHp: hp, atk, tier };
+  }
+
+  // Time bonus after a kill shrinks as tier rises so high waves can't coast
+  // on an always-full clock; floors out instead of vanishing entirely.
+  function timeBonusForTier(tier) {
+    return Math.max(45, START_TIME - tier * 8);
   }
 
   // Remembers which extension actually exists per art key ("webp" preferred,
@@ -375,26 +396,46 @@
     score += damage;
     enemy.hp = Math.max(0, enemy.hp - damage);
     playStageEffect("is-hit");
+    playPlayerEffect("is-attack");
     floatCombatText(`${comboCount > 1 ? `COMBO x${comboCount} ` : ""}-${damage}`, "damage");
     announce(`${comboCount > 1 ? `連段 x${comboCount} ` : ""}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, "#ffd84d");
     if (enemy.hp <= 0) {
       floatCombatText("擊破", "break");
       playStageEffect("is-break", 560);
+      const healed = healPlayer();
       wave += 1;
-      timeLeft = START_TIME;
+      const clearedTier = enemy.tier;
       enemy = makeEnemy(wave);
+      timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
       queueStageEffect("is-spawn", 220, 620);
-      announce("擊破！倒數重置，下一波來襲", boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
+      const timeNote = clearedTier > 0 ? `倒數重置為 ${timeLeft} 秒` : "倒數重置";
+      announce(`擊破！${timeNote}，下一波來襲`, boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
+      if (healed > 0) {
+        playPlayerEffect("is-heal", 620);
+        floatPlayerText(`+${healed}`, "is-heal");
+      }
       return true;
     }
     return false;
   }
 
+  // Rewards clearing a wave with partial HP recovery so a long run isn't a
+  // guaranteed death spiral once a few hits land — capped at max HP.
+  function healPlayer() {
+    if (playerHp >= PLAYER_MAX_HP) return 0;
+    const amount = Math.round(PLAYER_MAX_HP * HEAL_ON_CLEAR_RATIO);
+    const before = playerHp;
+    playerHp = Math.min(PLAYER_MAX_HP, playerHp + amount);
+    return playerHp - before;
+  }
+
   function enemyAttack() {
     playerHp = Math.max(0, playerHp - enemy.atk);
     playStageEffect("is-attack");
+    playPlayerEffect("is-hit");
     floatCombatText(`-${enemy.atk}`, "attack");
+    floatPlayerText(`-${enemy.atk}`, "is-hit");
     announce(`-${enemy.atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
   }
 
@@ -1056,6 +1097,28 @@
     combatFloatsEl.append(item);
     window.setTimeout(() => item.remove(), 950);
   }
+
+  function playPlayerEffect(className, duration = 400) {
+    if (!playerAvatarEl) return;
+    if (playerEffectTimer) window.clearTimeout(playerEffectTimer);
+    playerAvatarEl.classList.remove("is-attack", "is-hit", "is-heal");
+    // Force a reflow so re-triggering the same class restarts its animation.
+    void playerAvatarEl.offsetWidth;
+    playerAvatarEl.classList.add(className);
+    playerEffectTimer = window.setTimeout(() => {
+      playerAvatarEl.classList.remove(className);
+      playerEffectTimer = 0;
+    }, duration);
+  }
+
+  function floatPlayerText(text, className) {
+    if (!playerFloatsEl) return;
+    const item = document.createElement("span");
+    item.textContent = text;
+    item.className = className;
+    playerFloatsEl.append(item);
+    window.setTimeout(() => item.remove(), 900);
+  }
   /* ---------- drag / swap mechanics ---------- */
 
   function swap(a, b) {
@@ -1346,6 +1409,16 @@
       const artSrc = enemyArtSrc(enemy.art);
       if (enemyImageEl.getAttribute("src") !== artSrc) enemyImageEl.setAttribute("src", artSrc);
       if (enemyImageEl.alt !== `${enemy.name} 敵人圖像`) enemyImageEl.alt = `${enemy.name} 敵人圖像`;
+      const tierClass = `tier-${enemy.tier}`;
+      if (uiCache.enemyTierClass !== tierClass) {
+        uiCache.enemyTierClass = tierClass;
+        enemyImageEl.classList.remove("tier-1", "tier-2", "tier-3");
+        enemyBadgeEl.classList.remove("tier-1", "tier-2", "tier-3");
+        if (enemy.tier > 0) {
+          enemyImageEl.classList.add(tierClass);
+          enemyBadgeEl.classList.add(tierClass);
+        }
+      }
     }
   }
 
