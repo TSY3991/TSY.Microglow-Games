@@ -176,9 +176,15 @@ body::before {
   pointer-events: none;
 }
 
-.board-wrap > canvas,
-.board-wrap > .game-overlay {
+.board-wrap > canvas {
   position: relative;
+  z-index: 1;
+}
+
+.board-wrap > .game-overlay {
+  /* Each game's own stylesheet already sets position: absolute so the
+     overlay never competes with the canvas for flex/grid space; z-index
+     alone is enough here (absolute already creates a stacking context). */
   z-index: 1;
 }
 

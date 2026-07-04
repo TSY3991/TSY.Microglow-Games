@@ -935,4 +935,25 @@
       animationFrameId = 0;
     }
   });
+
+  // The page is locked (no scrolling), so the board scales itself to
+  // whatever space board-wrap has left instead of relying on CSS
+  // aspect-ratio alone (which only shrinks height to match width).
+  function fitBoardCanvas() {
+    const wrap = boardCanvas.parentElement;
+    if (!wrap) return;
+    const style = getComputedStyle(wrap);
+    const availableWidth = wrap.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const availableHeight = wrap.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    if (availableWidth <= 0 || availableHeight <= 0) return;
+    const ratio = boardCanvas.width / boardCanvas.height;
+    const scale = Math.min(availableWidth / boardCanvas.width, availableHeight / boardCanvas.height);
+    const width = Math.min(360, Math.floor(boardCanvas.width * scale));
+    boardCanvas.style.width = `${width}px`;
+    boardCanvas.style.height = `${Math.floor(width / ratio)}px`;
+  }
+
+  fitBoardCanvas();
+  window.addEventListener("resize", fitBoardCanvas);
+  window.addEventListener("orientationchange", fitBoardCanvas);
 })();

@@ -1,4 +1,6 @@
 html {
+  height: 100%;
+  overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
   -webkit-user-select: none;
@@ -6,6 +8,8 @@ html {
 }
 
 body {
+  height: 100%;
+  overflow: hidden;
   background:
     linear-gradient(90deg, rgba(47, 215, 255, 0.08) 1px, transparent 1px),
     linear-gradient(rgba(13, 148, 136, 0.07) 1px, transparent 1px),
@@ -26,12 +30,19 @@ canvas {
 }
 
 .downstairs-shell {
+  /* Zombie-style page lock: fixed fullscreen stage, document never scrolls. */
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   width: min(1160px, calc(100% - 28px));
   margin: 0 auto;
-  padding: 24px 0 34px;
+  padding: 18px 0 max(14px, env(safe-area-inset-bottom));
+  overflow: hidden;
 }
 
 .game-topbar {
+  flex: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
@@ -106,16 +117,24 @@ canvas {
 }
 
 .downstairs-layout {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(300px, 430px) minmax(280px, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .board-wrap {
   position: relative;
-  display: grid;
-  justify-items: center;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
   padding: 14px;
   border: 1px solid rgba(255, 216, 77, 0.34);
   border-radius: var(--radius);
@@ -144,6 +163,7 @@ canvas {
   z-index: 1;
   display: block;
   width: min(100%, 360px);
+  max-height: 100%;
   aspect-ratio: 9 / 14;
   height: auto;
   border-radius: 6px;
@@ -188,6 +208,10 @@ canvas {
 .downstairs-panel {
   display: grid;
   gap: 14px;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  align-content: start;
 }
 
 .score-grid {
@@ -299,6 +323,7 @@ canvas {
 }
 
 .touch-controls {
+  flex: none;
   display: none;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -446,7 +471,8 @@ canvas {
   }
 
   .downstairs-layout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
   }
 
   .touch-controls {
@@ -455,28 +481,10 @@ canvas {
 }
 
 @media (max-width: 520px) {
-  html {
-    min-height: 100%;
-    overflow-x: hidden;
-  }
-
-  body {
-    min-height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: auto;
-    touch-action: none;
-  }
-
   .downstairs-shell {
-    display: grid;
-    grid-template-rows: auto auto auto;
     gap: 6px;
-    min-height: 100dvh;
     width: min(100% - 18px, 1160px);
     padding-top: max(8px, env(safe-area-inset-top));
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-    overflow-x: hidden;
-    touch-action: none;
   }
 
   .game-topbar {
@@ -521,6 +529,8 @@ canvas {
   }
 
   .board-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 8px;
   }
 
@@ -529,8 +539,8 @@ canvas {
   }
 
   #downstairsBoard {
-    width: min(100%, 300px, calc((100dvh - 244px) * 0.64));
-    min-width: 184px;
+    width: min(100%, 300px);
+    min-width: 150px;
   }
 
   .game-overlay {
@@ -547,8 +557,11 @@ canvas {
   }
 
   .downstairs-panel {
+    flex: none;
     gap: 6px;
     min-height: 0;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .challenge-card {
@@ -662,7 +675,7 @@ canvas {
   }
 
   #downstairsBoard {
-    width: min(100%, 286px, calc((100dvh - 286px) * 0.64));
+    width: min(100%, 286px);
   }
 
   .touch-controls button {

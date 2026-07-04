@@ -1,4 +1,11 @@
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
+  height: 100%;
+  overflow: hidden;
   background:
     radial-gradient(circle at 20% 12%, rgba(141, 244, 95, 0.18), transparent 28%),
     radial-gradient(circle at 84% 22%, rgba(47, 215, 255, 0.16), transparent 30%),
@@ -11,12 +18,19 @@ body {
 }
 
 .snake-shell {
+  /* Zombie-style page lock: fixed fullscreen stage, document never scrolls. */
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   width: min(1180px, calc(100% - 28px));
   margin: 0 auto;
-  padding: 24px 0 34px;
+  padding: 18px 0 max(14px, env(safe-area-inset-bottom));
+  overflow: hidden;
 }
 
 .game-topbar {
+  flex: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
@@ -90,16 +104,24 @@ body {
 }
 
 .snake-layout {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(310px, 520px) minmax(280px, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .board-wrap {
   position: relative;
-  display: grid;
-  justify-items: center;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
   padding: 16px;
   border: 1px solid rgba(141, 244, 95, 0.28);
   border-radius: var(--radius);
@@ -114,6 +136,7 @@ body {
 #snakeBoard {
   display: block;
   width: min(100%, 480px);
+  max-height: 100%;
   aspect-ratio: 1;
   height: auto;
   border-radius: 6px;
@@ -160,6 +183,9 @@ body {
 .snake-panel {
   display: grid;
   gap: 14px;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .score-grid > div,
@@ -217,6 +243,7 @@ body {
 }
 
 .touch-controls {
+  flex: none;
   display: none;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -366,7 +393,8 @@ body {
   }
 
   .snake-layout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
   }
 
   .snake-panel {
@@ -379,28 +407,10 @@ body {
 }
 
 @media (max-width: 520px) {
-  html {
-    min-height: 100%;
-    overflow-x: hidden;
-  }
-
-  body {
-    min-height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: auto;
-    touch-action: none;
-  }
-
   .snake-shell {
-    display: grid;
-    grid-template-rows: auto auto auto;
     gap: 6px;
-    min-height: 100dvh;
     width: min(100% - 18px, 1180px);
     padding-top: max(8px, env(safe-area-inset-top));
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-    overflow-x: hidden;
-    touch-action: none;
   }
 
   .game-topbar {
@@ -439,19 +449,20 @@ body {
   }
 
   .snake-layout {
-    align-content: start;
     gap: 6px;
     min-height: 0;
     overflow: hidden;
   }
 
   .board-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 8px;
   }
 
   #snakeBoard {
-    width: min(100%, 310px, calc(100dvh - 266px));
-    min-width: 180px;
+    width: min(100%, 310px);
+    min-width: 140px;
   }
 
   .game-overlay {
@@ -468,8 +479,11 @@ body {
   }
 
   .snake-panel {
+    flex: none;
     gap: 6px;
     min-height: 0;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .help-card {

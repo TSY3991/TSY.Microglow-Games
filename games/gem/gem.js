@@ -1458,4 +1458,24 @@
       animationFrameId = 0;
     }
   });
+
+  // The page is locked (no scrolling), so the square board scales itself to
+  // whatever space board-wrap has left instead of relying on CSS max-width
+  // alone (which doesn't know about the available height).
+  function fitBoardCanvas() {
+    const wrap = boardCanvas.parentElement;
+    if (!wrap) return;
+    const style = getComputedStyle(wrap);
+    const availableWidth = wrap.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const availableHeight = wrap.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    const side = Math.max(180, Math.min(448, availableWidth, availableHeight));
+    if (Number.isFinite(side) && side > 0) {
+      boardCanvas.style.width = `${Math.floor(side)}px`;
+      boardCanvas.style.height = `${Math.floor(side)}px`;
+    }
+  }
+
+  fitBoardCanvas();
+  window.addEventListener("resize", fitBoardCanvas);
+  window.addEventListener("orientationchange", fitBoardCanvas);
 })();
