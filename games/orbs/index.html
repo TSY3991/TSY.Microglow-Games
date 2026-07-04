@@ -10,7 +10,7 @@
     <title>微光連珠對戰｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260704c">
-    <link rel="stylesheet" href="./orbs.css?v=20260705b">
+    <link rel="stylesheet" href="./orbs.css?v=20260705d">
   </head>
   <body>
     <main class="orbs-shell">
@@ -34,7 +34,7 @@
       <section class="orbs-layout" aria-label="微光連珠對戰遊戲區">
         <div class="board-wrap">
           <div class="combat-strip" aria-label="戰鬥狀態">
-            <div class="hp-card">
+            <div class="hp-card player-hp-card" data-player-hp-card>
               <div class="hp-heading">
                 <span>我方</span>
                 <strong data-player-hp>800/800</strong>
@@ -43,7 +43,7 @@
                 <span data-player-hp-track></span>
               </div>
             </div>
-            <div class="hp-card">
+            <div class="hp-card enemy-hp-card" data-enemy-hp-card>
               <div class="hp-heading">
                 <span data-enemy-name>第 1 波・敵人</span>
                 <strong data-enemy-hp>0/0</strong>
@@ -53,8 +53,13 @@
               </div>
             </div>
           </div>
+          <div class="battle-timer" data-battle-timer aria-label="戰鬥倒數">
+            <span>TIME</span>
+            <strong data-battle-time>75</strong>
+          </div>
           <div class="battle-stage" aria-label="戰鬥畫面">
             <div class="player-stage" data-player-stage>
+              <div class="player-level-badge" data-player-level>Lv.1</div>
               <div class="player-aura" aria-hidden="true"></div>
               <img data-player-image src="./assets/player/guardian.svg" alt="我方角色">
               <div class="player-shadow" aria-hidden="true"></div>
@@ -70,6 +75,7 @@
               <div class="combat-floats" data-combat-floats aria-hidden="true"></div>
             </div>
           </div>
+          <div class="story-toast" data-story-toast hidden></div>
           <div class="board-frame">
             <canvas id="orbsBoard" width="372" height="310" aria-label="連珠盤面"></canvas>
           </div>
@@ -159,6 +165,6 @@
 
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./orbs.js?v=20260705b"></script>
+    <script src="./orbs.js?v=20260705d"></script>
   </body>
 </html>

@@ -11,8 +11,10 @@
   const timeEl = document.querySelector("[data-time]");
   const playerHpEl = document.querySelector("[data-player-hp]");
   const playerHpTrack = document.querySelector("[data-player-hp-track]");
+  const playerHpCardEl = document.querySelector("[data-player-hp-card]");
   const enemyHpEl = document.querySelector("[data-enemy-hp]");
   const enemyHpTrack = document.querySelector("[data-enemy-hp-track]");
+  const enemyHpCardEl = document.querySelector("[data-enemy-hp-card]");
   const enemyNameEl = document.querySelector("[data-enemy-name]");
   const enemyStageEl = document.querySelector("[data-enemy-stage]");
   const enemyImageEl = document.querySelector("[data-enemy-image]");
@@ -22,6 +24,10 @@
   const playerStageEl = document.querySelector("[data-player-stage]");
   const playerImageEl = document.querySelector("[data-player-image]");
   const playerFloatsEl = document.querySelector("[data-combat-floats-player]");
+  const playerLevelEl = document.querySelector("[data-player-level]");
+  const battleTimerEl = document.querySelector("[data-battle-timer]");
+  const battleTimeEl = document.querySelector("[data-battle-time]");
+  const storyToastEl = document.querySelector("[data-story-toast]");
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const portalStats = window.MicroglowGameStats;
 
@@ -52,8 +58,9 @@
   // `art` is the base filename in assets/monsters/ (no extension): the loader
   // tries the Codex-generated .webp first and falls back to the bundled .svg
   // placeholder, so new art drops in without code changes.
-  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "light.webp", "dark.webp", "heal.webp"];
+  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "light.webp", "dark.webp", "heal.png"];
   const orbArtImages = ORB_ART_FILES.map((file) => {
+    if (!file) return null;
     const image = new Image();
     image.decoding = "async";
     image.src = `./assets/orbs/${file}`;
@@ -76,8 +83,16 @@
 
   const BASE_ORB_DAMAGE = 16;
   const COMBO_BONUS = 0.18;
-  const PLAYER_MAX_HP = 800;
+  const PLAYER_BASE_MAX_HP = 800;
   const START_TIME = 75;
+  const XP_SCORE_DIVISOR = 12;
+  const XP_PER_WAVE = 18;
+  const TIER_STORY_LINES = [
+    "",
+    "深層封鎖解除，敵人的微光頻率開始失控。",
+    "深淵訊號增幅中，一股更強大的力量正在甦醒。",
+    "王者級脈衝降臨，守護者核心全力運轉。"
+  ];
   // Every full loop through the 7 monster arts bumps the tier, so wave 8+
   // reuses the same art (recolored via CSS) but hits meaningfully harder
   // instead of just repeating the wave-1 numbers with a small linear bump.
@@ -91,8 +106,11 @@
   let best = 0;
   let plays = 0;
   let bestWave = 0;
+  let playerLevel = 1;
+  let playerXp = 0;
+  let playerMaxHp = PLAYER_BASE_MAX_HP;
   let wave = 1;
-  let playerHp = PLAYER_MAX_HP;
+  let playerHp = PLAYER_BASE_MAX_HP;
   let enemy = null;
   let timeLeft = START_TIME;
   let running = false;
@@ -112,6 +130,7 @@
   let stageEffectTimer = 0;
   let stageFollowupTimer = 0;
   let playerEffectTimer = 0;
+  let storyToastTimer = 0;
   const cellAnimations = new Map();
   const SWAP_ANIMATION_MS = 230;
   const orbSpriteCache = new Map();
@@ -122,6 +141,10 @@
   best = readBestScore();
   plays = readPlays();
   bestWave = readBestWave();
+  playerLevel = readPlayerLevel();
+  playerXp = readPlayerXp();
+  playerMaxHp = getPlayerMaxHp();
+  playerHp = playerMaxHp;
 
   initBoard();
   updateUi();
@@ -197,12 +220,77 @@
     return Number(portalStats.readGame(gameId).bestWave) || 0;
   }
 
-  function ensurePortalStats() {
-    portalStats.ensureGame(gameId, gameTitle, { bestWave: 0 });
+  function readPlayerLevel() {
+    return Math.max(1, Number(portalStats.readGame(gameId).playerLevel) || 1);
   }
 
-  function writePortalStats(lastScore, bestScore, bestWaveThisRun) {
-    return portalStats.recordRun(gameId, gameTitle, lastScore, bestScore, { bestWave: bestWaveThisRun });
+  function readPlayerXp() {
+    return Math.max(0, Number(portalStats.readGame(gameId).playerXp) || 0);
+  }
+
+  function ensurePortalStats() {
+    portalStats.ensureGame(gameId, gameTitle, { bestWave: 0, playerLevel: 1, playerXp: 0 });
+  }
+
+  function writePortalStats(lastScore, bestScore, bestWaveThisRun, nextPlayerLevel = playerLevel, nextPlayerXp = playerXp) {
+    portalStats.recordRun(gameId, gameTitle, lastScore, bestScore, { bestWave: bestWaveThisRun });
+    return portalStats.updateGame(gameId, (existing) => ({
+      ...existing,
+      title: gameTitle,
+      playerLevel: nextPlayerLevel,
+      playerXp: nextPlayerXp,
+      updatedAt: new Date().toISOString()
+    }));
+  }
+
+  function xpNeededForLevel(level) {
+    return Math.round(100 * Math.pow(Math.max(1, level), 1.4));
+  }
+
+  function getPlayerMaxHp(level = playerLevel) {
+    return PLAYER_BASE_MAX_HP + (Math.max(1, level) - 1) * 20;
+  }
+
+  function getPlayerDamagePerOrb(level = playerLevel) {
+    return BASE_ORB_DAMAGE + Math.floor((Math.max(1, level) - 1) / 2);
+  }
+
+  function getPlayerHealPerOrb(level = playerLevel) {
+    return HEAL_PER_ORB + Math.floor((Math.max(1, level) - 1) * 1.5);
+  }
+
+  function calculateRunXp(lastScore, reachedWave) {
+    if (lastScore <= 0 && reachedWave <= 1) return 0;
+    return Math.max(20, Math.floor(lastScore / XP_SCORE_DIVISOR) + Math.max(0, reachedWave - 1) * XP_PER_WAVE);
+  }
+
+  function applyPlayerXp(gainedXp) {
+    const oldLevel = playerLevel;
+    let nextLevel = playerLevel;
+    let nextXp = playerXp + Math.max(0, gainedXp);
+    while (nextXp >= xpNeededForLevel(nextLevel)) {
+      nextXp -= xpNeededForLevel(nextLevel);
+      nextLevel += 1;
+    }
+    playerLevel = nextLevel;
+    playerXp = nextXp;
+    playerMaxHp = getPlayerMaxHp();
+    return { gainedXp, oldLevel, newLevel: nextLevel, leveled: nextLevel > oldLevel };
+  }
+
+  function recordFinishedRun(showProgress = false) {
+    const xpGained = calculateRunXp(score, wave);
+    const progress = applyPlayerXp(xpGained);
+    const result = writePortalStats(score, Math.max(best, score), Math.max(bestWave, wave), playerLevel, playerXp);
+    plays = result.plays;
+    best = result.bestScore;
+    bestWave = result.bestWave;
+    if (showProgress && progress.leveled) {
+      playPlayerEffect("is-level", 900);
+      floatPlayerText("升級！", "is-level");
+      showStoryToast(`微光核心升階至 Lv.${playerLevel}，你感覺到自己變強了。`, 3000);
+    }
+    return { result, progress };
   }
 
   /* ---------- board setup ---------- */
@@ -392,10 +480,10 @@
       if (!matches.size) break;
       for (const group of groupMatches(matches)) {
         if (group.color === HEAL_COLOR_ID) {
-          totalHeal += group.size * HEAL_PER_ORB;
+          totalHeal += group.size * getPlayerHealPerOrb();
         } else {
           comboCount += 1;
-          totalDamage += group.size * BASE_ORB_DAMAGE;
+          totalDamage += group.size * getPlayerDamagePerOrb();
         }
       }
       eliminateCells(matches);
@@ -453,6 +541,7 @@
       timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
       queueStageEffect("is-spawn", 220, 620);
+      if (enemy.tier > clearedTier) showStoryToast(TIER_STORY_LINES[enemy.tier] || "深層訊號正在增幅，新的威脅已經接近。", 2600);
       const timeNote = clearedTier > 0 ? `倒數重置為 ${timeLeft} 秒` : "倒數重置";
       announce(`擊破！${timeNote}，下一波來襲`, boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
       return true;
@@ -465,9 +554,9 @@
   // automatic on-clear heal that wouldn't obviously tie back to anything the
   // player did.
   function applyHeal(amount) {
-    if (playerHp >= PLAYER_MAX_HP) return;
+    if (playerHp >= playerMaxHp) return;
     const before = playerHp;
-    playerHp = Math.min(PLAYER_MAX_HP, playerHp + amount);
+    playerHp = Math.min(playerMaxHp, playerHp + amount);
     const healed = playerHp - before;
     if (healed <= 0) return;
     playPlayerEffect("is-heal", 620);
@@ -523,7 +612,8 @@
     recordedThisRun = false;
     score = 0;
     wave = 1;
-    playerHp = PLAYER_MAX_HP;
+    playerMaxHp = getPlayerMaxHp();
+    playerHp = playerMaxHp;
     enemy = makeEnemy(1);
     timeLeft = START_TIME;
     dragging = null;
@@ -544,10 +634,7 @@
   function restartGame() {
     if (running && !recordedThisRun) {
       recordedThisRun = true;
-      const result = writePortalStats(score, Math.max(best, score), Math.max(bestWave, wave));
-      plays = result.plays;
-      best = result.bestScore;
-      bestWave = result.bestWave;
+      recordFinishedRun(false);
     }
     running = false;
     paused = false;
@@ -564,13 +651,12 @@
     stopTimer();
     stopLoop();
     clearStageEffect();
-    const result = writePortalStats(score, Math.max(best, score), Math.max(bestWave, wave));
-    plays = result.plays;
-    best = result.bestScore;
-    bestWave = result.bestWave;
+    const { progress } = recordFinishedRun(true);
     updateUi();
     draw();
-    showOverlay(title, `${message}，本局分數 ${score}，抵達第 ${wave} 波，最高分 ${best}`, "再玩一次");
+    const xpNote = progress.gainedXp > 0 ? `，獲得 ${progress.gainedXp} XP` : "";
+    const levelNote = progress.leveled ? `，升至 Lv.${progress.newLevel}` : `，守護者 Lv.${playerLevel}`;
+    showOverlay(title, `${message}，本局分數 ${score}，抵達第 ${wave} 波，最高分 ${best}${xpNote}${levelNote}`, "再玩一次");
   }
 
   function togglePause() {
@@ -1155,7 +1241,7 @@
   function playPlayerEffect(className, duration = 400) {
     if (!playerStageEl) return;
     if (playerEffectTimer) window.clearTimeout(playerEffectTimer);
-    playerStageEl.classList.remove("is-attack", "is-hit", "is-heal");
+    playerStageEl.classList.remove("is-attack", "is-hit", "is-heal", "is-level");
     // Force a reflow so re-triggering the same class restarts its animation.
     void playerStageEl.offsetWidth;
     playerStageEl.classList.add(className);
@@ -1172,6 +1258,21 @@
     item.className = className;
     playerFloatsEl.append(item);
     window.setTimeout(() => item.remove(), 900);
+  }
+
+  function showStoryToast(text, duration = 2400) {
+    if (!storyToastEl || !text) return;
+    if (storyToastTimer) window.clearTimeout(storyToastTimer);
+    storyToastEl.textContent = text;
+    storyToastEl.hidden = false;
+    storyToastEl.classList.remove("is-show");
+    void storyToastEl.offsetWidth;
+    storyToastEl.classList.add("is-show");
+    storyToastTimer = window.setTimeout(() => {
+      storyToastEl.classList.remove("is-show");
+      storyToastEl.hidden = true;
+      storyToastTimer = 0;
+    }, duration);
   }
   /* ---------- drag / swap mechanics ---------- */
 
@@ -1440,8 +1541,11 @@
   }
 
   function updateTimerUi() {
-    setUiText(timeEl, "time", String(Math.max(0, timeLeft)));
+    const timeText = String(Math.max(0, timeLeft));
+    setUiText(timeEl, "time", timeText);
+    setUiText(battleTimeEl, "battleTime", timeText);
     timeEl?.classList.toggle("is-low", timeLeft <= 10);
+    battleTimerEl?.classList.toggle("is-low", timeLeft <= 10);
   }
 
   function updateUi() {
@@ -1451,13 +1555,21 @@
     setUiText(playsEl, "plays", String(plays));
     updateTimerUi();
 
-    setUiText(playerHpEl, "playerHp", `${Math.max(0, playerHp)}/${PLAYER_MAX_HP}`);
-    setBarWidth(playerHpTrack, "playerHpPct", (playerHp / PLAYER_MAX_HP) * 100);
+    setUiText(playerHpEl, "playerHp", `${Math.max(0, playerHp)}/${playerMaxHp}`);
+    setUiText(playerLevelEl, "playerLevel", `Lv.${playerLevel}`);
+    const playerHpPct = playerMaxHp > 0 ? playerHp / playerMaxHp : 0;
+    setBarWidth(playerHpTrack, "playerHpPct", playerHpPct * 100);
+    playerHpCardEl?.classList.toggle("is-low", playerHpPct > 0 && playerHpPct <= 0.25);
+    playerHpCardEl?.classList.toggle("is-critical", playerHpPct > 0 && playerHpPct <= 0.2);
+    playerStageEl?.classList.toggle("is-critical", playerHpPct > 0 && playerHpPct <= 0.2);
 
     if (enemy) {
       setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${enemy.name}`);
       setUiText(enemyHpEl, "enemyHp", `${Math.max(0, enemy.hp)}/${enemy.maxHp}`);
-      setBarWidth(enemyHpTrack, "enemyHpPct", (enemy.hp / enemy.maxHp) * 100);
+      const enemyHpPct = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
+      setBarWidth(enemyHpTrack, "enemyHpPct", enemyHpPct * 100);
+      enemyHpCardEl?.classList.toggle("is-low", enemyHpPct > 0 && enemyHpPct <= 0.25);
+      enemyHpCardEl?.classList.toggle("is-critical", enemyHpPct > 0 && enemyHpPct <= 0.2);
       setUiText(enemyBadgeEl, "enemyBadge", enemy.name);
       setUiText(enemyAtkEl, "enemyAtk", `ATK ${enemy.atk}`);
       const artSrc = enemyArtSrc(enemy.art);
@@ -1485,7 +1597,7 @@
   window.addEventListener("pagehide", () => {
     if (running && !recordedThisRun) {
       recordedThisRun = true;
-      writePortalStats(score, Math.max(best, score), Math.max(bestWave, wave));
+      recordFinishedRun(false);
     }
     stopTimer();
     stopLoop();
