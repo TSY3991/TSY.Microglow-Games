@@ -10,7 +10,7 @@
     <title>微光連珠對戰｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260704c">
-    <link rel="stylesheet" href="./orbs.css?v=20260705a">
+    <link rel="stylesheet" href="./orbs.css?v=20260705b">
   </head>
   <body>
     <main class="orbs-shell">
@@ -34,41 +34,41 @@
       <section class="orbs-layout" aria-label="微光連珠對戰遊戲區">
         <div class="board-wrap">
           <div class="combat-strip" aria-label="戰鬥狀態">
-            <div class="hp-card is-player">
-              <div class="player-avatar" data-player-avatar aria-hidden="true">
-                <span class="player-avatar-core"></span>
-                <span class="player-avatar-ring"></span>
+            <div class="hp-card">
+              <div class="hp-heading">
+                <span>我方</span>
+                <strong data-player-hp>800/800</strong>
               </div>
-              <div class="hp-card-body">
-                <div class="hp-heading">
-                  <span>我方</span>
-                  <strong data-player-hp>800/800</strong>
-                </div>
-                <div class="hp-track player-hp" aria-hidden="true">
-                  <span data-player-hp-track></span>
-                </div>
-                <div class="combat-floats is-player" data-combat-floats-player aria-hidden="true"></div>
+              <div class="hp-track player-hp" aria-hidden="true">
+                <span data-player-hp-track></span>
               </div>
             </div>
             <div class="hp-card">
-              <div class="hp-card-body">
-                <div class="hp-heading">
-                  <span data-enemy-name>第 1 波・敵人</span>
-                  <strong data-enemy-hp>0/0</strong>
-                </div>
-                <div class="hp-track enemy-hp" aria-hidden="true">
-                  <span data-enemy-hp-track></span>
-                </div>
+              <div class="hp-heading">
+                <span data-enemy-name>第 1 波・敵人</span>
+                <strong data-enemy-hp>0/0</strong>
+              </div>
+              <div class="hp-track enemy-hp" aria-hidden="true">
+                <span data-enemy-hp-track></span>
               </div>
             </div>
           </div>
-          <div class="enemy-stage" data-enemy-stage aria-label="敵人舞台">
-            <div class="enemy-aura" aria-hidden="true"></div>
-            <img data-enemy-image src="./assets/monsters/slime.svg" alt="第 1 波敵人">
-            <div class="enemy-shadow" aria-hidden="true"></div>
-            <div class="enemy-badge" data-enemy-badge>濁光史萊姆</div>
-            <div class="enemy-attack" data-enemy-atk>ATK 24</div>
-            <div class="combat-floats" data-combat-floats aria-hidden="true"></div>
+          <div class="battle-stage" aria-label="戰鬥畫面">
+            <div class="player-stage" data-player-stage>
+              <div class="player-aura" aria-hidden="true"></div>
+              <img data-player-image src="./assets/player/guardian.svg" alt="我方角色">
+              <div class="player-shadow" aria-hidden="true"></div>
+              <div class="combat-floats is-player" data-combat-floats-player aria-hidden="true"></div>
+            </div>
+            <div class="battle-vs" aria-hidden="true">VS</div>
+            <div class="enemy-stage" data-enemy-stage aria-label="敵人舞台">
+              <div class="enemy-aura" aria-hidden="true"></div>
+              <img data-enemy-image src="./assets/monsters/slime.svg" alt="第 1 波敵人">
+              <div class="enemy-shadow" aria-hidden="true"></div>
+              <div class="enemy-badge" data-enemy-badge>濁光史萊姆</div>
+              <div class="enemy-attack" data-enemy-atk>ATK 24</div>
+              <div class="combat-floats" data-combat-floats aria-hidden="true"></div>
+            </div>
           </div>
           <div class="board-frame">
             <canvas id="orbsBoard" width="372" height="310" aria-label="連珠盤面"></canvas>
@@ -140,8 +140,8 @@
               <span>每擊敗一隻敵人就進入下一波，敵人血量與攻擊力會逐波提升；每滿 7 波怪物會晉升「強化／精英／王者」等級，數值再往上跳一階，難度會持續增加。</span>
             </div>
             <div>
-              <strong>回血機制</strong>
-              <span>擊敗敵人時我方會回復部分血量，頭像會亮起回血光效；擊敗速度越快，倒數時間扣得越少。</span>
+              <strong>回血珠</strong>
+              <span>盤面上有一種粉色愛心珠，出現機率較低；消除 3 顆以上愛心珠不會造成傷害，而是直接回復我方血量，我方角色會亮起回血光效。</span>
             </div>
             <div>
               <strong>操作方式</strong>
@@ -159,6 +159,6 @@
 
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./orbs.js?v=20260705a"></script>
+    <script src="./orbs.js?v=20260705b"></script>
   </body>
 </html>

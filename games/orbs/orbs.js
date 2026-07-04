@@ -19,7 +19,8 @@
   const enemyBadgeEl = document.querySelector("[data-enemy-badge]");
   const enemyAtkEl = document.querySelector("[data-enemy-atk]");
   const combatFloatsEl = document.querySelector("[data-combat-floats]");
-  const playerAvatarEl = document.querySelector("[data-player-avatar]");
+  const playerStageEl = document.querySelector("[data-player-stage]");
+  const playerImageEl = document.querySelector("[data-player-image]");
   const playerFloatsEl = document.querySelector("[data-combat-floats-player]");
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const portalStats = window.MicroglowGameStats;
@@ -33,18 +34,25 @@
   const boardPxWidth = COLS * CELL;
   const boardPxHeight = ROWS * CELL;
 
+  const HEAL_COLOR_ID = 5;
   const COLORS = [
     { id: 0, name: "fire", fill: "#f23a2e", glow: "rgba(255, 68, 55, 0.58)", mark: "#ffb4a9" },
     { id: 1, name: "water", fill: "#2aa8ff", glow: "rgba(47, 215, 255, 0.55)", mark: "#dff7ff" },
     { id: 2, name: "wood", fill: "#2fda55", glow: "rgba(141, 244, 95, 0.55)", mark: "#dbffd6" },
     { id: 3, name: "light", fill: "#f4bd39", glow: "rgba(255, 216, 77, 0.55)", mark: "#fff2bc" },
-    { id: 4, name: "dark", fill: "#a324d7", glow: "rgba(155, 107, 255, 0.55)", mark: "#f1d8ff" }
+    { id: 4, name: "dark", fill: "#a324d7", glow: "rgba(155, 107, 255, 0.55)", mark: "#f1d8ff" },
+    { id: HEAL_COLOR_ID, name: "heal", fill: "#ff6fa8", glow: "rgba(255, 111, 168, 0.55)", mark: "#ffe3ef" }
   ];
+  // Heal orbs are rarer than the 5 combat colors so healing stays a bonus,
+  // not the dominant strategy — weight below in randomColor().
+  const COLOR_WEIGHTS = COLORS.map((color) => (color.id === HEAL_COLOR_ID ? 0.6 : 1));
+  const TOTAL_COLOR_WEIGHT = COLOR_WEIGHTS.reduce((sum, weight) => sum + weight, 0);
+  const HEAL_PER_ORB = 20;
 
   // `art` is the base filename in assets/monsters/ (no extension): the loader
   // tries the Codex-generated .webp first and falls back to the bundled .svg
   // placeholder, so new art drops in without code changes.
-  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "light.webp", "dark.webp"];
+  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "light.webp", "dark.webp", "heal.webp"];
   const orbArtImages = ORB_ART_FILES.map((file) => {
     const image = new Image();
     image.decoding = "async";
@@ -77,7 +85,6 @@
   const TIER_LABELS = ["", "・強化", "・精英", "・王者"];
   const TIER_HP_MULT = [1, 1.35, 1.8, 2.35];
   const TIER_ATK_MULT = [1, 1.3, 1.65, 2.05];
-  const HEAL_ON_CLEAR_RATIO = 0.12;
 
   let board = [];
   let score = 0;
@@ -201,7 +208,12 @@
   /* ---------- board setup ---------- */
 
   function randomColor() {
-    return Math.floor(Math.random() * COLORS.length);
+    let roll = Math.random() * TOTAL_COLOR_WEIGHT;
+    for (let i = 0; i < COLORS.length; i += 1) {
+      roll -= COLOR_WEIGHTS[i];
+      if (roll <= 0) return i;
+    }
+    return COLORS.length - 1;
   }
 
   function initBoard() {
@@ -254,6 +266,22 @@
     artExtCache.set(match[1], "svg");
     enemyImageEl.setAttribute("src", enemyArtSrc(match[1]));
   });
+
+  // Same webp-first/svg-fallback pattern as the monster art, so a future
+  // Codex-generated guardian.webp drops in without any code changes.
+  function playerArtSrc(artKey) {
+    return `./assets/player/${artKey}.${artExtCache.get(`player-${artKey}`) || "webp"}`;
+  }
+
+  playerImageEl?.addEventListener("error", () => {
+    const src = playerImageEl.getAttribute("src") || "";
+    const match = src.match(/([a-z0-9_-]+)\.webp$/i);
+    if (!match) return;
+    artExtCache.set(`player-${match[1]}`, "svg");
+    playerImageEl.setAttribute("src", playerArtSrc(match[1]));
+  });
+
+  if (playerImageEl) playerImageEl.setAttribute("src", playerArtSrc("guardian"));
 
 
   /* ---------- match detection & resolution ---------- */
@@ -320,19 +348,25 @@
   // run before eliminateCells mutates the board) — this is what "combo"
   // means per the in-game instructions: simultaneous separate match groups
   // AND cascade chains from gravity refills both add to the combo count.
-  function countMatchGroups(matched) {
+  // Splits a matched set into distinct same-color connected clusters (BFS),
+  // returning each group's color and cell count. Heal-colored groups don't
+  // deal damage or count toward the combo multiplier — they heal the player
+  // directly, so matching them is a clear, separate action from attacking.
+  function groupMatches(matched) {
     const visited = new Set();
-    let groups = 0;
+    const groups = [];
     for (const key of matched) {
       if (visited.has(key)) continue;
-      groups += 1;
+      const [startR, startC] = key.split(",").map(Number);
+      const color = board[startR][startC].color;
+      let size = 0;
       const queue = [key];
       while (queue.length) {
         const current = queue.pop();
         if (visited.has(current)) continue;
         visited.add(current);
+        size += 1;
         const [r, c] = current.split(",").map(Number);
-        const color = board[r][c].color;
         const neighbours = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
         for (const [nr, nc] of neighbours) {
           const neighbourKey = `${nr},${nc}`;
@@ -341,6 +375,7 @@
           }
         }
       }
+      groups.push({ color, size });
     }
     return groups;
   }
@@ -350,17 +385,24 @@
   // keeps the core combat logic independent of requestAnimationFrame timing.
   function resolveBoard() {
     let totalDamage = 0;
+    let totalHeal = 0;
     let comboCount = 0;
     for (;;) {
       const matches = findMatches();
       if (!matches.size) break;
-      comboCount += countMatchGroups(matches);
-      totalDamage += matches.size * BASE_ORB_DAMAGE;
+      for (const group of groupMatches(matches)) {
+        if (group.color === HEAL_COLOR_ID) {
+          totalHeal += group.size * HEAL_PER_ORB;
+        } else {
+          comboCount += 1;
+          totalDamage += group.size * BASE_ORB_DAMAGE;
+        }
+      }
       eliminateCells(matches);
       applyGravityAndRefill();
     }
     if (comboCount > 1) totalDamage = Math.round(totalDamage * (1 + COMBO_BONUS * (comboCount - 1)));
-    return { totalDamage, comboCount };
+    return { totalDamage, comboCount, totalHeal };
   }
 
   /* ---------- turn & combat flow ---------- */
@@ -379,6 +421,9 @@
     let enemyDefeated = false;
     if (result.totalDamage > 0) {
       enemyDefeated = dealDamageToEnemy(result.totalDamage, result.comboCount);
+    }
+    if (result.totalHeal > 0) {
+      applyHeal(result.totalHeal);
     }
     // Skip the counterattack on the turn that lands the killing blow — the
     // freshly-spawned next-wave enemy shouldn't get a free hit before the
@@ -402,7 +447,6 @@
     if (enemy.hp <= 0) {
       floatCombatText("擊破", "break");
       playStageEffect("is-break", 560);
-      const healed = healPlayer();
       wave += 1;
       const clearedTier = enemy.tier;
       enemy = makeEnemy(wave);
@@ -411,23 +455,24 @@
       queueStageEffect("is-spawn", 220, 620);
       const timeNote = clearedTier > 0 ? `倒數重置為 ${timeLeft} 秒` : "倒數重置";
       announce(`擊破！${timeNote}，下一波來襲`, boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
-      if (healed > 0) {
-        playPlayerEffect("is-heal", 620);
-        floatPlayerText(`+${healed}`, "is-heal");
-      }
       return true;
     }
     return false;
   }
 
-  // Rewards clearing a wave with partial HP recovery so a long run isn't a
-  // guaranteed death spiral once a few hits land — capped at max HP.
-  function healPlayer() {
-    if (playerHp >= PLAYER_MAX_HP) return 0;
-    const amount = Math.round(PLAYER_MAX_HP * HEAL_ON_CLEAR_RATIO);
+  // Heal orbs are the only source of HP recovery — matching them is a
+  // deliberate player action with an immediate, visible +HP result, unlike an
+  // automatic on-clear heal that wouldn't obviously tie back to anything the
+  // player did.
+  function applyHeal(amount) {
+    if (playerHp >= PLAYER_MAX_HP) return;
     const before = playerHp;
     playerHp = Math.min(PLAYER_MAX_HP, playerHp + amount);
-    return playerHp - before;
+    const healed = playerHp - before;
+    if (healed <= 0) return;
+    playPlayerEffect("is-heal", 620);
+    floatPlayerText(`+${healed}`, "is-heal");
+    announce(`+${healed}`, boardPxWidth / 2, boardPxHeight * 0.32, "#8df45f");
   }
 
   function enemyAttack() {
@@ -624,7 +669,8 @@
       [[-0.78, -0.72], [-0.18, -0.86], [0.58, -0.76], [0.86, -0.28], [0.76, 0.58], [0.3, 0.86], [-0.54, 0.76], [-0.88, 0.28]],
       [[0, -0.96], [0.28, -0.6], [0.78, -0.56], [0.56, -0.1], [0.9, 0.28], [0.34, 0.36], [0.12, 0.88], [-0.24, 0.44], [-0.76, 0.56], [-0.54, 0.06], [-0.88, -0.34], [-0.36, -0.46]],
       [[-0.58, -0.84], [0.52, -0.84], [0.84, -0.48], [0.78, 0.52], [0.34, 0.9], [-0.48, 0.82], [-0.84, 0.36], [-0.78, -0.46]],
-      [[-0.7, -0.78], [-0.08, -0.9], [0.66, -0.74], [0.9, -0.16], [0.64, 0.6], [0.12, 0.92], [-0.54, 0.76], [-0.88, 0.22]]
+      [[-0.7, -0.78], [-0.08, -0.9], [0.66, -0.74], [0.9, -0.16], [0.64, 0.6], [0.12, 0.92], [-0.54, 0.76], [-0.88, 0.22]],
+      [[0, -0.9], [0.42, -0.66], [0.84, -0.3], [0.7, 0.3], [0.3, 0.82], [-0.3, 0.82], [-0.7, 0.3], [-0.84, -0.3], [-0.42, -0.66]]
     ];
     return shapes[colorIndex] || shapes[0];
   }
@@ -793,13 +839,21 @@
       sc.arc(cx + r * 0.12, cy - r * 0.02, r * 0.46, Math.PI * 0.34, Math.PI * 1.68);
       sc.bezierCurveTo(cx + r * 0.18, cy + r * 0.25, cx + r * 0.18, cy - r * 0.25, cx + r * 0.12, cy - r * 0.48);
       sc.fill();
-    } else {
+    } else if (colorIndex === 5) {
+      // Heart mark: matches the heal orb so its purpose reads at a glance.
       sc.beginPath();
       sc.moveTo(cx, cy + r * 0.52);
       sc.bezierCurveTo(cx - r * 0.58, cy + r * 0.16, cx - r * 0.62, cy - r * 0.36, cx - r * 0.2, cy - r * 0.36);
       sc.bezierCurveTo(cx - r * 0.02, cy - r * 0.36, cx, cy - r * 0.2, cx, cy - r * 0.2);
       sc.bezierCurveTo(cx, cy - r * 0.2, cx + r * 0.02, cy - r * 0.36, cx + r * 0.2, cy - r * 0.36);
       sc.bezierCurveTo(cx + r * 0.62, cy - r * 0.36, cx + r * 0.58, cy + r * 0.16, cx, cy + r * 0.52);
+      sc.fill();
+    } else {
+      // Dark (colorIndex 4): crescent mark.
+      sc.beginPath();
+      sc.arc(cx - r * 0.06, cy, r * 0.44, Math.PI * 0.32, Math.PI * 1.7);
+      sc.arc(cx + r * 0.14, cy, r * 0.34, Math.PI * 1.66, Math.PI * 0.36, true);
+      sc.closePath();
       sc.fill();
     }
     sc.restore();
@@ -1099,14 +1153,14 @@
   }
 
   function playPlayerEffect(className, duration = 400) {
-    if (!playerAvatarEl) return;
+    if (!playerStageEl) return;
     if (playerEffectTimer) window.clearTimeout(playerEffectTimer);
-    playerAvatarEl.classList.remove("is-attack", "is-hit", "is-heal");
+    playerStageEl.classList.remove("is-attack", "is-hit", "is-heal");
     // Force a reflow so re-triggering the same class restarts its animation.
-    void playerAvatarEl.offsetWidth;
-    playerAvatarEl.classList.add(className);
+    void playerStageEl.offsetWidth;
+    playerStageEl.classList.add(className);
     playerEffectTimer = window.setTimeout(() => {
-      playerAvatarEl.classList.remove(className);
+      playerStageEl.classList.remove(className);
       playerEffectTimer = 0;
     }, duration);
   }

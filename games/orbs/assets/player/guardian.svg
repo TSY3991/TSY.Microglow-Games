@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-labelledby="title desc">
+  <title id="title">Microglow Guardian</title>
+  <desc id="desc">Original ally character placeholder for Microglow Orbs.</desc>
+  <defs>
+    <radialGradient id="pcore" cx="46%" cy="30%" r="78%">
+      <stop offset="0" stop-color="#eafeff"/>
+      <stop offset=".38" stop-color="#2fd7ff"/>
+      <stop offset="1" stop-color="#0a2530"/>
+    </radialGradient>
+    <filter id="paura" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feColorMatrix in="blur" values="0 0 0 0 0.18 0 0 0 0 0.84 0 0 0 0 1 0 0 0 .7 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <ellipse cx="120" cy="192" rx="70" ry="13" fill="#020a0d" opacity=".62"/>
+  <path filter="url(#paura)" d="M120 30c20 0 36 16 36 36 0 14-7 25-17 32l6 20h-50l6-20c-10-7-17-18-17-32 0-20 16-36 36-36z" fill="url(#pcore)" stroke="#eafeff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M96 118h48l14 20-8 46h-60l-8-46z" fill="#0d2229" stroke="#eafeff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M96 118 70 132l-14 40 22 8 12-34z" fill="#123038" stroke="#eafeff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M144 118l26 14 14 40-22 8-12-34z" fill="#123038" stroke="#eafeff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M100 184 90 210l20-6 10-14zM140 184l10 26-20-6-10-14z" fill="#0d2229" stroke="#eafeff" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="120" cy="150" r="14" fill="#eafeff" opacity=".92"/>
+  <circle cx="120" cy="150" r="7" fill="#2fd7ff"/>
+  <path d="M104 62c6-8 14-12 16-12s10 4 16 12" fill="none" stroke="#0a2530" stroke-width="4" stroke-linecap="round" opacity=".5"/>
+  <path d="M90 128c8-6 18-9 30-9s22 3 30 9" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".22"/>
+</svg>

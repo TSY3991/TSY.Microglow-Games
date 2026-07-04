@@ -253,97 +253,6 @@ button {
   background: linear-gradient(180deg, rgba(255, 232, 164, 0.08), rgba(5, 8, 14, 0.62));
 }
 
-.hp-card.is-player {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.hp-card-body {
-  position: relative;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.player-avatar {
-  position: relative;
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-}
-
-.player-avatar-ring {
-  position: absolute;
-  inset: 0;
-  border: 2px solid rgba(47, 215, 255, 0.5);
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(47, 215, 255, 0.4);
-}
-
-.player-avatar-core {
-  position: relative;
-  z-index: 1;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, var(--cyan), var(--teal));
-  box-shadow: 0 0 12px rgba(47, 215, 255, 0.65);
-  transform: rotate(45deg);
-  transition: filter 160ms ease;
-  animation: player-avatar-idle 3.2s ease-in-out infinite;
-}
-
-.player-avatar.is-attack .player-avatar-core {
-  animation: player-avatar-attack 380ms ease;
-}
-
-.player-avatar.is-hit .player-avatar-core {
-  animation: player-avatar-hit 360ms ease;
-}
-
-.player-avatar.is-hit .player-avatar-ring {
-  animation: player-avatar-hit-ring 360ms ease;
-}
-
-.player-avatar.is-heal .player-avatar-core {
-  animation: player-avatar-heal 620ms ease;
-}
-
-.player-avatar.is-heal .player-avatar-ring {
-  animation: player-avatar-heal-ring 620ms ease;
-}
-
-.combat-floats.is-player {
-  position: absolute;
-  inset: -6px -6px auto auto;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.combat-floats.is-player span {
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(5, 14, 19, 0.72);
-  font-size: 0.86rem;
-  font-weight: 950;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.36);
-  transform: translate(0, -50%);
-  animation: combat-float-player 850ms ease forwards;
-}
-
-.combat-floats.is-player span.is-hit {
-  color: var(--pink);
-}
-
-.combat-floats.is-player span.is-heal {
-  color: var(--teal);
-}
-
 .hp-card .hp-heading {
   display: flex;
   justify-content: space-between;
@@ -385,18 +294,42 @@ button {
   box-shadow: 0 0 12px rgba(255, 94, 188, 0.55);
 }
 
-.enemy-stage {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
+.battle-stage {
   /* Shrinks before the board when viewport height is tight. */
   flex: 0 4 286px;
   min-height: 104px;
   margin-bottom: 14px;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.battle-vs {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  color: rgba(238, 252, 255, 0.38);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.05em;
+}
+
+.player-stage,
+.enemy-stage {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(255, 216, 120, 0.42);
   border-radius: 10px;
+}
+
+.enemy-stage {
+  border: 1px solid rgba(255, 216, 120, 0.42);
   background:
     linear-gradient(180deg, rgba(255, 232, 164, 0.08), rgba(255, 255, 255, 0.015) 44%, rgba(0, 0, 0, 0.2)),
     radial-gradient(ellipse at 50% 92%, rgba(255, 216, 120, 0.38), transparent 36%),
@@ -440,12 +373,18 @@ button {
   opacity: 0.95;
 }
 
+.player-aura,
 .enemy-aura {
   position: absolute;
   z-index: 0;
-  width: 230px;
-  height: 230px;
+  width: 68%;
+  height: 68%;
+  max-width: 190px;
+  max-height: 190px;
   border-radius: 50%;
+}
+
+.enemy-aura {
   background:
     conic-gradient(from 20deg, rgba(131, 18, 33, 0.68), rgba(255, 216, 77, 0.28), rgba(47, 215, 255, 0.16), rgba(74, 14, 114, 0.52), rgba(131, 18, 33, 0.68));
   opacity: 0.62;
@@ -454,15 +393,33 @@ button {
   animation: enemy-aura-pulse 3.6s ease-in-out infinite;
 }
 
+.player-aura {
+  background:
+    conic-gradient(from 20deg, rgba(47, 215, 255, 0.6), rgba(13, 148, 136, 0.3), rgba(141, 244, 95, 0.18), rgba(47, 215, 255, 0.6));
+  opacity: 0.58;
+  filter: blur(16px);
+  transform: translateY(10px) scale(0.9);
+  animation: player-aura-pulse 3.6s ease-in-out infinite;
+}
+
+.player-stage img,
 .enemy-stage img {
   position: relative;
   z-index: 2;
-  width: min(78%, 310px);
-  max-height: 238px;
+  width: min(80%, 190px);
+  max-height: 190px;
   object-fit: contain;
-  filter: contrast(1.28) saturate(0.92) brightness(0.88) drop-shadow(0 32px 24px rgba(0, 0, 0, 0.68)) drop-shadow(0 0 22px rgba(255, 216, 120, 0.18));
   transform-origin: 50% 80%;
+}
+
+.enemy-stage img {
+  filter: contrast(1.28) saturate(0.92) brightness(0.88) drop-shadow(0 24px 18px rgba(0, 0, 0, 0.68)) drop-shadow(0 0 18px rgba(255, 216, 120, 0.18));
   animation: enemy-idle 2.4s ease-in-out infinite;
+}
+
+.player-stage img {
+  filter: contrast(1.1) saturate(1.05) brightness(1.02) drop-shadow(0 24px 18px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px rgba(47, 215, 255, 0.32));
+  animation: player-idle 2.6s ease-in-out infinite;
 }
 
 /* Tiers reuse the same 7 monster arts but recolor + reframe them (hue-rotate
@@ -479,12 +436,14 @@ button {
   filter: contrast(1.4) saturate(1.3) brightness(0.94) hue-rotate(300deg) drop-shadow(0 32px 24px rgba(0, 0, 0, 0.68)) drop-shadow(0 0 30px rgba(255, 94, 188, 0.48));
 }
 
+.player-shadow,
 .enemy-shadow {
   position: absolute;
   z-index: 1;
-  bottom: 31px;
-  width: 238px;
-  height: 36px;
+  bottom: 14%;
+  width: 62%;
+  max-width: 150px;
+  height: 16px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.46);
   filter: blur(6px);
@@ -494,6 +453,10 @@ button {
 .enemy-attack {
   position: absolute;
   z-index: 3;
+  max-width: calc(100% - 20px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -562,6 +525,34 @@ button {
 
 .combat-floats span.is-break {
   color: var(--teal);
+}
+
+.combat-floats.is-player span.is-hit {
+  color: var(--pink);
+}
+
+.combat-floats.is-player span.is-heal {
+  color: var(--teal);
+}
+
+.player-stage.is-attack img {
+  animation: player-attack 380ms ease, player-idle 2.6s ease-in-out 380ms infinite;
+}
+
+.player-stage.is-hit img {
+  animation: player-hit 360ms ease, player-idle 2.6s ease-in-out 360ms infinite;
+}
+
+.player-stage.is-hit .player-aura {
+  animation: player-aura-hit 360ms ease;
+}
+
+.player-stage.is-heal img {
+  animation: player-heal 620ms ease, player-idle 2.6s ease-in-out 620ms infinite;
+}
+
+.player-stage.is-heal .player-aura {
+  animation: player-aura-heal 620ms ease;
 }
 
 .enemy-stage.is-hit {
@@ -1109,93 +1100,92 @@ button {
   }
 }
 
-@keyframes combat-float-player {
-  0% {
-    opacity: 0;
-    transform: translate(0, 0) scale(0.8);
-  }
-
-  18% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(0, -30px) scale(1.05);
-  }
-}
-
-@keyframes player-avatar-idle {
+@keyframes player-idle {
   0%,
   100% {
-    filter: brightness(1);
+    transform: translateY(0) scale(1);
   }
 
   50% {
-    filter: brightness(1.18);
+    transform: translateY(-6px) scale(1.015);
   }
 }
 
-@keyframes player-avatar-attack {
+@keyframes player-aura-pulse {
   0%,
   100% {
-    transform: rotate(45deg) scale(1);
+    opacity: 0.5;
+    transform: translateY(10px) scale(0.88) rotate(0deg);
+  }
+
+  50% {
+    opacity: 0.68;
+    transform: translateY(6px) scale(1) rotate(-12deg);
+  }
+}
+
+/* Player is on the left facing the enemy on the right, so an attack lunges
+   rightward — the mirror image of the enemy's leftward hit recoil. */
+@keyframes player-attack {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) scale(1);
   }
 
   40% {
-    filter: brightness(1.6) drop-shadow(0 0 10px rgba(47, 215, 255, 0.85));
-    transform: rotate(45deg) scale(1.28);
+    filter: contrast(1.1) saturate(1.05) brightness(1.5) drop-shadow(0 0 16px rgba(47, 215, 255, 0.8));
+    transform: translateY(0) translateX(10px) scale(1.06);
   }
 }
 
-@keyframes player-avatar-hit {
+@keyframes player-hit {
   0%,
   100% {
-    transform: rotate(45deg) translateX(0);
+    transform: translateX(0) scale(1);
   }
 
-  25% {
-    filter: brightness(1.5) drop-shadow(0 0 10px rgba(255, 94, 188, 0.8));
-    transform: rotate(45deg) translateX(-4px);
+  30% {
+    filter: contrast(1.1) saturate(1.05) brightness(1.7) drop-shadow(0 0 16px rgba(255, 94, 188, 0.75));
+    transform: translateX(-8px) scale(0.96);
   }
 
-  60% {
-    transform: rotate(45deg) translateX(3px);
+  62% {
+    transform: translateX(4px) scale(0.99);
   }
 }
 
-@keyframes player-avatar-hit-ring {
+@keyframes player-aura-hit {
   0% {
-    border-color: rgba(255, 94, 188, 0.9);
-    transform: scale(0.9);
+    opacity: 0.9;
+    filter: blur(10px) brightness(1.8);
+    background: conic-gradient(from 20deg, rgba(255, 94, 188, 0.7), rgba(255, 94, 188, 0.3), rgba(47, 215, 255, 0.5), rgba(255, 94, 188, 0.7));
   }
 
   100% {
-    border-color: rgba(47, 215, 255, 0.5);
-    transform: scale(1);
+    opacity: 0.58;
   }
 }
 
-@keyframes player-avatar-heal {
+@keyframes player-heal {
   0%,
   100% {
     filter: brightness(1);
   }
 
   45% {
-    filter: brightness(1.7) drop-shadow(0 0 14px rgba(141, 244, 95, 0.85));
+    filter: contrast(1.1) saturate(1.05) brightness(1.6) drop-shadow(0 0 18px rgba(141, 244, 95, 0.8));
   }
 }
 
-@keyframes player-avatar-heal-ring {
+@keyframes player-aura-heal {
   0% {
-    border-color: rgba(141, 244, 95, 0.9);
-    transform: scale(0.85);
+    opacity: 0.95;
+    filter: blur(12px) brightness(1.8);
+    background: conic-gradient(from 20deg, rgba(141, 244, 95, 0.75), rgba(47, 215, 255, 0.4), rgba(141, 244, 95, 0.75));
   }
 
   100% {
-    border-color: rgba(47, 215, 255, 0.5);
-    transform: scale(1);
+    opacity: 0.58;
   }
 }
 
@@ -1329,26 +1319,21 @@ button {
     max-width: 100%;
   }
 
-  .enemy-stage {
+  .battle-stage {
     flex: 0 4 220px;
     min-height: 88px;
     margin-bottom: 8px;
   }
 
+  .player-stage img,
   .enemy-stage img {
-    width: min(82%, 250px);
-    max-height: 214px;
+    max-height: 160px;
   }
 
+  .player-aura,
   .enemy-aura {
-    width: 218px;
-    height: 218px;
-  }
-
-  .enemy-shadow {
-    bottom: 27px;
-    width: 224px;
-    height: 32px;
+    max-width: 150px;
+    max-height: 150px;
   }
 
   .help-card {
@@ -1412,18 +1397,19 @@ button {
     font-size: 0.98rem;
   }
 
-  .enemy-stage {
+  .battle-stage {
     flex-basis: 200px;
   }
 
+  .player-stage img,
   .enemy-stage img {
-    width: min(84%, 230px);
-    max-height: 198px;
+    max-height: 140px;
   }
 
+  .player-aura,
   .enemy-aura {
-    width: 198px;
-    height: 198px;
+    max-width: 130px;
+    max-height: 130px;
   }
 
   .help-card {
