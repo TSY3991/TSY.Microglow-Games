@@ -118,6 +118,7 @@
   /* ---------- layout ---------- */
 
   function lockPageGestures() {
+    let lastTouchEnd = 0;
     const preventBoardTouch = (event) => {
       event.preventDefault();
     };
@@ -128,9 +129,21 @@
       if (canScrollOverlay(event.target)) return;
       event.preventDefault();
     }, { passive: false });
-    document.addEventListener("gesturestart", (event) => {
+    document.addEventListener("touchend", (event) => {
+      const now = Date.now();
+      if (now - lastTouchEnd < 420) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
+    document.addEventListener("dblclick", (event) => {
       event.preventDefault();
     }, { passive: false });
+    ["gesturestart", "gesturechange", "gestureend"].forEach((type) => {
+      document.addEventListener(type, (event) => {
+        event.preventDefault();
+      }, { passive: false });
+    });
   }
 
   function canScrollOverlay(target) {
