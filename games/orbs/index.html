@@ -10,7 +10,7 @@
     <title>微光連珠對戰｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260704c">
-    <link rel="stylesheet" href="./orbs.css?v=20260704d">
+    <link rel="stylesheet" href="./orbs.css?v=20260704f">
   </head>
   <body>
     <main class="orbs-shell">
@@ -61,7 +61,9 @@
             <div class="enemy-attack" data-enemy-atk>ATK 24</div>
             <div class="combat-floats" data-combat-floats aria-hidden="true"></div>
           </div>
-          <canvas id="orbsBoard" width="372" height="310" aria-label="連珠盤面"></canvas>
+          <div class="board-frame">
+            <canvas id="orbsBoard" width="372" height="310" aria-label="連珠盤面"></canvas>
+          </div>
           <div class="game-overlay" data-overlay>
             <strong data-overlay-title>準備開戰</strong>
             <span data-overlay-message>拖曳一顆元素珠移動位置，放手後結算 3 顆以上同色珠攻擊敵人，時間耗盡或血量歸零則結束。</span>
@@ -128,6 +130,10 @@
               <strong>波數難度</strong>
               <span>每擊敗一隻敵人就進入下一波，敵人血量與攻擊力會逐波提升，分數則以造成的總傷害累計。</span>
             </div>
+            <div>
+              <strong>操作方式</strong>
+              <span>手機／桌機：按住元素珠拖曳，路徑可任意轉彎。鍵盤：方向鍵移動游標，空白鍵拿起與放下。</span>
+            </div>
           </div>
           <p class="instruction-note">微光霓虹風，轉珠、連段、怪物受擊與反擊會形成一回合戰鬥節奏。</p>
           <div class="instruction-actions">
@@ -140,6 +146,6 @@
 
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./orbs.js?v=20260702a"></script>
+    <script src="./orbs.js?v=20260704f"></script>
   </body>
 </html>

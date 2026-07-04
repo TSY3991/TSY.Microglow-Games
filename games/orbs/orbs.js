@@ -107,8 +107,50 @@
 
   initBoard();
   updateUi();
+  fitBoardCanvas();
   draw();
   showOverlay("準備開戰", "拖曳任意路徑連接 3 顆以上同色元素珠攻擊敵人；每一波 75 秒，擊破後倒數重置。", "開始遊戲");
+
+  window.addEventListener("resize", fitBoardCanvas);
+  window.addEventListener("orientationchange", fitBoardCanvas);
+  lockPageGestures();
+
+  /* ---------- layout ---------- */
+
+  function lockPageGestures() {
+    const preventBoardTouch = (event) => {
+      event.preventDefault();
+    };
+    ["touchstart", "touchmove", "touchend", "touchcancel"].forEach((type) => {
+      boardCanvas.addEventListener(type, preventBoardTouch, { passive: false });
+    });
+    document.addEventListener("touchmove", (event) => {
+      if (canScrollOverlay(event.target)) return;
+      event.preventDefault();
+    }, { passive: false });
+    document.addEventListener("gesturestart", (event) => {
+      event.preventDefault();
+    }, { passive: false });
+  }
+
+  function canScrollOverlay(target) {
+    if (!(target instanceof Element)) return false;
+    const scrollHost = target.closest(".instruction-card, .game-overlay");
+    return Boolean(scrollHost && scrollHost.scrollHeight > scrollHost.clientHeight);
+  }
+
+  // The page is locked (no scrolling), so the board scales itself to whatever
+  // space .board-frame has left instead of relying on document flow.
+  function fitBoardCanvas() {
+    const frame = boardCanvas.parentElement;
+    if (!frame) return;
+    const availableWidth = Math.min(frame.clientWidth, 460);
+    const availableHeight = frame.clientHeight;
+    if (availableWidth <= 0 || availableHeight <= 0) return;
+    const scale = Math.min(availableWidth / boardPxWidth, availableHeight / boardPxHeight);
+    boardCanvas.style.width = `${Math.floor(boardPxWidth * scale)}px`;
+    boardCanvas.style.height = `${Math.floor(boardPxHeight * scale)}px`;
+  }
 
   /* ---------- portal stats ---------- */
 
