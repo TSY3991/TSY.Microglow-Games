@@ -22,6 +22,7 @@
   const enemyBadgeEl = document.querySelector("[data-enemy-badge]");
   const enemyAtkEl = document.querySelector("[data-enemy-atk]");
   const combatFloatsEl = document.querySelector("[data-combat-floats]");
+  const combatStripEl = document.querySelector(".combat-strip");
   const playerStageEl = document.querySelector("[data-player-stage]");
   const playerImageEl = document.querySelector("[data-player-image]");
   const playerFloatsEl = document.querySelector("[data-combat-floats-player]");
@@ -195,6 +196,7 @@
     const boardResizeObserver = new ResizeObserver(() => refitBoardAfterLayout());
     boardResizeObserver.observe(boardCanvas.parentElement);
     if (boardWrapEl) boardResizeObserver.observe(boardWrapEl);
+    if (combatStripEl) boardResizeObserver.observe(combatStripEl);
   }
   lockPageGestures();
 
@@ -246,6 +248,24 @@
     const scale = Math.min(availableWidth / boardPxWidth, availableHeight / boardPxHeight);
     boardCanvas.style.width = `${Math.floor(boardPxWidth * scale)}px`;
     boardCanvas.style.height = `${Math.floor(boardPxHeight * scale)}px`;
+  }
+
+  function positionEnemyBadge() {
+    if (!battleStageEl || !enemyBadgeEl || !combatStripEl) return;
+    if (!window.matchMedia("(max-width: 860px)").matches) {
+      battleStageEl.style.removeProperty("--enemy-badge-top");
+      return;
+    }
+    const stageRect = battleStageEl.getBoundingClientRect();
+    const stripRect = combatStripEl.getBoundingClientRect();
+    const badgeRect = enemyBadgeEl.getBoundingClientRect();
+    if (!stageRect.height || !stripRect.height) return;
+    const gap = 10;
+    const minTop = 8;
+    const requestedTop = stripRect.bottom - stageRect.top + gap;
+    const maxTop = Math.max(minTop, stageRect.height - Math.max(28, badgeRect.height || 28) - 10);
+    const badgeTop = Math.round(Math.max(minTop, Math.min(requestedTop, maxTop)));
+    battleStageEl.style.setProperty("--enemy-badge-top", `${badgeTop}px`);
   }
 
   /* ---------- portal stats ---------- */
@@ -1369,6 +1389,7 @@
   // rAF/setTimeout barrage this used to run on every single attack.
   function refitBoardAfterLayout() {
     fitBoardCanvas();
+    positionEnemyBadge();
   }
 
   function endCombatCinematic() {
@@ -1491,8 +1512,16 @@
     window.setTimeout(() => item.remove(), 900);
   }
 
-  function showStoryToast(text, duration = 2400) {
+  function storyToastDuration(text, requestedDuration) {
+    const readableChars = Array.from(String(text).replace(/\s/g, "")).length;
+    const readingDuration = 1600 + readableChars * 165;
+    const computedDuration = Math.min(6200, Math.max(3500, readingDuration));
+    return Math.max(requestedDuration || 0, computedDuration);
+  }
+
+  function showStoryToast(text, duration = 0) {
     if (!storyToastEl || !text) return;
+    const displayDuration = storyToastDuration(text, duration);
     if (storyToastTimer) window.clearTimeout(storyToastTimer);
     storyToastEl.textContent = text;
     storyToastEl.hidden = false;
@@ -1503,7 +1532,7 @@
       storyToastEl.classList.remove("is-show");
       storyToastEl.hidden = true;
       storyToastTimer = 0;
-    }, duration);
+    }, displayDuration);
   }
   /* ---------- drag / swap mechanics ---------- */
 
@@ -1832,6 +1861,7 @@
         }
       }
     }
+    positionEnemyBadge();
   }
 
   /* ---------- cleanup ---------- */

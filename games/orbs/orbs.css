@@ -2660,3 +2660,47 @@ button {
     flex: 0 0 auto;
   }
 }
+
+/* 20260705n: keep the enemy name readable while leaving board breathing room */
+.enemy-badge {
+  z-index: 7;
+}
+
+@media (max-width: 860px) {
+  .battle-stage {
+    z-index: 2;
+    overflow: visible;
+    margin-bottom: 8px;
+  }
+
+  .enemy-stage {
+    overflow: visible;
+  }
+
+  .enemy-badge {
+    z-index: 9;
+    top: var(--enemy-badge-top, 56px);
+    max-width: min(78%, 274px);
+  }
+
+  .combat-floats {
+    z-index: 6;
+  }
+
+  .board-frame {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .battle-stage {
+    flex-basis: 218px;
+    min-height: 154px;
+    margin-bottom: 6px;
+  }
+
+  .enemy-badge {
+    top: var(--enemy-badge-top, 52px);
+    max-width: min(80%, 250px);
+  }
+}
