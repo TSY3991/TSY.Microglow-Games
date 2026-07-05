@@ -18,6 +18,7 @@
   const enemyNameEl = document.querySelector("[data-enemy-name]");
   const enemyStageEl = document.querySelector("[data-enemy-stage]");
   const battleStageEl = document.querySelector(".battle-stage");
+  const boardWrapEl = document.querySelector(".board-wrap");
   const enemyImageEl = document.querySelector("[data-enemy-image]");
   const enemyBadgeEl = document.querySelector("[data-enemy-badge]");
   const enemyAtkEl = document.querySelector("[data-enemy-atk]");
@@ -84,6 +85,9 @@
 
   const BASE_ORB_DAMAGE = 16;
   const COMBO_BONUS = 0.18;
+  const ULTIMATE_MATCH_SIZE = 5;
+  const ULTIMATE_DAMAGE_MULT = 2.25;
+  const ULTIMATE_FLAT_DAMAGE = 72;
   const PLAYER_BASE_MAX_HP = 800;
   const START_TIME = 75;
   const XP_SCORE_DIVISOR = 12;
@@ -135,6 +139,7 @@
   let stageFollowupTimer = 0;
   let playerEffectTimer = 0;
   let storyToastTimer = 0;
+  let combatCinematicTimer = 0;
   const delayedCombatTimers = new Set();
   const cellAnimations = new Map();
   const SWAP_ANIMATION_MS = 230;
@@ -480,6 +485,8 @@
     let totalDamage = 0;
     let totalHeal = 0;
     let comboCount = 0;
+    let ultimateCount = 0;
+    let largestAttackGroup = 0;
     for (;;) {
       const matches = findMatches();
       if (!matches.size) break;
@@ -488,14 +495,21 @@
           totalHeal += group.size * getPlayerHealPerOrb();
         } else {
           comboCount += 1;
-          totalDamage += group.size * getPlayerDamagePerOrb();
+          largestAttackGroup = Math.max(largestAttackGroup, group.size);
+          const baseGroupDamage = group.size * getPlayerDamagePerOrb();
+          if (group.size >= ULTIMATE_MATCH_SIZE) {
+            ultimateCount += 1;
+            totalDamage += Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
+          } else {
+            totalDamage += baseGroupDamage;
+          }
         }
       }
       eliminateCells(matches);
       applyGravityAndRefill();
     }
     if (comboCount > 1) totalDamage = Math.round(totalDamage * (1 + COMBO_BONUS * (comboCount - 1)));
-    return { totalDamage, comboCount, totalHeal };
+    return { totalDamage, comboCount, totalHeal, ultimateCount, largestAttackGroup };
   }
 
   /* ---------- turn & combat flow ---------- */
@@ -513,7 +527,7 @@
     const result = resolveBoard();
     let enemyDefeated = false;
     if (result.totalDamage > 0) {
-      enemyDefeated = dealDamageToEnemy(result.totalDamage, result.comboCount);
+      enemyDefeated = dealDamageToEnemy(result.totalDamage, result.comboCount, result.ultimateCount, result.largestAttackGroup);
     }
     if (result.totalHeal > 0) {
       applyHeal(result.totalHeal);
@@ -536,16 +550,20 @@
     wake();
   }
 
-  function dealDamageToEnemy(damage, comboCount) {
+  function dealDamageToEnemy(damage, comboCount, ultimateCount = 0, largestAttackGroup = 0) {
     score += damage;
     enemy.hp = Math.max(0, enemy.hp - damage);
-    const impactDelay = launchCombatProjectile(playerStageEl, enemyStageEl, "player");
-    playPlayerEffect("is-attack");
+    const hasUltimate = ultimateCount > 0;
+    const impactDelay = launchCombatProjectile(playerStageEl, enemyStageEl, hasUltimate ? "ultimate" : "player");
+    playPlayerEffect(hasUltimate ? "is-ultimate" : "is-attack", hasUltimate ? 760 : 400);
+    if (hasUltimate) showStoryToast(`五連微光共鳴！${largestAttackGroup} 顆大絕啟動`, 1700);
     if (enemy.hp > 0) {
       scheduleStageEffect("is-hit", impactDelay, 360);
     }
-    floatCombatText(`${comboCount > 1 ? `COMBO x${comboCount} ` : ""}-${damage}`, "damage");
-    announce(`${comboCount > 1 ? `連段 x${comboCount} ` : ""}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, "#ffd84d");
+    const comboText = comboCount > 1 ? `COMBO x${comboCount} ` : "";
+    const ultimateText = hasUltimate ? `大絕 x${ultimateCount} ` : "";
+    floatCombatText(`${ultimateText}${comboText}-${damage}`, hasUltimate ? "ultimate" : "damage");
+    announce(`${ultimateText}${comboText}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, hasUltimate ? "#2fd7ff" : "#ffd84d");
     if (enemy.hp <= 0) {
       floatCombatText("擊破", "break");
       scheduleStageEffect("is-break", impactDelay, 560);
@@ -1246,7 +1264,13 @@
   function clearCombatProjectiles() {
     delayedCombatTimers.forEach((timer) => window.clearTimeout(timer));
     delayedCombatTimers.clear();
+    if (combatCinematicTimer) {
+      window.clearTimeout(combatCinematicTimer);
+      combatCinematicTimer = 0;
+    }
     battleStageEl?.querySelectorAll(".combat-projectile, .combat-impact").forEach((node) => node.remove());
+    boardWrapEl?.classList.remove("is-cinematic", "is-ultimate-cinematic");
+    fitBoardCanvas();
   }
 
   function scheduleStageEffect(className, delay = 0, duration = 430) {
@@ -1256,8 +1280,25 @@
     }, delay);
   }
 
+  function startCombatCinematic(variant = "player", duration = 720) {
+    if (!boardWrapEl) return;
+    if (combatCinematicTimer) {
+      window.clearTimeout(combatCinematicTimer);
+      combatCinematicTimer = 0;
+    }
+    boardWrapEl.classList.remove("is-cinematic", "is-ultimate-cinematic");
+    boardWrapEl.classList.add(variant === "ultimate" ? "is-ultimate-cinematic" : "is-cinematic");
+    fitBoardCanvas();
+    scheduleCombatTimeout(() => fitBoardCanvas(), 80);
+    combatCinematicTimer = window.setTimeout(() => {
+      boardWrapEl.classList.remove("is-cinematic", "is-ultimate-cinematic");
+      combatCinematicTimer = 0;
+      fitBoardCanvas();
+    }, duration);
+  }
   function launchCombatProjectile(fromEl, toEl, variant = "player") {
     const delay = combatImpactDelay();
+    startCombatCinematic(variant, delay + (variant === "ultimate" ? 760 : 420));
     if (!battleStageEl || !fromEl || !toEl) return delay;
     const stageRect = battleStageEl.getBoundingClientRect();
     const fromRect = fromEl.getBoundingClientRect();
@@ -1324,7 +1365,7 @@
   function playPlayerEffect(className, duration = 400) {
     if (!playerStageEl) return;
     if (playerEffectTimer) window.clearTimeout(playerEffectTimer);
-    playerStageEl.classList.remove("is-attack", "is-hit", "is-heal", "is-level");
+    playerStageEl.classList.remove("is-attack", "is-hit", "is-heal", "is-level", "is-ultimate");
     // Force a reflow so re-triggering the same class restarts its animation.
     void playerStageEl.offsetWidth;
     playerStageEl.classList.add(className);
