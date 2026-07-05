@@ -10,7 +10,7 @@
     <title>微光連珠對戰｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260704c">
-    <link rel="stylesheet" href="./orbs.css?v=20260705j">
+    <link rel="stylesheet" href="./orbs.css?v=20260705k">
   </head>
   <body>
     <main class="orbs-shell">
@@ -23,16 +23,41 @@
           <p class="eyebrow">Timed Orb Battle</p>
           <h1>微光連珠對戰</h1>
         </div>
-        <div class="top-actions" aria-label="遊戲控制">
-          <button type="button" data-action="instructions">玩法</button>
-          <button type="button" data-action="start">開始</button>
-          <button type="button" data-action="pause">暫停</button>
-          <button type="button" data-action="restart">重開</button>
-        </div>
+
       </header>
 
       <section class="orbs-layout" aria-label="微光連珠對戰遊戲區">
         <div class="board-wrap">
+          <div class="play-hud" aria-label="遊戲狀態與控制">
+            <div class="score-grid">
+              <div class="score-primary">
+                <span>分數</span>
+                <strong data-score>0</strong>
+              </div>
+              <div class="score-secondary">
+                <span>最高分</span>
+                <strong data-best>0</strong>
+              </div>
+              <div class="battle-timer score-primary" data-battle-timer aria-label="戰鬥倒數">
+                <span>時間</span>
+                <strong data-battle-time>75</strong>
+              </div>
+              <div class="score-primary">
+                <span>波數</span>
+                <strong data-wave>1</strong>
+              </div>
+              <div class="score-secondary">
+                <span>遊玩</span>
+                <strong data-plays>0</strong>
+              </div>
+            </div>
+            <div class="top-actions" aria-label="遊戲控制">
+              <button type="button" data-action="instructions">玩法</button>
+              <button type="button" data-action="start">開始</button>
+              <button type="button" data-action="pause">暫停</button>
+              <button type="button" data-action="restart">重開</button>
+            </div>
+          </div>
           <div class="combat-strip" aria-label="戰鬥狀態">
             <div class="hp-card player-hp-card" data-player-hp-card>
               <div class="hp-heading">
@@ -86,29 +111,6 @@
         </div>
 
         <aside class="orbs-panel" aria-label="分數與狀態">
-          <div class="score-grid">
-            <div class="score-primary">
-              <span>分數</span>
-              <strong data-score>0</strong>
-            </div>
-            <div class="score-secondary">
-              <span>最高分</span>
-              <strong data-best>0</strong>
-            </div>
-            <div class="battle-timer score-primary" data-battle-timer aria-label="戰鬥倒數">
-              <span>時間</span>
-              <strong data-battle-time>75</strong>
-            </div>
-            <div class="score-primary">
-              <span>波數</span>
-              <strong data-wave>1</strong>
-            </div>
-
-            <div class="score-secondary">
-              <span>遊玩</span>
-              <strong data-plays>0</strong>
-            </div>
-          </div>
 
           <div class="help-card">
             <h2>操作技巧</h2>
@@ -134,6 +136,10 @@
             <div>
               <strong>五連大絕</strong>
               <span>任一攻擊屬性一次連成 5 顆以上時會觸發大絕招，該組傷害大幅提升，並發射更強的微光能量彈。</span>
+            </div>
+            <div>
+              <strong>五行屬性</strong>
+              <span>攻擊珠分為木、火、土、金、水；木剋土、土剋水、水剋火、火剋金、金剋木。剋制敵人會增傷，同屬性會減傷。</span>
             </div>
             <div>
               <strong>回合制戰鬥</strong>
@@ -172,6 +178,6 @@
 
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./orbs.js?v=20260705j"></script>
+    <script src="./orbs.js?v=20260705k"></script>
   </body>
 </html>

@@ -43,13 +43,23 @@
   const boardPxHeight = ROWS * CELL;
 
   const HEAL_COLOR_ID = 5;
+  const ELEMENTS = [
+    { id: 0, key: "fire", label: "火", fill: "#f23a2e", glow: "rgba(255, 68, 55, 0.58)", mark: "#ffb4a9" },
+    { id: 1, key: "water", label: "水", fill: "#2aa8ff", glow: "rgba(47, 215, 255, 0.55)", mark: "#dff7ff" },
+    { id: 2, key: "wood", label: "木", fill: "#2fda55", glow: "rgba(141, 244, 95, 0.55)", mark: "#dbffd6" },
+    { id: 3, key: "earth", label: "土", fill: "#d9a43b", glow: "rgba(255, 216, 77, 0.55)", mark: "#fff2bc" },
+    { id: 4, key: "metal", label: "金", fill: "#d8e6f0", glow: "rgba(210, 230, 244, 0.55)", mark: "#ffffff" }
+  ];
+  const ELEMENT_ADVANTAGE = {
+    wood: "earth",
+    earth: "water",
+    water: "fire",
+    fire: "metal",
+    metal: "wood"
+  };
   const COLORS = [
-    { id: 0, name: "fire", fill: "#f23a2e", glow: "rgba(255, 68, 55, 0.58)", mark: "#ffb4a9" },
-    { id: 1, name: "water", fill: "#2aa8ff", glow: "rgba(47, 215, 255, 0.55)", mark: "#dff7ff" },
-    { id: 2, name: "wood", fill: "#2fda55", glow: "rgba(141, 244, 95, 0.55)", mark: "#dbffd6" },
-    { id: 3, name: "light", fill: "#f4bd39", glow: "rgba(255, 216, 77, 0.55)", mark: "#fff2bc" },
-    { id: 4, name: "dark", fill: "#a324d7", glow: "rgba(155, 107, 255, 0.55)", mark: "#f1d8ff" },
-    { id: HEAL_COLOR_ID, name: "heal", fill: "#ff6fa8", glow: "rgba(255, 111, 168, 0.55)", mark: "#ffe3ef" }
+    ...ELEMENTS.map((element) => ({ ...element, name: element.key })),
+    { id: HEAL_COLOR_ID, key: "heal", name: "heal", label: "心", fill: "#ff6fa8", glow: "rgba(255, 111, 168, 0.55)", mark: "#ffe3ef" }
   ];
   // Heal orbs are rarer than the 5 combat colors so healing stays a bonus,
   // not the dominant strategy — weight below in randomColor().
@@ -74,13 +84,13 @@
     return image;
   });
   const ENEMIES = [
-    { name: "濁光史萊姆", art: "slime" },
-    { name: "微光哨兵", art: "sentinel" },
-    { name: "霓虹守衛", art: "guardian" },
-    { name: "脈衝魔像", art: "golem" },
-    { name: "幻影守門者", art: "phantom" },
-    { name: "深淵行者", art: "abyss" },
-    { name: "共鳴巨獸", art: "beast" }
+    { name: "濁光史萊姆", art: "slime", element: 1 },
+    { name: "微光哨兵", art: "sentinel", element: 4 },
+    { name: "霓虹守衛", art: "guardian", element: 3 },
+    { name: "脈衝魔像", art: "golem", element: 0 },
+    { name: "幻影守門者", art: "phantom", element: 2 },
+    { name: "深淵行者", art: "abyss", element: 1 },
+    { name: "共鳴巨獸", art: "beast", element: 4 }
   ];
 
   const BASE_ORB_DAMAGE = 16;
@@ -98,6 +108,13 @@
     "深淵訊號增幅中，一股更強大的力量正在甦醒。",
     "王者級脈衝降臨，守護者核心全力運轉。"
   ];
+  const STORY_ROUTE_LINES = {
+    1: "第 1 節：微光守護者甦醒，核心偵測到第一道異常訊號。",
+    3: "第 2 節：廢棄管線開始共鳴，敵人的屬性頻率逐漸清晰。",
+    5: "第 3 節：裂縫後方出現深層座標，守護者必須推進到訊號源。",
+    8: "第 4 節：強化個體突破封鎖，微光核心進入高壓戰鬥模式。",
+    12: "第 5 節：深淵頻率鎖定完成，真正的共鳴巨獸正在接近。"
+  };
   // Every full loop through the 7 monster arts bumps the tier, so wave 8+
   // reuses the same art (recolored via CSS) but hits meaningfully harder
   // instead of just repeating the wave-1 numbers with a small linear bump.
@@ -141,6 +158,7 @@
   let storyToastTimer = 0;
   let combatCinematicTimer = 0;
   const delayedCombatTimers = new Set();
+  const layoutRefitTimers = new Set();
   const cellAnimations = new Map();
   const SWAP_ANIMATION_MS = 230;
   const orbSpriteCache = new Map();
@@ -162,8 +180,13 @@
   draw();
   showOverlay("準備開戰", "拖曳任意路徑連接 3 顆以上同色元素珠攻擊敵人；每一波 75 秒，擊破後倒數重置。", "開始遊戲");
 
-  window.addEventListener("resize", fitBoardCanvas);
-  window.addEventListener("orientationchange", fitBoardCanvas);
+  window.addEventListener("resize", refitBoardAfterLayout);
+  window.addEventListener("orientationchange", refitBoardAfterLayout);
+  if (typeof ResizeObserver !== "undefined") {
+    const boardResizeObserver = new ResizeObserver(() => refitBoardAfterLayout());
+    boardResizeObserver.observe(boardCanvas.parentElement);
+    if (boardWrapEl) boardResizeObserver.observe(boardWrapEl);
+  }
   lockPageGestures();
 
   /* ---------- layout ---------- */
@@ -340,7 +363,27 @@
     const hp = Math.round(baseHp * TIER_HP_MULT[tier]);
     const atk = Math.round(baseAtk * TIER_ATK_MULT[tier]);
     const name = `${template.name}${TIER_LABELS[tier]}`;
-    return { ...template, name, hp, maxHp: hp, atk, tier };
+    return { ...template, name, hp, maxHp: hp, atk, tier, element: template.element };
+  }
+
+  function elementById(id) {
+    return ELEMENTS[id] || ELEMENTS[0];
+  }
+
+  function elementMultiplier(attackElementId, defenseElementId) {
+    const attack = elementById(attackElementId);
+    const defense = elementById(defenseElementId);
+    if (attack.id === defense.id) return 0.65;
+    return ELEMENT_ADVANTAGE[attack.key] === defense.key ? 1.5 : 1;
+  }
+
+  function elementClass(id) {
+    return `element-${elementById(id).key}`;
+  }
+
+  function maybeShowWaveStory(waveNumber) {
+    const line = STORY_ROUTE_LINES[waveNumber];
+    if (line) showStoryToast(line, 2800);
   }
 
   // Time bonus after a kill shrinks as tier rises so high waves can't coast
@@ -487,6 +530,8 @@
     let comboCount = 0;
     let ultimateCount = 0;
     let largestAttackGroup = 0;
+    let elementalStrong = 0;
+    let elementalWeak = 0;
     for (;;) {
       const matches = findMatches();
       if (!matches.size) break;
@@ -497,19 +542,22 @@
           comboCount += 1;
           largestAttackGroup = Math.max(largestAttackGroup, group.size);
           const baseGroupDamage = group.size * getPlayerDamagePerOrb();
+          const multiplier = elementMultiplier(group.color, enemy?.element ?? 0);
+          if (multiplier > 1) elementalStrong += 1;
+          if (multiplier < 1) elementalWeak += 1;
+          let groupDamage = baseGroupDamage;
           if (group.size >= ULTIMATE_MATCH_SIZE) {
             ultimateCount += 1;
-            totalDamage += Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
-          } else {
-            totalDamage += baseGroupDamage;
+            groupDamage = Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
           }
+          totalDamage += Math.max(1, Math.round(groupDamage * multiplier));
         }
       }
       eliminateCells(matches);
       applyGravityAndRefill();
     }
     if (comboCount > 1) totalDamage = Math.round(totalDamage * (1 + COMBO_BONUS * (comboCount - 1)));
-    return { totalDamage, comboCount, totalHeal, ultimateCount, largestAttackGroup };
+    return { totalDamage, comboCount, totalHeal, ultimateCount, largestAttackGroup, elementalStrong, elementalWeak };
   }
 
   /* ---------- turn & combat flow ---------- */
@@ -527,7 +575,7 @@
     const result = resolveBoard();
     let enemyDefeated = false;
     if (result.totalDamage > 0) {
-      enemyDefeated = dealDamageToEnemy(result.totalDamage, result.comboCount, result.ultimateCount, result.largestAttackGroup);
+      enemyDefeated = dealDamageToEnemy(result.totalDamage, result.comboCount, result.ultimateCount, result.largestAttackGroup, result.elementalStrong, result.elementalWeak);
     }
     if (result.totalHeal > 0) {
       applyHeal(result.totalHeal);
@@ -550,7 +598,7 @@
     wake();
   }
 
-  function dealDamageToEnemy(damage, comboCount, ultimateCount = 0, largestAttackGroup = 0) {
+  function dealDamageToEnemy(damage, comboCount, ultimateCount = 0, largestAttackGroup = 0, elementalStrong = 0, elementalWeak = 0) {
     score += damage;
     enemy.hp = Math.max(0, enemy.hp - damage);
     const hasUltimate = ultimateCount > 0;
@@ -562,8 +610,11 @@
     }
     const comboText = comboCount > 1 ? `COMBO x${comboCount} ` : "";
     const ultimateText = hasUltimate ? `大絕 x${ultimateCount} ` : "";
-    floatCombatText(`${ultimateText}${comboText}-${damage}`, hasUltimate ? "ultimate" : "damage");
-    announce(`${ultimateText}${comboText}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, hasUltimate ? "#2fd7ff" : "#ffd84d");
+    const elementText = elementalStrong > 0 ? "剋制 " : elementalWeak > 0 ? "同屬弱化 " : "";
+    if (!hasUltimate && elementalStrong > 0) showStoryToast("屬性剋制！微光傷害增幅。", 1400);
+    if (!hasUltimate && elementalStrong === 0 && elementalWeak > 0) showStoryToast("同屬頻率干涉，傷害被削弱。", 1400);
+    floatCombatText(`${elementText}${ultimateText}${comboText}-${damage}`, hasUltimate ? "ultimate" : "damage");
+    announce(`${elementText}${ultimateText}${comboText}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, hasUltimate ? "#2fd7ff" : "#ffd84d");
     if (enemy.hp <= 0) {
       floatCombatText("擊破", "break");
       scheduleStageEffect("is-break", impactDelay, 820);
@@ -573,7 +624,11 @@
       timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
       scheduleStageEffect("is-spawn", impactDelay + 760, 720);
-      if (enemy.tier > clearedTier) showStoryToast(TIER_STORY_LINES[enemy.tier] || "深層訊號正在增幅，新的威脅已經接近。", 2600);
+      if (enemy.tier > clearedTier) {
+        showStoryToast(TIER_STORY_LINES[enemy.tier] || "深層訊號正在增幅，新的威脅已經接近。", 2600);
+      } else {
+        scheduleCombatTimeout(() => maybeShowWaveStory(wave), impactDelay + 900);
+      }
       const timeNote = clearedTier > 0 ? `倒數重置為 ${timeLeft} 秒` : "倒數重置";
       announce(`擊破！${timeNote}，下一波來襲`, boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
       return true;
@@ -665,6 +720,7 @@
     updateUi();
     draw();
     playStageEffect("is-spawn", 620);
+    scheduleCombatTimeout(() => maybeShowWaveStory(1), 360);
     startTimer();
     wake();
   }
@@ -840,6 +896,7 @@
       sc.imageSmoothingEnabled = true;
       sc.imageSmoothingQuality = "high";
       sc.drawImage(artImage, 0, 0, size, size);
+      drawOrbMark(sc, size / 2, size / 2, CELL * 0.24, colorIndex);
       orbSpriteCache.set(colorIndex, sprite);
       return sprite;
     }
@@ -961,9 +1018,13 @@
       sc.stroke();
     } else if (colorIndex === 3) {
       sc.beginPath();
-      sc.arc(cx + r * 0.12, cy - r * 0.02, r * 0.46, Math.PI * 0.34, Math.PI * 1.68);
-      sc.bezierCurveTo(cx + r * 0.18, cy + r * 0.25, cx + r * 0.18, cy - r * 0.25, cx + r * 0.12, cy - r * 0.48);
-      sc.fill();
+      sc.moveTo(cx - r * 0.5, cy + r * 0.38);
+      sc.lineTo(cx + r * 0.5, cy + r * 0.38);
+      sc.moveTo(cx - r * 0.32, cy + r * 0.08);
+      sc.lineTo(cx + r * 0.32, cy + r * 0.08);
+      sc.moveTo(cx, cy - r * 0.5);
+      sc.lineTo(cx, cy + r * 0.48);
+      sc.stroke();
     } else if (colorIndex === 5) {
       // Heart mark: matches the heal orb so its purpose reads at a glance.
       sc.beginPath();
@@ -974,12 +1035,17 @@
       sc.bezierCurveTo(cx + r * 0.62, cy - r * 0.36, cx + r * 0.58, cy + r * 0.16, cx, cy + r * 0.52);
       sc.fill();
     } else {
-      // Dark (colorIndex 4): crescent mark.
       sc.beginPath();
-      sc.arc(cx - r * 0.06, cy, r * 0.44, Math.PI * 0.32, Math.PI * 1.7);
-      sc.arc(cx + r * 0.14, cy, r * 0.34, Math.PI * 1.66, Math.PI * 0.36, true);
+      sc.moveTo(cx, cy - r * 0.58);
+      sc.lineTo(cx + r * 0.46, cy - r * 0.02);
+      sc.lineTo(cx + r * 0.18, cy + r * 0.58);
+      sc.lineTo(cx - r * 0.18, cy + r * 0.58);
+      sc.lineTo(cx - r * 0.46, cy - r * 0.02);
       sc.closePath();
       sc.fill();
+      sc.strokeStyle = "rgba(255,255,255,0.22)";
+      sc.lineWidth = Math.max(2, r * 0.1);
+      sc.stroke();
     }
     sc.restore();
   }
@@ -1261,11 +1327,23 @@
     return timer;
   }
 
+  function scheduleLayoutRefit(delay = 0) {
+    const timer = window.setTimeout(() => {
+      layoutRefitTimers.delete(timer);
+      fitBoardCanvas();
+    }, Math.max(0, delay));
+    layoutRefitTimers.add(timer);
+  }
+
   function refitBoardAfterLayout() {
+    layoutRefitTimers.forEach((timer) => window.clearTimeout(timer));
+    layoutRefitTimers.clear();
     fitBoardCanvas();
-    window.requestAnimationFrame(() => fitBoardCanvas());
-    scheduleCombatTimeout(() => fitBoardCanvas(), 140);
-    scheduleCombatTimeout(() => fitBoardCanvas(), 300);
+    window.requestAnimationFrame(() => {
+      fitBoardCanvas();
+      window.requestAnimationFrame(() => fitBoardCanvas());
+    });
+    [80, 180, 360, 620].forEach(scheduleLayoutRefit);
   }
 
   function endCombatCinematic() {
@@ -1282,9 +1360,7 @@
       combatCinematicTimer = 0;
     }
     battleStageEl?.querySelectorAll(".combat-projectile, .combat-impact").forEach((node) => node.remove());
-    boardWrapEl?.classList.remove("is-cinematic", "is-ultimate-cinematic");
-    fitBoardCanvas();
-    window.requestAnimationFrame(() => fitBoardCanvas());
+    endCombatCinematic();
   }
 
   function scheduleStageEffect(className, delay = 0, duration = 430) {
@@ -1697,22 +1773,32 @@
     playerStageEl?.classList.toggle("is-critical", playerHpPct > 0 && playerHpPct <= 0.2);
 
     if (enemy) {
-      setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${enemy.name}`);
+      const enemyElement = elementById(enemy.element);
+      setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${enemyElement.label}・${enemy.name}`);
       setUiText(enemyHpEl, "enemyHp", `${Math.max(0, enemy.hp)}/${enemy.maxHp}`);
       const enemyHpPct = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
       setBarWidth(enemyHpTrack, "enemyHpPct", enemyHpPct * 100);
       enemyHpCardEl?.classList.toggle("is-low", enemyHpPct > 0 && enemyHpPct <= 0.25);
       enemyHpCardEl?.classList.toggle("is-critical", enemyHpPct > 0 && enemyHpPct <= 0.2);
-      setUiText(enemyBadgeEl, "enemyBadge", enemy.name);
-      setUiText(enemyAtkEl, "enemyAtk", `ATK ${enemy.atk}`);
+      setUiText(enemyBadgeEl, "enemyBadge", `${enemyElement.label}・${enemy.name}`);
+      setUiText(enemyAtkEl, "enemyAtk", `${enemyElement.label} ATK ${enemy.atk}`);
       const artSrc = enemyArtSrc(enemy.art);
       if (enemyImageEl.getAttribute("src") !== artSrc) enemyImageEl.setAttribute("src", artSrc);
       if (enemyImageEl.alt !== `${enemy.name} 敵人圖像`) enemyImageEl.alt = `${enemy.name} 敵人圖像`;
       const tierClass = `tier-${enemy.tier}`;
-      if (uiCache.enemyTierClass !== tierClass) {
-        uiCache.enemyTierClass = tierClass;
-        enemyImageEl.classList.remove("tier-1", "tier-2", "tier-3");
-        enemyBadgeEl.classList.remove("tier-1", "tier-2", "tier-3");
+      const elementClassName = elementClass(enemy.element);
+      const enemyVisualClass = `${tierClass} ${elementClassName}`;
+      if (uiCache.enemyVisualClass !== enemyVisualClass) {
+        uiCache.enemyVisualClass = enemyVisualClass;
+        const elementClasses = ELEMENTS.map((element) => elementClass(element.id));
+        enemyImageEl.classList.remove("tier-1", "tier-2", "tier-3", ...elementClasses);
+        enemyBadgeEl.classList.remove("tier-1", "tier-2", "tier-3", ...elementClasses);
+        enemyStageEl.classList.remove(...elementClasses);
+        enemyHpCardEl?.classList.remove(...elementClasses);
+        enemyImageEl.classList.add(elementClassName);
+        enemyBadgeEl.classList.add(elementClassName);
+        enemyStageEl.classList.add(elementClassName);
+        enemyHpCardEl?.classList.add(elementClassName);
         if (enemy.tier > 0) {
           enemyImageEl.classList.add(tierClass);
           enemyBadgeEl.classList.add(tierClass);
