@@ -158,7 +158,7 @@
 
   initBoard();
   updateUi();
-  fitBoardCanvas();
+  refitBoardAfterLayout();
   draw();
   showOverlay("準備開戰", "拖曳任意路徑連接 3 顆以上同色元素珠攻擊敵人；每一波 75 秒，擊破後倒數重置。", "開始遊戲");
 
@@ -1261,6 +1261,19 @@
     return timer;
   }
 
+  function refitBoardAfterLayout() {
+    fitBoardCanvas();
+    window.requestAnimationFrame(() => fitBoardCanvas());
+    scheduleCombatTimeout(() => fitBoardCanvas(), 140);
+    scheduleCombatTimeout(() => fitBoardCanvas(), 300);
+  }
+
+  function endCombatCinematic() {
+    boardWrapEl?.classList.remove("is-cinematic", "is-ultimate-cinematic");
+    combatCinematicTimer = 0;
+    refitBoardAfterLayout();
+  }
+
   function clearCombatProjectiles() {
     delayedCombatTimers.forEach((timer) => window.clearTimeout(timer));
     delayedCombatTimers.clear();
@@ -1271,6 +1284,7 @@
     battleStageEl?.querySelectorAll(".combat-projectile, .combat-impact").forEach((node) => node.remove());
     boardWrapEl?.classList.remove("is-cinematic", "is-ultimate-cinematic");
     fitBoardCanvas();
+    window.requestAnimationFrame(() => fitBoardCanvas());
   }
 
   function scheduleStageEffect(className, delay = 0, duration = 430) {
@@ -1288,13 +1302,8 @@
     }
     boardWrapEl.classList.remove("is-cinematic", "is-ultimate-cinematic");
     boardWrapEl.classList.add(variant === "ultimate" ? "is-ultimate-cinematic" : "is-cinematic");
-    fitBoardCanvas();
-    scheduleCombatTimeout(() => fitBoardCanvas(), 80);
-    combatCinematicTimer = window.setTimeout(() => {
-      boardWrapEl.classList.remove("is-cinematic", "is-ultimate-cinematic");
-      combatCinematicTimer = 0;
-      fitBoardCanvas();
-    }, duration);
+    refitBoardAfterLayout();
+    combatCinematicTimer = window.setTimeout(endCombatCinematic, duration);
   }
   function launchCombatProjectile(fromEl, toEl, variant = "player") {
     const delay = combatImpactDelay();

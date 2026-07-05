@@ -2341,3 +2341,114 @@ button {
     min-height: 270px;
   }
 }
+/* 20260705j: keep combat focus reversible and let the stage fill the timer-to-board space */
+@media (max-width: 860px) {
+  .orbs-layout {
+    gap: 4px;
+  }
+
+  .board-wrap {
+    position: relative;
+    gap: 3px;
+    padding-top: 2px;
+  }
+
+  .combat-strip {
+    position: absolute;
+    z-index: 8;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    margin-bottom: 0;
+    pointer-events: none;
+  }
+
+  .combat-strip .hp-card {
+    min-height: 42px;
+    padding: 6px 8px;
+    background: rgba(7, 18, 25, 0.72);
+    backdrop-filter: blur(8px);
+  }
+
+  .battle-stage {
+    flex-basis: 254px;
+    min-height: 176px;
+    margin-bottom: 2px;
+  }
+
+  .board-frame {
+    padding-bottom: 0;
+  }
+
+  .board-wrap.is-cinematic .battle-stage {
+    flex-basis: 354px;
+    min-height: 252px;
+  }
+
+  .board-wrap.is-ultimate-cinematic .battle-stage {
+    flex-basis: 392px;
+    min-height: 286px;
+  }
+
+  .board-wrap.is-cinematic .board-frame,
+  .board-wrap.is-ultimate-cinematic .board-frame {
+    flex: 0 1 112px !important;
+    min-height: 88px;
+    height: auto;
+    overflow: hidden;
+    opacity: 0.42;
+    visibility: visible;
+    pointer-events: none;
+  }
+
+  .board-wrap.is-cinematic #orbsBoard,
+  .board-wrap.is-ultimate-cinematic #orbsBoard {
+    display: block !important;
+    filter: brightness(0.62) saturate(0.9);
+    transform: scale(0.96);
+    transform-origin: 50% 100%;
+  }
+}
+
+@media (max-width: 540px) {
+  .orbs-layout {
+    gap: 3px;
+  }
+
+  .board-wrap {
+    gap: 2px;
+  }
+
+  .combat-strip {
+    top: 7px;
+    left: 7px;
+    right: 7px;
+    gap: 5px;
+  }
+
+  .combat-strip .hp-card {
+    min-height: 39px;
+    padding: 5px 6px;
+  }
+
+  .battle-stage {
+    flex-basis: 240px;
+    min-height: 166px;
+  }
+
+  .board-wrap.is-cinematic .battle-stage {
+    flex-basis: 338px;
+    min-height: 240px;
+  }
+
+  .board-wrap.is-ultimate-cinematic .battle-stage {
+    flex-basis: 374px;
+    min-height: 272px;
+  }
+
+  .board-wrap.is-cinematic .board-frame,
+  .board-wrap.is-ultimate-cinematic .board-frame {
+    flex-basis: 96px !important;
+    min-height: 78px;
+  }
+}
