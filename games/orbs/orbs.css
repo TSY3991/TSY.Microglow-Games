@@ -2650,3 +2650,13 @@ button {
     top: 74px;
   }
 }
+/* 20260705l: align the combat stage directly to the orb board canvas top */
+@media (max-width: 860px) {
+  .board-frame {
+    align-items: flex-start;
+  }
+
+  #orbsBoard {
+    flex: 0 0 auto;
+  }
+}
