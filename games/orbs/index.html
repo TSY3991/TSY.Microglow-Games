@@ -10,7 +10,7 @@
     <title>微光連珠對戰｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260704c">
-    <link rel="stylesheet" href="./orbs.css?v=20260705g">
+    <link rel="stylesheet" href="./orbs.css?v=20260705h">
   </head>
   <body>
     <main class="orbs-shell">
@@ -53,10 +53,7 @@
               </div>
             </div>
           </div>
-          <div class="battle-timer" data-battle-timer aria-label="戰鬥倒數">
-            <span>TIME</span>
-            <strong data-battle-time>75</strong>
-          </div>
+
           <div class="battle-stage" aria-label="戰鬥畫面">
             <div class="player-stage" data-player-stage>
               <div class="player-level-badge" data-player-level>Lv.1</div>
@@ -98,7 +95,10 @@
               <span>最高分</span>
               <strong data-best>0</strong>
             </div>
-            <div class="score-primary">
+            <div class="battle-timer score-primary" data-battle-timer aria-label="戰鬥倒數">
+              <span>時間</span>
+              <strong data-battle-time>75</strong>
+            </div>            <div class="score-primary">
               <span>波數</span>
               <strong data-wave>1</strong>
             </div>
@@ -156,7 +156,7 @@
             </div>
             <div>
               <strong>戰鬥畫面設定</strong>
-              <span>已套用問答結果：怪物是主視覺，玩家平常是小卡片；攻擊與大絕時戰鬥畫面會放大，棋盤暫時縮小。</span>
+              <span>已套用問答結果：怪物是主視覺，玩家平常是小卡片；攻擊與大絕時戰鬥畫面會放大，棋盤暫時隱藏，結束後再回到轉珠盤。</span>
             </div>
             <div>
               <strong>操作方式</strong>
@@ -174,6 +174,6 @@
 
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./orbs.js?v=20260705g"></script>
+    <script src="./orbs.js?v=20260705h"></script>
   </body>
 </html>

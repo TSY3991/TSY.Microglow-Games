@@ -2146,3 +2146,198 @@ button {
     min-height: 162px;
   }
 }
+/* 20260705h: requested battle/readability pass */
+.score-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.score-grid .battle-timer {
+  width: 100%;
+  min-height: 58px;
+  margin: 0;
+  border-radius: 12px;
+}
+
+.score-grid .battle-timer span {
+  letter-spacing: 0.03em;
+}
+
+.score-grid .battle-timer strong {
+  font-size: 1.28rem;
+}
+
+@media (max-width: 860px) {
+  .return-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .back-link,
+  .portal-return {
+    min-height: 26px;
+    padding: 0 6px;
+    border-radius: 9px;
+    font-size: 0.66rem;
+    line-height: 1;
+  }
+
+  .game-topbar {
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  .game-topbar h1 {
+    font-size: clamp(1.02rem, 5vw, 1.24rem);
+  }
+
+  .top-actions button {
+    min-height: 28px;
+    font-size: 0.7rem;
+  }
+
+  .score-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .score-grid > div,
+  .score-grid .battle-timer {
+    min-height: 32px;
+    padding: 3px 4px;
+  }
+
+  .score-grid .battle-timer {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-width: 1px;
+  }
+
+  .score-grid .battle-timer strong,
+  .score-grid strong {
+    font-size: 0.94rem;
+  }
+
+  .score-grid .battle-timer span,
+  .score-grid span {
+    font-size: 0.54rem;
+  }
+
+  .battle-stage {
+    flex-basis: 202px;
+    min-height: 132px;
+  }
+
+  .board-frame {
+    align-items: flex-end;
+    padding-bottom: 2px;
+    transition: flex-basis 180ms ease, opacity 150ms ease, visibility 150ms ease;
+  }
+
+  .board-wrap.is-cinematic .battle-stage {
+    flex-basis: 340px;
+    min-height: 238px;
+  }
+
+  .board-wrap.is-ultimate-cinematic .battle-stage {
+    flex-basis: 390px;
+    min-height: 282px;
+  }
+
+  .board-wrap.is-cinematic .board-frame,
+  .board-wrap.is-ultimate-cinematic .board-frame {
+    flex: 0 0 0 !important;
+    min-height: 0;
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .board-wrap.is-cinematic #orbsBoard,
+  .board-wrap.is-ultimate-cinematic #orbsBoard {
+    display: none;
+  }
+
+  .board-wrap.is-cinematic .player-stage,
+  .board-wrap.is-ultimate-cinematic .player-stage {
+    width: min(48%, 178px);
+    height: min(70%, 150px);
+    transform: translate(6px, -10px) scale(1.08);
+  }
+
+  .board-wrap.is-ultimate-cinematic .player-stage {
+    transform: translate(12px, -18px) scale(1.2);
+  }
+
+  .board-wrap.is-cinematic .enemy-stage img,
+  .board-wrap.is-ultimate-cinematic .enemy-stage img {
+    width: min(82%, 320px);
+    max-height: 94%;
+  }
+
+  .combat-projectile {
+    animation-duration: var(--fx-duration);
+  }
+
+  .combat-impact {
+    animation-duration: 560ms;
+  }
+
+  .player-stage.is-attack img {
+    animation: player-attack 900ms ease, player-idle 2.6s ease-in-out 900ms infinite;
+  }
+
+  .player-stage.is-hit img {
+    animation: player-hit 680ms ease, player-idle 2.6s ease-in-out 680ms infinite;
+  }
+
+  .enemy-stage.is-hit img {
+    animation: enemy-hit 680ms ease, enemy-idle 2.4s ease-in-out 680ms infinite;
+  }
+
+  .enemy-stage.is-attack img {
+    animation: enemy-attack 900ms ease, enemy-idle 2.4s ease-in-out 900ms infinite;
+  }
+
+  .enemy-stage.is-attack::before {
+    animation: enemy-attack-sweep 900ms ease;
+  }
+
+  .combat-floats span {
+    animation-duration: 1320ms;
+  }
+}
+
+@media (max-width: 540px) {
+  .orbs-shell {
+    padding-top: max(4px, env(safe-area-inset-top));
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+
+  .return-nav {
+    gap: 4px;
+  }
+
+  .game-topbar h1 {
+    font-size: clamp(0.96rem, 4.6vw, 1.14rem);
+  }
+
+  .battle-stage {
+    flex-basis: 186px;
+    min-height: 124px;
+  }
+
+  .board-wrap.is-cinematic .battle-stage {
+    flex-basis: 320px;
+    min-height: 228px;
+  }
+
+  .board-wrap.is-ultimate-cinematic .battle-stage {
+    flex-basis: 365px;
+    min-height: 270px;
+  }
+}

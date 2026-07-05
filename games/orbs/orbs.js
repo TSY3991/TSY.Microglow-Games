@@ -105,8 +105,8 @@
   const TIER_LABELS = ["", "・強化", "・精英", "・王者"];
   const TIER_HP_MULT = [1, 1.35, 1.8, 2.35];
   const TIER_ATK_MULT = [1, 1.3, 1.65, 2.05];
-  const COMBAT_PROJECTILE_MS = 300;
-  const REDUCED_MOTION_PROJECTILE_MS = 70;
+  const COMBAT_PROJECTILE_MS = 620;
+  const REDUCED_MOTION_PROJECTILE_MS = 90;
   const reducedMotionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 
   let board = [];
@@ -555,10 +555,10 @@
     enemy.hp = Math.max(0, enemy.hp - damage);
     const hasUltimate = ultimateCount > 0;
     const impactDelay = launchCombatProjectile(playerStageEl, enemyStageEl, hasUltimate ? "ultimate" : "player");
-    playPlayerEffect(hasUltimate ? "is-ultimate" : "is-attack", hasUltimate ? 760 : 400);
+    playPlayerEffect(hasUltimate ? "is-ultimate" : "is-attack", hasUltimate ? 1450 : 900);
     if (hasUltimate) showStoryToast(`五連微光共鳴！${largestAttackGroup} 顆大絕啟動`, 1700);
     if (enemy.hp > 0) {
-      scheduleStageEffect("is-hit", impactDelay, 360);
+      scheduleStageEffect("is-hit", impactDelay, 680);
     }
     const comboText = comboCount > 1 ? `COMBO x${comboCount} ` : "";
     const ultimateText = hasUltimate ? `大絕 x${ultimateCount} ` : "";
@@ -566,13 +566,13 @@
     announce(`${ultimateText}${comboText}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, hasUltimate ? "#2fd7ff" : "#ffd84d");
     if (enemy.hp <= 0) {
       floatCombatText("擊破", "break");
-      scheduleStageEffect("is-break", impactDelay, 560);
+      scheduleStageEffect("is-break", impactDelay, 820);
       wave += 1;
       const clearedTier = enemy.tier;
       enemy = makeEnemy(wave);
       timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
-      scheduleStageEffect("is-spawn", impactDelay + 280, 620);
+      scheduleStageEffect("is-spawn", impactDelay + 760, 720);
       if (enemy.tier > clearedTier) showStoryToast(TIER_STORY_LINES[enemy.tier] || "深層訊號正在增幅，新的威脅已經接近。", 2600);
       const timeNote = clearedTier > 0 ? `倒數重置為 ${timeLeft} 秒` : "倒數重置";
       announce(`擊破！${timeNote}，下一波來襲`, boardPxWidth / 2, boardPxHeight * 0.5, "#8df45f");
@@ -602,7 +602,7 @@
     const impactDelay = launchCombatProjectile(enemyStageEl, playerStageEl, "enemy");
     scheduleCombatTimeout(() => {
       if (!running) return;
-      playPlayerEffect("is-hit");
+      playPlayerEffect("is-hit", 680);
       floatPlayerText(`-${enemy.atk}`, "is-hit");
       announce(`-${enemy.atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
     }, impactDelay);
@@ -1298,7 +1298,7 @@
   }
   function launchCombatProjectile(fromEl, toEl, variant = "player") {
     const delay = combatImpactDelay();
-    startCombatCinematic(variant, delay + (variant === "ultimate" ? 760 : 420));
+    startCombatCinematic(variant, delay + (variant === "ultimate" ? 1450 : 950));
     if (!battleStageEl || !fromEl || !toEl) return delay;
     const stageRect = battleStageEl.getBoundingClientRect();
     const fromRect = fromEl.getBoundingClientRect();
@@ -1328,7 +1328,7 @@
       impact.style.left = `${endX}px`;
       impact.style.top = `${endY}px`;
       battleStageEl.append(impact);
-      scheduleCombatTimeout(() => impact.remove(), reducedMotionQuery?.matches ? 80 : 280);
+      scheduleCombatTimeout(() => impact.remove(), reducedMotionQuery?.matches ? 90 : 560);
     }, delay);
 
     return delay;
