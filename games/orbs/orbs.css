@@ -784,6 +784,20 @@ button {
     0 0 28px rgba(255, 216, 77, 0.58);
 }
 
+/* Elemental advantage/disadvantage reads through color instead of a toast
+   that used to fire almost every turn. */
+.combat-floats span.is-strong {
+  color: #ffe27a;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.4),
+    0 0 14px rgba(255, 216, 77, 0.6);
+}
+
+.combat-floats span.is-weak {
+  color: #9fb0bd;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+
 .combat-floats.is-player span.is-hit {
   color: var(--pink);
 }

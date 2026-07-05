@@ -8,7 +8,6 @@
   const bestEl = document.querySelector("[data-best]");
   const waveEl = document.querySelector("[data-wave]");
   const playsEl = document.querySelector("[data-plays]");
-  const timeEl = document.querySelector("[data-time]");
   const playerHpEl = document.querySelector("[data-player-hp]");
   const playerHpTrack = document.querySelector("[data-player-hp-track]");
   const playerHpCardEl = document.querySelector("[data-player-hp-card]");
@@ -70,7 +69,7 @@
   // `art` is the base filename in assets/monsters/ (no extension): the loader
   // tries the Codex-generated .webp first and falls back to the bundled .svg
   // placeholder, so new art drops in without code changes.
-  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "light.webp", "dark.webp", "heal.png"];
+  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "earth.webp", "metal.webp", "heal.png"];
   const orbArtImages = ORB_ART_FILES.map((file) => {
     if (!file) return null;
     const image = new Image();
@@ -122,7 +121,7 @@
   const TIER_LABELS = ["", "・強化", "・精英", "・王者"];
   const TIER_HP_MULT = [1, 1.35, 1.8, 2.35];
   const TIER_ATK_MULT = [1, 1.3, 1.65, 2.05];
-  const COMBAT_PROJECTILE_MS = 620;
+  const COMBAT_PROJECTILE_MS = 320;
   const REDUCED_MOTION_PROJECTILE_MS = 90;
   const reducedMotionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 
@@ -136,10 +135,21 @@
   let playerMaxHp = PLAYER_BASE_MAX_HP;
   let wave = 1;
   let playerHp = PLAYER_BASE_MAX_HP;
+  // The HUD renders these instead of the live playerHp/enemy.hp values, so a
+  // hit lands on the HP bar exactly when the projectile visually arrives
+  // instead of the bar dropping the instant damage is computed.
+  let displayPlayerHp = PLAYER_BASE_MAX_HP;
+  let displayEnemyHp = 0;
+  let displayEnemyMaxHp = 0;
   let enemy = null;
   let timeLeft = START_TIME;
   let running = false;
   let paused = false;
+  // True only during the brief freeze between the killing counterattack
+  // landing and the game-over check firing, so the death sequence can't be
+  // "unpaused" by P/tab-hide (which would otherwise resume togglePause()
+  // early since it shares the same paused flag).
+  let dying = false;
   let recordedThisRun = false;
   let dragging = null; // { path: [{r,c}], pointerId, heldId, pointerX, pointerY }
   let cursor = { r: 2, c: 2 };
@@ -153,12 +163,10 @@
   let timerHandle = 0;
   let backgroundCanvas = null;
   let stageEffectTimer = 0;
-  let stageFollowupTimer = 0;
   let playerEffectTimer = 0;
   let storyToastTimer = 0;
   let combatCinematicTimer = 0;
   const delayedCombatTimers = new Set();
-  const layoutRefitTimers = new Set();
   const cellAnimations = new Map();
   const SWAP_ANIMATION_MS = 230;
   const orbSpriteCache = new Map();
@@ -173,6 +181,7 @@
   playerXp = readPlayerXp();
   playerMaxHp = getPlayerMaxHp();
   playerHp = playerMaxHp;
+  displayPlayerHp = playerHp;
 
   initBoard();
   updateUi();
@@ -567,7 +576,7 @@
     cursorVisible = false;
     keyboardHolding = false;
     cellAnimations.clear();
-    if (!running || paused || pathLength <= 0) {
+    if (!running || paused || dying || pathLength <= 0) {
       draw();
       return;
     }
@@ -588,8 +597,11 @@
       enemyImpactDelay = enemyAttack();
     }
     if (playerHp <= 0 && enemyImpactDelay > 0) {
-      paused = true;
-      scheduleCombatTimeout(() => checkEnd(), enemyImpactDelay + 70);
+      dying = true;
+      scheduleCombatTimeout(() => {
+        dying = false;
+        checkEnd();
+      }, enemyImpactDelay + 70);
     } else {
       checkEnd();
     }
@@ -601,21 +613,34 @@
   function dealDamageToEnemy(damage, comboCount, ultimateCount = 0, largestAttackGroup = 0, elementalStrong = 0, elementalWeak = 0) {
     score += damage;
     enemy.hp = Math.max(0, enemy.hp - damage);
+    const preHitMaxHp = enemy.maxHp;
+    const postHitHp = enemy.hp;
     const hasUltimate = ultimateCount > 0;
     const impactDelay = launchCombatProjectile(playerStageEl, enemyStageEl, hasUltimate ? "ultimate" : "player");
     playPlayerEffect(hasUltimate ? "is-ultimate" : "is-attack", hasUltimate ? 1450 : 900);
     if (hasUltimate) showStoryToast(`五連微光共鳴！${largestAttackGroup} 顆大絕啟動`, 1700);
+    // HP bar/text sync waits for the projectile to land instead of dropping
+    // the instant damage is computed, so the hit reads as connected.
+    scheduleCombatTimeout(() => {
+      displayEnemyMaxHp = preHitMaxHp;
+      displayEnemyHp = postHitHp;
+      updateUi();
+    }, impactDelay);
     if (enemy.hp > 0) {
       scheduleStageEffect("is-hit", impactDelay, 680);
     }
     const comboText = comboCount > 1 ? `COMBO x${comboCount} ` : "";
     const ultimateText = hasUltimate ? `大絕 x${ultimateCount} ` : "";
-    const elementText = elementalStrong > 0 ? "剋制 " : elementalWeak > 0 ? "同屬弱化 " : "";
-    if (!hasUltimate && elementalStrong > 0) showStoryToast("屬性剋制！微光傷害增幅。", 1400);
-    if (!hasUltimate && elementalStrong === 0 && elementalWeak > 0) showStoryToast("同屬頻率干涉，傷害被削弱。", 1400);
-    floatCombatText(`${elementText}${ultimateText}${comboText}-${damage}`, hasUltimate ? "ultimate" : "damage");
-    announce(`${elementText}${ultimateText}${comboText}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, hasUltimate ? "#2fd7ff" : "#ffd84d");
+    // Elemental advantage/disadvantage shows as a color-coded damage number
+    // instead of a toast — a toast firing almost every turn quickly became
+    // noise; the number itself is enough feedback once you know the rule.
+    const elementText = elementalStrong > 0 ? "剋制 " : elementalWeak > 0 ? "同屬 " : "";
+    const damageType = hasUltimate ? "ultimate" : elementalStrong > 0 ? "strong" : elementalWeak > 0 ? "weak" : "damage";
+    const damageColor = hasUltimate ? "#2fd7ff" : elementalStrong > 0 ? "#ffd84d" : elementalWeak > 0 ? "#9fb0bd" : "#ffd84d";
+    floatCombatText(`${elementText}${ultimateText}${comboText}-${damage}`, damageType);
+    announce(`${elementText}${ultimateText}${comboText}-${damage}`, boardPxWidth / 2, boardPxHeight * 0.32, damageColor);
     if (enemy.hp <= 0) {
+      if (!hasUltimate) startCombatCinematic("player", impactDelay + 1580);
       floatCombatText("擊破", "break");
       scheduleStageEffect("is-break", impactDelay, 820);
       wave += 1;
@@ -624,6 +649,13 @@
       timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
       scheduleStageEffect("is-spawn", impactDelay + 760, 720);
+      // The new enemy's full HP bar only appears once its spawn animation
+      // plays, matching the visual reveal instead of popping in early.
+      scheduleCombatTimeout(() => {
+        displayEnemyMaxHp = enemy.maxHp;
+        displayEnemyHp = enemy.hp;
+        updateUi();
+      }, impactDelay + 760);
       if (enemy.tier > clearedTier) {
         showStoryToast(TIER_STORY_LINES[enemy.tier] || "深層訊號正在增幅，新的威脅已經接近。", 2600);
       } else {
@@ -646,6 +678,7 @@
     playerHp = Math.min(playerMaxHp, playerHp + amount);
     const healed = playerHp - before;
     if (healed <= 0) return;
+    displayPlayerHp = playerHp; // Instant: healing has no travelling projectile to wait on.
     playPlayerEffect("is-heal", 620);
     floatPlayerText(`+${healed}`, "is-heal");
     announce(`+${healed}`, boardPxWidth / 2, boardPxHeight * 0.32, "#8df45f");
@@ -657,6 +690,8 @@
     const impactDelay = launchCombatProjectile(enemyStageEl, playerStageEl, "enemy");
     scheduleCombatTimeout(() => {
       if (!running) return;
+      displayPlayerHp = playerHp;
+      updateUi();
       playPlayerEffect("is-hit", 680);
       floatPlayerText(`-${enemy.atk}`, "is-hit");
       announce(`-${enemy.atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
@@ -701,12 +736,16 @@
     if (running) return;
     running = true;
     paused = false;
+    dying = false;
     recordedThisRun = false;
     score = 0;
     wave = 1;
     playerMaxHp = getPlayerMaxHp();
     playerHp = playerMaxHp;
+    displayPlayerHp = playerHp;
     enemy = makeEnemy(1);
+    displayEnemyHp = enemy.hp;
+    displayEnemyMaxHp = enemy.maxHp;
     timeLeft = START_TIME;
     dragging = null;
     particles = [];
@@ -755,6 +794,7 @@
   }
 
   function togglePause() {
+    if (dying) return; // Let the death sequence finish; don't let P/tab-hide resume early.
     if (!running) {
       startGame();
       return;
@@ -1308,10 +1348,6 @@
       window.clearTimeout(stageEffectTimer);
       stageEffectTimer = 0;
     }
-    if (stageFollowupTimer) {
-      window.clearTimeout(stageFollowupTimer);
-      stageFollowupTimer = 0;
-    }
     enemyStageEl.classList.remove("is-hit", "is-attack", "is-defeated", "is-break", "is-spawn");
   }
   function combatImpactDelay() {
@@ -1327,23 +1363,12 @@
     return timer;
   }
 
-  function scheduleLayoutRefit(delay = 0) {
-    const timer = window.setTimeout(() => {
-      layoutRefitTimers.delete(timer);
-      fitBoardCanvas();
-    }, Math.max(0, delay));
-    layoutRefitTimers.add(timer);
-  }
-
+  // Cinematic mode (now only used for the kill/ultimate moments, not every
+  // attack) is the only thing that changes board-frame's layout mid-game, so
+  // a single refit on each transition is enough — no need for the repeated
+  // rAF/setTimeout barrage this used to run on every single attack.
   function refitBoardAfterLayout() {
-    layoutRefitTimers.forEach((timer) => window.clearTimeout(timer));
-    layoutRefitTimers.clear();
     fitBoardCanvas();
-    window.requestAnimationFrame(() => {
-      fitBoardCanvas();
-      window.requestAnimationFrame(() => fitBoardCanvas());
-    });
-    [80, 180, 360, 620].forEach(scheduleLayoutRefit);
   }
 
   function endCombatCinematic() {
@@ -1381,9 +1406,13 @@
     refitBoardAfterLayout();
     combatCinematicTimer = window.setTimeout(endCombatCinematic, duration);
   }
+  // Cinematic (the board-shrinking, input-blocking close-up) is reserved for
+  // the ultimate hit and the kill/wave-clear moment — every other attack
+  // just plays the projectile/impact over the normal, still-interactive
+  // layout so combat doesn't lock the player out for ~1.5s per turn.
   function launchCombatProjectile(fromEl, toEl, variant = "player") {
     const delay = combatImpactDelay();
-    startCombatCinematic(variant, delay + (variant === "ultimate" ? 1450 : 950));
+    if (variant === "ultimate") startCombatCinematic("ultimate", delay + 1450);
     if (!battleStageEl || !fromEl || !toEl) return delay;
     const stageRect = battleStageEl.getBoundingClientRect();
     const fromRect = fromEl.getBoundingClientRect();
@@ -1428,21 +1457,14 @@
     }, duration);
   }
 
-  function queueStageEffect(className, delay = 0, duration = 430) {
-    if (stageFollowupTimer) {
-      window.clearTimeout(stageFollowupTimer);
-    }
-    stageFollowupTimer = window.setTimeout(() => {
-      stageFollowupTimer = 0;
-      playStageEffect(className, duration);
-    }, delay);
-  }
-
   function floatCombatText(text, type) {
     const item = document.createElement("span");
     item.textContent = text;
     if (type === "attack") item.className = "is-attack";
     if (type === "break") item.className = "is-break";
+    if (type === "ultimate") item.className = "is-ultimate";
+    if (type === "strong") item.className = "is-strong";
+    if (type === "weak") item.className = "is-weak";
     combatFloatsEl.append(item);
     window.setTimeout(() => item.remove(), 950);
   }
@@ -1578,11 +1600,11 @@
     if (!dragging) return true;
     const pathLength = dragging.path.length - 1;
     finalizeTurn(pathLength);
-    return running && !paused;
+    return running && !paused && !dying;
   }
 
   boardCanvas.addEventListener("pointerdown", (event) => {
-    if (!running || paused) return;
+    if (!running || paused || dying) return;
     const cell = getCellFromPointer(event);
     if (!cell) return;
     event.preventDefault();
@@ -1599,7 +1621,7 @@
 
   boardCanvas.addEventListener("pointermove", (event) => {
     if (!dragging || event.pointerId !== dragging.pointerId) return;
-    if (!running || paused) { settleActiveDrag(); return; }
+    if (!running || paused || dying) { settleActiveDrag(); return; }
     event.preventDefault();
     const cell = getCellFromPointer(event);
     if (cell) {
@@ -1658,6 +1680,7 @@
       }
       return;
     }
+    if (dying) return;
 
     let handled = true;
     if (key === "ArrowUp") cursor = { r: Math.max(0, cursor.r - 1), c: cursor.c };
@@ -1751,9 +1774,7 @@
 
   function updateTimerUi() {
     const timeText = String(Math.max(0, timeLeft));
-    setUiText(timeEl, "time", timeText);
     setUiText(battleTimeEl, "battleTime", timeText);
-    timeEl?.classList.toggle("is-low", timeLeft <= 10);
     battleTimerEl?.classList.toggle("is-low", timeLeft <= 10);
   }
 
@@ -1764,9 +1785,12 @@
     setUiText(playsEl, "plays", String(plays));
     updateTimerUi();
 
-    setUiText(playerHpEl, "playerHp", `${Math.max(0, playerHp)}/${playerMaxHp}`);
+    // Rendered from displayPlayerHp/displayEnemyHp (not the live playerHp/
+    // enemy.hp) so the bar only drops once the attack's projectile lands —
+    // see the scheduleCombatTimeout calls around each hit.
+    setUiText(playerHpEl, "playerHp", `${Math.max(0, displayPlayerHp)}/${playerMaxHp}`);
     setUiText(playerLevelEl, "playerLevel", `Lv.${playerLevel}`);
-    const playerHpPct = playerMaxHp > 0 ? playerHp / playerMaxHp : 0;
+    const playerHpPct = playerMaxHp > 0 ? displayPlayerHp / playerMaxHp : 0;
     setBarWidth(playerHpTrack, "playerHpPct", playerHpPct * 100);
     playerHpCardEl?.classList.toggle("is-low", playerHpPct > 0 && playerHpPct <= 0.25);
     playerHpCardEl?.classList.toggle("is-critical", playerHpPct > 0 && playerHpPct <= 0.2);
@@ -1775,13 +1799,16 @@
     if (enemy) {
       const enemyElement = elementById(enemy.element);
       setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${enemyElement.label}・${enemy.name}`);
-      setUiText(enemyHpEl, "enemyHp", `${Math.max(0, enemy.hp)}/${enemy.maxHp}`);
-      const enemyHpPct = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
+      setUiText(enemyHpEl, "enemyHp", `${Math.max(0, displayEnemyHp)}/${displayEnemyMaxHp}`);
+      const enemyHpPct = displayEnemyMaxHp > 0 ? displayEnemyHp / displayEnemyMaxHp : 0;
       setBarWidth(enemyHpTrack, "enemyHpPct", enemyHpPct * 100);
       enemyHpCardEl?.classList.toggle("is-low", enemyHpPct > 0 && enemyHpPct <= 0.25);
       enemyHpCardEl?.classList.toggle("is-critical", enemyHpPct > 0 && enemyHpPct <= 0.2);
       setUiText(enemyBadgeEl, "enemyBadge", `${enemyElement.label}・${enemy.name}`);
-      setUiText(enemyAtkEl, "enemyAtk", `${enemyElement.label} ATK ${enemy.atk}`);
+      // No element label here: the enemy's attack doesn't use elemental
+      // multipliers, so tagging ATK with an element would misleadingly imply
+      // it does — the element badge above is the only place that matters.
+      setUiText(enemyAtkEl, "enemyAtk", `ATK ${enemy.atk}`);
       const artSrc = enemyArtSrc(enemy.art);
       if (enemyImageEl.getAttribute("src") !== artSrc) enemyImageEl.setAttribute("src", artSrc);
       if (enemyImageEl.alt !== `${enemy.name} 敵人圖像`) enemyImageEl.alt = `${enemy.name} 敵人圖像`;
