@@ -19,6 +19,23 @@
   const gameTitle = "微光俄羅斯方塊";
   const gestureKey = "tetris.gesturesEnabled.v1";
   const portalStats = window.MicroglowGameStats;
+
+  function readGesturePref(fallback) {
+    try {
+      const raw = window.localStorage.getItem(gestureKey);
+      return raw === null ? fallback : raw === "true";
+    } catch {
+      return fallback;
+    }
+  }
+
+  function writeGesturePref(value) {
+    try {
+      window.localStorage.setItem(gestureKey, String(value));
+    } catch {
+      // Ignore private-mode storage failures.
+    }
+  }
   let lastTouchStart = 0;
   let lastTouchEnd = 0;
   let controlRepeatDelay = 0;
@@ -84,7 +101,7 @@
   let paused = false;
   let swapUsed = false;
   let soundOn = true;
-  let gesturesOn = storage?.read(gestureKey, true) !== false;
+  let gesturesOn = readGesturePref(true) !== false;
   let audioContext = null;
   let gestureStart = null;
   let lastTap = {
@@ -555,7 +572,7 @@
     }
     if (action === "gesture") {
       gesturesOn = !gesturesOn;
-      storage?.write(gestureKey, gesturesOn);
+      writeGesturePref(gesturesOn);
       updateGestureButton();
     }
   }
