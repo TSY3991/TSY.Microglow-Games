@@ -2108,11 +2108,6 @@ button {
     box-shadow: 0 0 36px rgba(255, 216, 77, 0.32), 0 0 44px rgba(47, 215, 255, 0.2), inset 0 0 38px rgba(255, 94, 188, 0.1);
   }
 
-  .board-wrap.is-cinematic .board-frame,
-  .board-wrap.is-ultimate-cinematic .board-frame {
-    flex: 0.72 1 auto;
-  }
-
   .board-wrap.is-cinematic .player-stage,
   .board-wrap.is-ultimate-cinematic .player-stage {
     width: min(42%, 156px);
@@ -2244,8 +2239,6 @@ button {
   }
 
   .board-frame {
-    align-items: flex-end;
-    padding-bottom: 2px;
     transition: flex-basis 180ms ease, opacity 150ms ease, visibility 150ms ease;
   }
 
@@ -2257,22 +2250,6 @@ button {
   .board-wrap.is-ultimate-cinematic .battle-stage {
     flex-basis: 390px;
     min-height: 282px;
-  }
-
-  .board-wrap.is-cinematic .board-frame,
-  .board-wrap.is-ultimate-cinematic .board-frame {
-    flex: 0 0 0 !important;
-    min-height: 0;
-    height: 0;
-    overflow: hidden;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .board-wrap.is-cinematic #orbsBoard,
-  .board-wrap.is-ultimate-cinematic #orbsBoard {
-    display: none;
   }
 
   .board-wrap.is-cinematic .player-stage,
@@ -2390,10 +2367,6 @@ button {
     margin-bottom: 2px;
   }
 
-  .board-frame {
-    padding-bottom: 0;
-  }
-
   .board-wrap.is-cinematic .battle-stage {
     flex-basis: 354px;
     min-height: 252px;
@@ -2402,17 +2375,6 @@ button {
   .board-wrap.is-ultimate-cinematic .battle-stage {
     flex-basis: 392px;
     min-height: 286px;
-  }
-
-  .board-wrap.is-cinematic .board-frame,
-  .board-wrap.is-ultimate-cinematic .board-frame {
-    flex: 0 1 112px !important;
-    min-height: 88px;
-    height: auto;
-    overflow: hidden;
-    opacity: 0.42;
-    visibility: visible;
-    pointer-events: none;
   }
 
   .board-wrap.is-cinematic #orbsBoard,
@@ -2458,12 +2420,6 @@ button {
   .board-wrap.is-ultimate-cinematic .battle-stage {
     flex-basis: 374px;
     min-height: 272px;
-  }
-
-  .board-wrap.is-cinematic .board-frame,
-  .board-wrap.is-ultimate-cinematic .board-frame {
-    flex-basis: 96px !important;
-    min-height: 78px;
   }
 }
 /* 20260705k: integrated mobile HUD, reversible combat focus, and five-element battle states */
@@ -2566,14 +2522,6 @@ button {
     margin-bottom: 0;
   }
 
-  .board-frame {
-    flex: 1 1 auto;
-    align-items: flex-end;
-    min-height: 0;
-    margin-top: 0;
-    padding-bottom: 0;
-  }
-
   .board-wrap.is-cinematic .battle-stage {
     flex-basis: 340px;
     min-height: 238px;
@@ -2652,10 +2600,6 @@ button {
 }
 /* 20260705l: align the combat stage directly to the orb board canvas top */
 @media (max-width: 860px) {
-  .board-frame {
-    align-items: flex-start;
-  }
-
   #orbsBoard {
     flex: 0 0 auto;
   }
@@ -2685,10 +2629,6 @@ button {
 
   .combat-floats {
     z-index: 6;
-  }
-
-  .board-frame {
-    margin-top: 0;
   }
 }
 
