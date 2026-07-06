@@ -321,6 +321,10 @@
     spawnParticles(player.x, player.y, "#8df45f", 24);
     showOverlay("達成 100 層", "你已完成 100 層挑戰，可以按繼續往更深樓層前進。", "繼續挑戰");
     paused = true;
+    releasePointerSide();
+    keys.left = false;
+    keys.right = false;
+    keys.drop = false;
   }
 
   function endGame(title, message) {

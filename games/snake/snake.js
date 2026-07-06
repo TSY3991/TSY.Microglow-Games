@@ -499,12 +499,6 @@
     return delta;
   }
 
-  function distanceBetween(a, b) {
-    const dx = shortestDelta(a.x, b.x);
-    const dy = shortestDelta(a.y, b.y);
-    return Math.hypot(dx, dy);
-  }
-
   function directDistanceBetween(a, b) {
     return Math.hypot(a.x - b.x, a.y - b.y);
   }
