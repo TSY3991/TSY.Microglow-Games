@@ -31,6 +31,9 @@
   const battleTimeEl = document.querySelector("[data-battle-time]");
   const storyToastEl = document.querySelector("[data-story-toast]");
   const instructionModal = document.querySelector("[data-instruction-modal]");
+  const skillNameEl = document.querySelector("[data-skill-name]");
+  const skillTrackEl = document.querySelector("[data-skill-track]");
+  const skillCastBtn = document.querySelector("[data-skill-cast-btn]");
   const portalStats = window.MicroglowGameStats;
 
   const gameId = "microglow-orbs";
@@ -126,6 +129,19 @@
   const REDUCED_MOTION_PROJECTILE_MS = 90;
   const reducedMotionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 
+  // Charge-bar active skills: energy comes from clearing orbs (see the
+  // energyGain accumulation in resolveBoard()), casting doesn't consume a
+  // turn or trigger a counterattack, and only one skill is equipped at a
+  // time — switch anytime with the "換技能" button.
+  const SKILL_ENERGY_MAX = 100;
+  const SKILLS = [
+    { id: "burst", name: "微光爆發", unlockLevel: 1 },
+    { id: "heal", name: "星光治癒", unlockLevel: 4 },
+    { id: "resonance", name: "元素共鳴", unlockLevel: 8 },
+    { id: "time", name: "時間漣漪", unlockLevel: 12 },
+    { id: "reshuffle", name: "五行輪轉", unlockLevel: 16 }
+  ];
+
   let board = [];
   let score = 0;
   let best = 0;
@@ -143,6 +159,8 @@
   let displayEnemyHp = 0;
   let displayEnemyMaxHp = 0;
   let enemy = null;
+  let skillEnergy = 0;
+  let equippedSkillId = SKILLS[0].id;
   let timeLeft = START_TIME;
   let running = false;
   let paused = false;
@@ -180,6 +198,7 @@
   bestWave = readBestWave();
   playerLevel = readPlayerLevel();
   playerXp = readPlayerXp();
+  equippedSkillId = readEquippedSkill();
   playerMaxHp = getPlayerMaxHp();
   playerHp = playerMaxHp;
   displayPlayerHp = playerHp;
@@ -288,6 +307,22 @@
 
   function readPlayerXp() {
     return Math.max(0, Number(portalStats.readGame(gameId).playerXp) || 0);
+  }
+
+  // Stored separately from ensureGame's extraDefaults (which Number()-coerces
+  // every field) since this is a string id, not a numeric stat.
+  function readEquippedSkill() {
+    const stored = portalStats.readGame(gameId).equippedSkillId;
+    return SKILLS.some((skill) => skill.id === stored) ? stored : SKILLS[0].id;
+  }
+
+  function persistEquippedSkill(skillId) {
+    portalStats.updateGame(gameId, (existing) => ({
+      ...existing,
+      title: gameTitle,
+      equippedSkillId: skillId,
+      updatedAt: new Date().toISOString()
+    }));
   }
 
   function ensurePortalStats() {
@@ -408,6 +443,14 @@
 
   function elementClass(id) {
     return `element-${elementById(id).key}`;
+  }
+
+  // Reverse-lookup of ELEMENT_ADVANTAGE: which color beats `defenseElementId`.
+  function counterColorIdForElement(defenseElementId) {
+    const defenseKey = elementById(defenseElementId).key;
+    const attackerEntry = Object.entries(ELEMENT_ADVANTAGE).find(([, target]) => target === defenseKey);
+    const attackerElement = attackerEntry && ELEMENTS.find((element) => element.key === attackerEntry[0]);
+    return attackerElement ? attackerElement.id : ELEMENTS[0].id;
   }
 
   function maybeShowWaveStory(waveNumber) {
@@ -561,12 +604,14 @@
     let largestAttackGroup = 0;
     let elementalStrong = 0;
     let elementalWeak = 0;
+    let energyGain = 0;
     for (;;) {
       const matches = findMatches();
       if (!matches.size) break;
       for (const group of groupMatches(matches)) {
         if (group.color === HEAL_COLOR_ID) {
           totalHeal += group.size * getPlayerHealPerOrb();
+          energyGain += group.size * 3;
         } else {
           comboCount += 1;
           largestAttackGroup = Math.max(largestAttackGroup, group.size);
@@ -575,9 +620,11 @@
           if (multiplier > 1) elementalStrong += 1;
           if (multiplier < 1) elementalWeak += 1;
           let groupDamage = baseGroupDamage;
+          energyGain += group.size * 2;
           if (group.size >= ULTIMATE_MATCH_SIZE) {
             ultimateCount += 1;
             groupDamage = Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
+            energyGain += 15;
           }
           totalDamage += Math.max(1, Math.round(groupDamage * multiplier));
         }
@@ -585,8 +632,11 @@
       eliminateCells(matches);
       applyGravityAndRefill();
     }
-    if (comboCount > 1) totalDamage = Math.round(totalDamage * (1 + COMBO_BONUS * (comboCount - 1)));
-    return { totalDamage, comboCount, totalHeal, ultimateCount, largestAttackGroup, elementalStrong, elementalWeak };
+    if (comboCount > 1) {
+      totalDamage = Math.round(totalDamage * (1 + COMBO_BONUS * (comboCount - 1)));
+      energyGain += (comboCount - 1) * 3;
+    }
+    return { totalDamage, comboCount, totalHeal, ultimateCount, largestAttackGroup, elementalStrong, elementalWeak, energyGain };
   }
 
   /* ---------- turn & combat flow ---------- */
@@ -602,6 +652,9 @@
     }
 
     const result = resolveBoard();
+    if (result.energyGain > 0) {
+      skillEnergy = Math.min(SKILL_ENERGY_MAX, skillEnergy + result.energyGain);
+    }
     let enemyDefeated = false;
     if (result.totalDamage > 0) {
       enemyDefeated = dealDamageToEnemy(result.totalDamage, result.comboCount, result.ultimateCount, result.largestAttackGroup, result.elementalStrong, result.elementalWeak);
@@ -704,6 +757,68 @@
     announce(`+${healed}`, boardPxWidth / 2, boardPxHeight * 0.32, "#8df45f");
   }
 
+  /* ---------- charge skills ---------- */
+
+  function unlockedSkills() {
+    return SKILLS.filter((skill) => skill.unlockLevel <= playerLevel);
+  }
+
+  function equippedSkill() {
+    return SKILLS.find((skill) => skill.id === equippedSkillId) || SKILLS[0];
+  }
+
+  function cycleEquippedSkill() {
+    const unlocked = unlockedSkills();
+    if (unlocked.length <= 1) return;
+    const currentIndex = unlocked.findIndex((skill) => skill.id === equippedSkillId);
+    const next = unlocked[(currentIndex + 1) % unlocked.length];
+    equippedSkillId = next.id;
+    persistEquippedSkill(equippedSkillId);
+    updateUi();
+  }
+
+  function canCastSkill() {
+    return running && !paused && !dying && !dragging && skillEnergy >= SKILL_ENERGY_MAX;
+  }
+
+  function castSkill() {
+    if (!canCastSkill()) return;
+    const skill = equippedSkill();
+    skillEnergy = 0;
+
+    if (skill.id === "burst") {
+      const damage = Math.max(1, Math.round(getPlayerDamagePerOrb() * 6));
+      dealDamageToEnemy(damage, 1);
+    } else if (skill.id === "heal") {
+      applyHeal(Math.round(playerMaxHp * 0.35));
+    } else if (skill.id === "resonance") {
+      const colorId = counterColorIdForElement(enemy?.element ?? 0);
+      const cells = [];
+      for (let r = 0; r < ROWS; r += 1) {
+        for (let c = 0; c < COLS; c += 1) cells.push({ r, c });
+      }
+      for (let i = cells.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cells[i], cells[j]] = [cells[j], cells[i]];
+      }
+      cells.slice(0, 6).forEach(({ r, c }) => {
+        board[r][c] = { color: colorId, id: crypto.randomUUID?.() || `${Date.now()}-${r}-${c}-${Math.random()}` };
+      });
+    } else if (skill.id === "time") {
+      timeLeft += 12;
+      updateTimerUi();
+    } else if (skill.id === "reshuffle") {
+      initBoard();
+    }
+
+    playPlayerEffect("is-level", 900);
+    floatPlayerText(skill.name, "is-skill");
+    showStoryToast(`${skill.name} 發動！`, 1800);
+    updateUi();
+    draw();
+    wake();
+  }
+
   function enemyAttack() {
     playerHp = Math.max(0, playerHp - enemy.atk);
     playStageEffect("is-attack");
@@ -766,6 +881,7 @@
     enemy = makeEnemy(1);
     displayEnemyHp = enemy.hp;
     displayEnemyMaxHp = enemy.maxHp;
+    skillEnergy = 0;
     timeLeft = START_TIME;
     dragging = null;
     particles = [];
@@ -1779,6 +1895,8 @@
         else if (paused) togglePause();
       } else if (action === "pause") togglePause();
       else if (action === "restart") restartGame();
+      else if (action === "skill-cast") castSkill();
+      else if (action === "skill-swap") cycleEquippedSkill();
     });
   });
 
@@ -1807,12 +1925,25 @@
     battleTimerEl?.classList.toggle("is-low", timeLeft <= 10);
   }
 
+  function updateSkillUi() {
+    const skill = equippedSkill();
+    setUiText(skillNameEl, "skillName", skill.name);
+    const pct = (skillEnergy / SKILL_ENERGY_MAX) * 100;
+    setBarWidth(skillTrackEl, "skillPct", pct);
+    if (skillCastBtn) {
+      const ready = canCastSkill();
+      skillCastBtn.disabled = !ready;
+      skillCastBtn.dataset.ready = ready ? "true" : "false";
+    }
+  }
+
   function updateUi() {
     setUiText(scoreEl, "score", String(score));
     setUiText(bestEl, "best", String(best));
     setUiText(waveEl, "wave", String(wave));
     setUiText(playsEl, "plays", String(plays));
     updateTimerUi();
+    updateSkillUi();
 
     // Rendered from displayPlayerHp/displayEnemyHp (not the live playerHp/
     // enemy.hp) so the bar only drops once the attack's projectile lands —

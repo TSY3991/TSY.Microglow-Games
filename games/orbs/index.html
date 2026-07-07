@@ -10,7 +10,7 @@
     <title>微光連珠對戰｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260704c">
-    <link rel="stylesheet" href="./orbs.css?v=20260706b">
+    <link rel="stylesheet" href="./orbs.css?v=20260707a">
   </head>
   <body>
     <main class="orbs-shell">
@@ -66,6 +66,15 @@
               </div>
               <div class="hp-track player-hp" aria-hidden="true">
                 <span data-player-hp-track></span>
+              </div>
+              <div class="skill-row" data-skill-row>
+                <button type="button" class="skill-bar" data-action="skill-cast" data-skill-cast-btn disabled aria-label="放技能">
+                  <span class="skill-name" data-skill-name>微光爆發</span>
+                  <span class="hp-track skill-track" aria-hidden="true">
+                    <span data-skill-track></span>
+                  </span>
+                </button>
+                <button type="button" class="skill-swap-btn" data-action="skill-swap" aria-label="切換技能">換技能</button>
               </div>
             </div>
             <div class="hp-card enemy-hp-card" data-enemy-hp-card>
@@ -163,6 +172,11 @@
             </div>
 
             <div>
+              <strong>充能技能</strong>
+              <span>消珠會累積能量條，滿了可放技能（不耗回合、敵人不會反擊）。技能隨等級解鎖，按「換技能」切換目前要用的一個。</span>
+            </div>
+
+            <div>
               <strong>操作方式</strong>
               <span>手機／桌機：按住元素珠拖曳，路徑可任意轉彎。鍵盤：方向鍵移動游標，空白鍵拿起與放下。</span>
             </div>
@@ -178,6 +192,6 @@
 
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./orbs.js?v=20260706a"></script>
+    <script src="./orbs.js?v=20260707a"></script>
   </body>
 </html>
