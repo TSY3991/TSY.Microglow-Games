@@ -182,6 +182,23 @@
   const MAIN_ELEMENT_DAMAGE_MULT = 1.2;
   const MAIN_ELEMENT_SAME_ELEMENT_PENALTY = 0.5;
 
+  // Board mechanics (batch 3b).
+  // Reinforced orb: clearing 6+ of one color leaves one surviving orb behind
+  // (instead of being cleared) that deals bonus damage the next time it's
+  // matched.
+  const REINFORCED_SPAWN_SIZE = 6;
+  const REINFORCED_DAMAGE_MULT = 1.5;
+  // Cross bomb: a match group that spans both a horizontal and vertical
+  // run of 3+ (an L/T/cross shape) blows up the 3x3 area around the
+  // intersection in addition to the normal match.
+  const CROSS_BOMB_DAMAGE_MULT = 1.2;
+  // Obstacle rock: appears on high waves, blocks dragging like a locked
+  // orb, and breaks after 2 separate turns of adjacent clears.
+  const ROCK_MIN_WAVE = 10;
+  const ROCK_SPAWN_CHANCE = 0.35;
+  const ROCK_MAX_ON_BOARD = 2;
+  const ROCK_HITS_TO_BREAK = 2;
+
   // Charge-bar active skills: energy comes from clearing orbs (see the
   // energyGain accumulation in resolveBoard()), casting doesn't consume a
   // turn or trigger a counterattack, and only one skill is equipped at a
@@ -625,6 +642,25 @@
     }
   }
 
+  // High-wave environmental obstacle: blocks dragging like a locked orb, but
+  // only breaks after 2 separate turns of adjacent clears (see eliminateCells).
+  function maybeSpawnObstacleRock() {
+    if (wave < ROCK_MIN_WAVE) return;
+    if (countFlag("rock") >= ROCK_MAX_ON_BOARD) return;
+    if (Math.random() > ROCK_SPAWN_CHANCE) return;
+    const free = [];
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        const cell = board[r][c];
+        if (cell && !isBlockedCell(cell)) free.push({ r, c });
+      }
+    }
+    if (!free.length) return;
+    const pick = free[Math.floor(Math.random() * free.length)];
+    board[pick.r][pick.c] = { rock: true, hits: 0, id: crypto.randomUUID?.() || `${Date.now()}-rock-${Math.random()}` };
+    showStoryToast("盤面出現障礙岩塊！鄰近消珠 2 次可以敲碎它。", 1800);
+  }
+
   // Fired when a BOSS's first HP segment breaks — clears every lock/poison
   // flag from the board so the second phase starts clean.
   function clearNegativeOrbs() {
@@ -712,11 +748,15 @@
     return r >= 0 && r < ROWS && c >= 0 && c < COLS;
   }
 
-  // Locked (chained) orbs never match — NaN !== NaN makes them unequal to
-  // everything, including another locked orb, so a locked cell always breaks
-  // a run instead of joining one.
+  // Locked (chained) orbs and obstacle rocks never match — NaN !== NaN makes
+  // them unequal to everything, including each other, so they always break a
+  // run instead of joining one.
   function matchColor(cell) {
-    return cell.locked ? NaN : cell.color;
+    return cell.locked || cell.rock ? NaN : cell.color;
+  }
+
+  function isBlockedCell(cell) {
+    return Boolean(cell?.locked || cell?.rock);
   }
 
   function findMatches() {
@@ -746,6 +786,7 @@
 
   function eliminateCells(matched) {
     const toUnlock = new Set();
+    const rockPositions = new Map();
     for (const key of matched) {
       const [r, c] = key.split(",").map(Number);
       const gem = board[r][c];
@@ -755,13 +796,23 @@
       board[r][c] = null;
       // Clearing a match unlocks any chained orb touching the cleared cells —
       // this is the only way to free a locked orb (design: "消掉封珠四周連帶解鎖").
+      // Adjacent obstacle rocks take one hit per turn this way instead.
       const neighbours = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
       for (const [nr, nc] of neighbours) {
         const neighbour = board[nr]?.[nc];
         if (neighbour?.locked) toUnlock.add(neighbour);
+        if (neighbour?.rock) rockPositions.set(`${nr},${nc}`, neighbour);
       }
     }
     toUnlock.forEach((cell) => { cell.locked = false; });
+    rockPositions.forEach((cell, key) => {
+      cell.hits = (cell.hits || 0) + 1;
+      if (cell.hits >= ROCK_HITS_TO_BREAK) {
+        const [rr, cc] = key.split(",").map(Number);
+        board[rr][cc] = null;
+        spawnBurst(cc * CELL + CELL / 2, rr * CELL + CELL / 2, "#9aa0a8", 10);
+      }
+    });
   }
 
   function applyGravityAndRefill() {
@@ -799,12 +850,14 @@
       const color = board[startR][startC].color;
       let size = 0;
       let poisoned = false;
+      const cells = [];
       const queue = [key];
       while (queue.length) {
         const current = queue.pop();
         if (visited.has(current)) continue;
         visited.add(current);
         size += 1;
+        cells.push(current);
         const [r, c] = current.split(",").map(Number);
         if (board[r][c]?.poisoned) poisoned = true;
         const neighbours = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
@@ -815,9 +868,29 @@
           }
         }
       }
-      groups.push({ color, size, poisoned });
+      groups.push({ color, size, poisoned, cells });
     }
     return groups;
+  }
+
+  // Finds a cell within a same-color connected group that sits at the
+  // intersection of a horizontal run and a vertical run (each >= 3) — the
+  // signature of an L/T/cross shaped match — using only the group's own
+  // cell keys (cheap set-membership checks, no board access needed).
+  function findCrossIntersection(cellKeys) {
+    const set = new Set(cellKeys);
+    for (const key of cellKeys) {
+      const [r, c] = key.split(",").map(Number);
+      let hRun = 1;
+      for (let cc = c - 1; set.has(`${r},${cc}`); cc -= 1) hRun += 1;
+      for (let cc = c + 1; set.has(`${r},${cc}`); cc += 1) hRun += 1;
+      if (hRun < 3) continue;
+      let vRun = 1;
+      for (let rr = r - 1; set.has(`${rr},${c}`); rr -= 1) vRun += 1;
+      for (let rr = r + 1; set.has(`${rr},${c}`); rr += 1) vRun += 1;
+      if (vRun >= 3) return { r, c };
+    }
+    return null;
   }
 
   // Runs the full chain synchronously (no per-step animation delay) so a
@@ -835,7 +908,9 @@
     for (;;) {
       const matches = findMatches();
       if (!matches.size) break;
-      for (const group of groupMatches(matches)) {
+      const groups = groupMatches(matches);
+      const reinforcedSpawnKeys = [];
+      for (const group of groups) {
         if (group.color === HEAL_COLOR_ID) {
           totalHeal += group.size * getPlayerHealPerOrb();
           energyGain += group.size * 3;
@@ -864,6 +939,12 @@
             ? baseMultiplier * SHIELD_OFFELEMENT_MULT
             : baseMultiplier;
           const atkTalentMult = 1 + talents.atk * TALENT_ATK_DMG_PER_TIER;
+          // A reinforced orb caught in this group boosts the whole group's
+          // damage — consumed the instant it's matched (see eliminateCells).
+          const reinforcedBonus = group.cells.some((cellKey) => {
+            const [gr, gc] = cellKey.split(",").map(Number);
+            return board[gr]?.[gc]?.reinforced;
+          }) ? REINFORCED_DAMAGE_MULT : 1;
           let groupDamage = baseGroupDamage;
           energyGain += group.size * 2;
           if (group.size >= ULTIMATE_MATCH_SIZE) {
@@ -872,9 +953,44 @@
             groupDamage = Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT * ultTalentMult + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
             energyGain += 15;
           }
-          totalDamage += Math.max(1, Math.round(groupDamage * effectiveMultiplier * atkTalentMult));
+          totalDamage += Math.max(1, Math.round(groupDamage * effectiveMultiplier * atkTalentMult * reinforcedBonus));
+          if (group.size >= REINFORCED_SPAWN_SIZE) {
+            reinforcedSpawnKeys.push(group.cells[0]);
+          }
+          // L/T/cross shaped groups blow up the 3x3 area around the
+          // intersection — cells already in this turn's matches don't get
+          // double-counted.
+          const cross = findCrossIntersection(group.cells);
+          if (cross) {
+            let bombDamage = 0;
+            let bombCount = 0;
+            for (let dr = -1; dr <= 1; dr += 1) {
+              for (let dc = -1; dc <= 1; dc += 1) {
+                const rr = cross.r + dr;
+                const cc = cross.c + dc;
+                const key = `${rr},${cc}`;
+                if (!inBounds(rr, cc) || matches.has(key)) continue;
+                const cell = board[rr]?.[cc];
+                if (!cell || isBlockedCell(cell)) continue;
+                spawnBurst(cc * CELL + CELL / 2, rr * CELL + CELL / 2, COLORS[cell.color]?.fill || "#ffd84d", 6);
+                board[rr][cc] = null;
+                bombDamage += getPlayerDamagePerOrb();
+                bombCount += 1;
+              }
+            }
+            if (bombCount > 0) {
+              totalDamage += Math.max(1, Math.round(bombDamage * CROSS_BOMB_DAMAGE_MULT * atkTalentMult));
+              energyGain += bombCount * 2;
+            }
+          }
         }
       }
+      reinforcedSpawnKeys.forEach((key) => {
+        if (!matches.has(key)) return;
+        matches.delete(key);
+        const [r, c] = key.split(",").map(Number);
+        if (board[r]?.[c]) board[r][c].reinforced = true;
+      });
       eliminateCells(matches);
       applyGravityAndRefill();
     }
@@ -1001,6 +1117,7 @@
       const clearedTier = enemy.tier;
       enemy = makeEnemy(wave);
       clearNegativeOrbs();
+      maybeSpawnObstacleRock();
       if (talents.sup >= TALENT_MAX_TIER) {
         skillEnergy = Math.min(SKILL_ENERGY_MAX, skillEnergy + TALENT_SUP_WAVE_BONUS_ENERGY);
       }
@@ -1080,7 +1197,9 @@
       const colorId = counterColorIdForElement(enemy?.element ?? 0);
       const cells = [];
       for (let r = 0; r < ROWS; r += 1) {
-        for (let c = 0; c < COLS; c += 1) cells.push({ r, c });
+        for (let c = 0; c < COLS; c += 1) {
+          if (!isBlockedCell(board[r][c])) cells.push({ r, c });
+        }
       }
       for (let i = cells.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1459,6 +1578,25 @@
     ctx.closePath();
   }
 
+  function drawRockCell(gem, r, c) {
+    const x = c * CELL + CELL / 2;
+    const y = r * CELL + CELL / 2;
+    context.save();
+    context.fillStyle = "#5a6270";
+    context.strokeStyle = "rgba(255, 255, 255, 0.18)";
+    context.lineWidth = 2;
+    drawRoundRect(context, x - CELL * 0.38, y - CELL * 0.38, CELL * 0.76, CELL * 0.76, 10);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "rgba(255, 255, 255, 0.85)";
+    context.font = "900 16px 'Noto Sans TC', 'Microsoft JhengHei', sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    const hitsLeft = Math.max(0, ROCK_HITS_TO_BREAK - (gem.hits || 0));
+    context.fillText(String(hitsLeft), x, y);
+    context.restore();
+  }
+
   function drawFacet(ctx, cx, cy, radius, points, fill) {
     ctx.beginPath();
     points.forEach(([x, y], index) => {
@@ -1668,6 +1806,10 @@
         const gem = board[r][c];
         if (!gem) continue;
         if (dragging && dragging.heldId === gem.id && !keyboardHolding) continue;
+        if (gem.rock) {
+          drawRockCell(gem, r, c);
+          continue;
+        }
         const sprite = getOrbSprite(gem.color);
         const position = getGemDrawPosition(gem, r, c);
         context.save();
@@ -1690,6 +1832,18 @@
           context.beginPath();
           context.arc(position.x, position.y, CELL * 0.44, 0, Math.PI * 2);
           context.fill();
+          context.restore();
+        }
+        if (gem.reinforced) {
+          context.save();
+          context.globalAlpha = 0.55;
+          context.strokeStyle = "rgba(255, 216, 77, 0.95)";
+          context.lineWidth = 3;
+          context.shadowColor = "rgba(255, 216, 77, 0.8)";
+          context.shadowBlur = 10;
+          context.beginPath();
+          context.arc(position.x, position.y, CELL * 0.46, 0, Math.PI * 2);
+          context.stroke();
           context.restore();
         }
         if (gem.locked) {
@@ -2123,7 +2277,7 @@
     if (!dragging) return;
     const current = dragging.path[dragging.path.length - 1];
     if (sameCell(current, target) || !inBounds(target.r, target.c)) return;
-    if (board[target.r]?.[target.c]?.locked) return; // can't swap through a chained orb
+    if (isBlockedCell(board[target.r]?.[target.c])) return; // can't swap through a chained orb or rock
     const previous = dragging.path[dragging.path.length - 2];
     if (previous && sameCell(previous, target)) {
       swap(current, target);
@@ -2190,7 +2344,7 @@
     event.preventDefault();
     if (!settleActiveDrag()) return;
     const heldGem = board[cell.r][cell.c];
-    if (!heldGem || heldGem.locked) return; // can't pick up a chained orb
+    if (!heldGem || isBlockedCell(heldGem)) return; // can't pick up a chained orb or rock
     dragging = { path: [{ r: cell.r, c: cell.c }], pointerId: event.pointerId, heldId: heldGem.id, pointerX: cell.pointerX, pointerY: cell.pointerY };
     cursorVisible = false;
     try { boardCanvas.setPointerCapture?.(event.pointerId); } catch {
@@ -2279,7 +2433,7 @@
       if (!keyboardHolding) {
         if (!settleActiveDrag()) return;
         const heldGem = board[cursor.r][cursor.c];
-        if (!heldGem || heldGem.locked) return; // can't pick up a chained orb
+        if (!heldGem || isBlockedCell(heldGem)) return; // can't pick up a chained orb or rock
         keyboardHolding = true;
         dragging = { path: [{ r: cursor.r, c: cursor.c }], pointerId: -1, heldId: heldGem.id, pointerX: null, pointerY: null };
       } else {
