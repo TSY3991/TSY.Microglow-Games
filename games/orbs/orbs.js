@@ -36,6 +36,10 @@
   const skillCastBtn = document.querySelector("[data-skill-cast-btn]");
   const bossTrackEl = document.querySelector("[data-enemy-boss-track]");
   const bossTrackFillEl = document.querySelector("[data-enemy-boss-track-fill]");
+  const talentModal = document.querySelector("[data-talent-modal]");
+  const talentListEl = document.querySelector("[data-talent-list]");
+  const talentSummaryEl = document.querySelector("[data-talent-summary]");
+  const mainElementBtn = document.querySelector("[data-main-element-btn]");
   const portalStats = window.MicroglowGameStats;
 
   const gameId = "microglow-orbs";
@@ -152,6 +156,32 @@
   const BERSERK_ATK_MULT = 1.5;
   const STATUS_SKILL_TRIGGER_CHANCE = 0.45;
 
+  // Talent tree (batch 3): 3 branches, 5 tiers each, 1 point per 5 player
+  // levels (derived from playerLevel, not stored separately — spend never
+  // exceeds what the level formula grants). Each tier also costs shards
+  // (dropped by BOSS kills) as the "reinforcement material".
+  const TALENT_MAX_TIER = 5;
+  const TALENT_POINTS_PER_LEVEL = 5;
+  const TALENT_ATK_DMG_PER_TIER = 0.04;
+  const TALENT_ATK_ULT_PER_TIER = 0.06;
+  const TALENT_DEF_HP_PER_TIER = 0.05;
+  const TALENT_DEF_POISON_RESIST_PER_TIER = 0.2;
+  const TALENT_SUP_ENERGY_PER_TIER = 0.08;
+  const TALENT_SUP_WAVE_BONUS_ENERGY = 20;
+  const TALENT_BRANCHES = [
+    { id: "atk", label: "攻擊系", describe: (t) => `消珠傷害 +${Math.round(t * TALENT_ATK_DMG_PER_TIER * 100)}%、大絕傷害 +${Math.round(t * TALENT_ATK_ULT_PER_TIER * 100)}%` },
+    { id: "def", label: "生存系", describe: (t) => `最大血量 +${Math.round(t * TALENT_DEF_HP_PER_TIER * 100)}%、毒傷減免 ${Math.min(100, Math.round(t * TALENT_DEF_POISON_RESIST_PER_TIER * 100))}%${t >= TALENT_MAX_TIER ? "（免疫）" : ""}` },
+    { id: "sup", label: "輔助系", describe: (t) => `充能速度 +${Math.round(t * TALENT_SUP_ENERGY_PER_TIER * 100)}%${t >= TALENT_MAX_TIER ? `、每波開場 +${TALENT_SUP_WAVE_BONUS_ENERGY} 能量` : ""}` }
+  ];
+  function talentShardCost(tier) {
+    return (tier + 1) * 4;
+  }
+
+  // Declaring a "main element" pre-fight trades a damage boost for a bigger
+  // same-element penalty (design: risk/reward instead of a full party system).
+  const MAIN_ELEMENT_DAMAGE_MULT = 1.2;
+  const MAIN_ELEMENT_SAME_ELEMENT_PENALTY = 0.5;
+
   // Charge-bar active skills: energy comes from clearing orbs (see the
   // energyGain accumulation in resolveBoard()), casting doesn't consume a
   // turn or trigger a counterattack, and only one skill is equipped at a
@@ -184,6 +214,8 @@
   let enemy = null;
   let skillEnergy = 0;
   let equippedSkillId = SKILLS[0].id;
+  let talents = { atk: 0, def: 0, sup: 0 };
+  let mainElement = null;
   let timeLeft = START_TIME;
   let running = false;
   let paused = false;
@@ -222,6 +254,9 @@
   playerLevel = readPlayerLevel();
   playerXp = readPlayerXp();
   equippedSkillId = readEquippedSkill();
+  talents = readTalents();
+  mainElement = readMainElement();
+  updateMainElementUi();
   playerMaxHp = getPlayerMaxHp();
   playerHp = playerMaxHp;
   displayPlayerHp = playerHp;
@@ -348,6 +383,78 @@
     }));
   }
 
+  function clampTalentTier(value) {
+    return Math.max(0, Math.min(TALENT_MAX_TIER, Math.floor(Number(value) || 0)));
+  }
+
+  function readTalents() {
+    const stored = portalStats.readGame(gameId).talents;
+    return {
+      atk: clampTalentTier(stored?.atk),
+      def: clampTalentTier(stored?.def),
+      sup: clampTalentTier(stored?.sup)
+    };
+  }
+
+  function readShards() {
+    return Math.max(0, Number(portalStats.readGame(gameId).shards) || 0);
+  }
+
+  function readMainElement() {
+    const stored = portalStats.readGame(gameId).mainElement;
+    return ELEMENTS.some((element) => element.id === stored) ? stored : null;
+  }
+
+  function persistMainElement(elementId) {
+    portalStats.updateGame(gameId, (existing) => ({
+      ...existing,
+      title: gameTitle,
+      mainElement: elementId,
+      updatedAt: new Date().toISOString()
+    }));
+  }
+
+  // Available points are derived from playerLevel rather than stored — the
+  // spent total (sum of talent tiers) can never exceed what the level
+  // formula grants, so there's nothing to desync.
+  function availableTalentPoints(currentTalents = talents) {
+    const earned = Math.floor(playerLevel / TALENT_POINTS_PER_LEVEL);
+    return Math.max(0, earned - (currentTalents.atk + currentTalents.def + currentTalents.sup));
+  }
+
+  function spendTalentPoint(branchId) {
+    const current = readTalents();
+    const tier = current[branchId];
+    if (tier === undefined || tier >= TALENT_MAX_TIER) return false;
+    if (availableTalentPoints(current) <= 0) return false;
+    const shards = readShards();
+    const cost = talentShardCost(tier);
+    if (shards < cost) return false;
+    const nextTalents = { ...current, [branchId]: tier + 1 };
+    portalStats.updateGame(gameId, (existing) => ({
+      ...existing,
+      title: gameTitle,
+      talents: nextTalents,
+      shards: shards - cost,
+      updatedAt: new Date().toISOString()
+    }));
+    talents = nextTalents;
+    return true;
+  }
+
+  // Free respec (design: "天賦可免費重置") — clears allocation but does not
+  // refund spent shards, keeping the material cost meaningful.
+  function resetTalents() {
+    const cleared = { atk: 0, def: 0, sup: 0 };
+    portalStats.updateGame(gameId, (existing) => ({
+      ...existing,
+      title: gameTitle,
+      talents: cleared,
+      updatedAt: new Date().toISOString()
+    }));
+    talents = cleared;
+  }
+
   function ensurePortalStats() {
     portalStats.ensureGame(gameId, gameTitle, { bestWave: 0, playerLevel: 1, playerXp: 0 });
   }
@@ -368,7 +475,8 @@
   }
 
   function getPlayerMaxHp(level = playerLevel) {
-    return PLAYER_BASE_MAX_HP + (Math.max(1, level) - 1) * 20;
+    const base = PLAYER_BASE_MAX_HP + (Math.max(1, level) - 1) * 20;
+    return Math.round(base * (1 + talents.def * TALENT_DEF_HP_PER_TIER));
   }
 
   function getPlayerDamagePerOrb(level = playerLevel) {
@@ -740,23 +848,31 @@
           comboCount += 1;
           largestAttackGroup = Math.max(largestAttackGroup, group.size);
           const baseGroupDamage = group.size * getPlayerDamagePerOrb();
-          const baseMultiplier = elementMultiplier(group.color, enemy?.element ?? 0);
+          let baseMultiplier = elementMultiplier(group.color, enemy?.element ?? 0);
           if (baseMultiplier > 1) elementalStrong += 1;
           if (baseMultiplier < 1) elementalWeak += 1;
+          // A declared main element hits 20% harder, but if the enemy
+          // happens to share that element the usual same-element penalty
+          // (0.65x) is amplified to 0.5x instead — risk/reward trade-off.
+          if (mainElement !== null && group.color === mainElement) {
+            baseMultiplier = baseMultiplier === 0.65 ? MAIN_ELEMENT_SAME_ELEMENT_PENALTY : baseMultiplier * MAIN_ELEMENT_DAMAGE_MULT;
+          }
           // An active elemental shield blocks off-element damage down to a
           // sliver instead of applying the usual advantage/disadvantage math.
           const shieldActive = enemy?.shieldTurnsLeft > 0;
           const effectiveMultiplier = shieldActive && group.color !== enemy.shieldElement
             ? baseMultiplier * SHIELD_OFFELEMENT_MULT
             : baseMultiplier;
+          const atkTalentMult = 1 + talents.atk * TALENT_ATK_DMG_PER_TIER;
           let groupDamage = baseGroupDamage;
           energyGain += group.size * 2;
           if (group.size >= ULTIMATE_MATCH_SIZE) {
             ultimateCount += 1;
-            groupDamage = Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
+            const ultTalentMult = 1 + talents.atk * TALENT_ATK_ULT_PER_TIER;
+            groupDamage = Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT * ultTalentMult + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
             energyGain += 15;
           }
-          totalDamage += Math.max(1, Math.round(groupDamage * effectiveMultiplier));
+          totalDamage += Math.max(1, Math.round(groupDamage * effectiveMultiplier * atkTalentMult));
         }
       }
       eliminateCells(matches);
@@ -766,6 +882,7 @@
       totalDamage = Math.round(totalDamage * (1 + COMBO_BONUS * (comboCount - 1)));
       energyGain += (comboCount - 1) * 3;
     }
+    energyGain = Math.round(energyGain * (1 + talents.sup * TALENT_SUP_ENERGY_PER_TIER));
     return { totalDamage, comboCount, totalHeal, ultimateCount, largestAttackGroup, elementalStrong, elementalWeak, energyGain };
   }
 
@@ -884,6 +1001,9 @@
       const clearedTier = enemy.tier;
       enemy = makeEnemy(wave);
       clearNegativeOrbs();
+      if (talents.sup >= TALENT_MAX_TIER) {
+        skillEnergy = Math.min(SKILL_ENERGY_MAX, skillEnergy + TALENT_SUP_WAVE_BONUS_ENERGY);
+      }
       timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
       scheduleStageEffect("is-spawn", impactDelay + 760, 720);
@@ -1119,7 +1239,9 @@
   function applyPoisonTick() {
     const poisonedCount = countFlag("poisoned");
     if (poisonedCount <= 0) return;
-    const damage = Math.max(1, Math.round(playerMaxHp * POISON_DMG_PCT * poisonedCount));
+    const resist = Math.min(1, talents.def * TALENT_DEF_POISON_RESIST_PER_TIER);
+    if (resist >= 1) return; // max-tier survival branch: full poison immunity
+    const damage = Math.max(1, Math.round(playerMaxHp * POISON_DMG_PCT * poisonedCount * (1 - resist)));
     playerHp = Math.max(0, playerHp - damage);
     displayPlayerHp = playerHp;
     playPlayerEffect("is-hit", 500);
@@ -1173,7 +1295,7 @@
     enemy = makeEnemy(1);
     displayEnemyHp = enemy.hp;
     displayEnemyMaxHp = enemy.maxHp;
-    skillEnergy = 0;
+    skillEnergy = talents.sup >= TALENT_MAX_TIER ? TALENT_SUP_WAVE_BONUS_ENERGY : 0;
     timeLeft = START_TIME;
     dragging = null;
     particles = [];
@@ -2123,6 +2245,13 @@
       }
       return;
     }
+    if (talentModal && !talentModal.hidden) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeTalentModal();
+      }
+      return;
+    }
 
     const key = event.key;
     if (!running) {
@@ -2212,11 +2341,83 @@
       else if (action === "restart") restartGame();
       else if (action === "skill-cast") castSkill();
       else if (action === "skill-swap") cycleEquippedSkill();
+      else if (action === "talents") openTalentModal();
+      else if (action === "element-cycle") cycleMainElement();
     });
   });
 
   document.querySelector("[data-instruction-start]")?.addEventListener("click", () => closeInstruction(true));
   document.querySelector("[data-instruction-close]")?.addEventListener("click", () => closeInstruction(false));
+  document.querySelector("[data-talent-close]")?.addEventListener("click", () => closeTalentModal());
+  document.querySelector("[data-talent-reset]")?.addEventListener("click", () => {
+    resetTalents();
+    renderTalentList();
+    updateUi();
+  });
+
+  /* ---------- talents & main element ---------- */
+
+  function openTalentModal() {
+    if (!talentModal) return;
+    renderTalentList();
+    talentModal.hidden = false;
+  }
+
+  function closeTalentModal() {
+    if (talentModal) talentModal.hidden = true;
+  }
+
+  function renderTalentList() {
+    if (!talentListEl) return;
+    const current = readTalents();
+    talents = current;
+    const shards = readShards();
+    const available = availableTalentPoints(current);
+    talentListEl.replaceChildren();
+    TALENT_BRANCHES.forEach((branch) => {
+      const tier = current[branch.id];
+      const row = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = `${branch.label}　${tier}/${TALENT_MAX_TIER}`;
+      const desc = document.createElement("span");
+      const maxed = tier >= TALENT_MAX_TIER;
+      desc.textContent = maxed
+        ? `${branch.describe(tier)}`
+        : `${branch.describe(tier)}｜升級消耗 ${talentShardCost(tier)} 微光碎片`;
+      row.append(title, desc);
+      if (!maxed) {
+        const upgradeBtn = document.createElement("button");
+        upgradeBtn.type = "button";
+        upgradeBtn.textContent = "升級";
+        upgradeBtn.disabled = available <= 0 || shards < talentShardCost(tier);
+        upgradeBtn.addEventListener("click", () => {
+          if (spendTalentPoint(branch.id)) {
+            renderTalentList();
+            updateUi();
+          }
+        });
+        row.append(upgradeBtn);
+      }
+      talentListEl.append(row);
+    });
+    if (talentSummaryEl) {
+      talentSummaryEl.textContent = `可用天賦點：${available}｜微光碎片：${shards}｜每 ${TALENT_POINTS_PER_LEVEL} 等級 +1 天賦點`;
+    }
+  }
+
+  function updateMainElementUi() {
+    if (!mainElementBtn) return;
+    mainElementBtn.textContent = mainElement === null ? "主屬性:無" : `主屬性:${elementById(mainElement).label}`;
+  }
+
+  // Cycles 無 → 火 → 水 → 木 → 土 → 金 → 無…
+  function cycleMainElement() {
+    const order = [null, ...ELEMENTS.map((element) => element.id)];
+    const currentIndex = order.indexOf(mainElement);
+    mainElement = order[(currentIndex + 1) % order.length];
+    persistMainElement(mainElement);
+    updateMainElementUi();
+  }
 
   /* ---------- UI updates ---------- */
 

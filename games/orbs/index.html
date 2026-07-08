@@ -56,6 +56,8 @@
               <button type="button" data-action="start">開始</button>
               <button type="button" data-action="pause">暫停</button>
               <button type="button" data-action="restart">重開</button>
+              <button type="button" data-action="talents">天賦</button>
+              <button type="button" data-action="element-cycle" data-main-element-btn>主屬性:無</button>
             </div>
           </div>
           <div class="combat-strip" aria-label="戰鬥狀態">
@@ -180,6 +182,11 @@
             </div>
 
             <div>
+              <strong>天賦與主屬性</strong>
+              <span>擊敗首領掉落微光碎片，可在「天賦」面板花費碎片強化攻擊／生存／輔助三系；「主屬性」可宣言一個屬性，該屬性傷害 +20%，但若敵人剛好同屬性，劣勢會被放大。</span>
+            </div>
+
+            <div>
               <strong>操作方式</strong>
               <span>手機／桌機：按住元素珠拖曳，路徑可任意轉彎。鍵盤：方向鍵移動游標，空白鍵拿起與放下。</span>
             </div>
@@ -191,10 +198,23 @@
           </div>
         </div>
       </div>
+
+      <div class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="talent-title" data-talent-modal hidden>
+        <div class="instruction-card">
+          <p class="instruction-kicker">角色養成</p>
+          <h2 id="talent-title">天賦盤</h2>
+          <div class="instruction-list" data-talent-list></div>
+          <p class="instruction-note" data-talent-summary></p>
+          <div class="instruction-actions">
+            <button type="button" data-talent-reset>重置天賦</button>
+            <button type="button" data-talent-close>關閉</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./orbs.js?v=20260708a"></script>
+    <script src="./orbs.js?v=20260708b"></script>
   </body>
 </html>
