@@ -34,6 +34,8 @@
   const skillNameEl = document.querySelector("[data-skill-name]");
   const skillTrackEl = document.querySelector("[data-skill-track]");
   const skillCastBtn = document.querySelector("[data-skill-cast-btn]");
+  const bossTrackEl = document.querySelector("[data-enemy-boss-track]");
+  const bossTrackFillEl = document.querySelector("[data-enemy-boss-track-fill]");
   const portalStats = window.MicroglowGameStats;
 
   const gameId = "microglow-orbs";
@@ -128,6 +130,27 @@
   const COMBAT_PROJECTILE_MS = 320;
   const REDUCED_MOTION_PROJECTILE_MS = 90;
   const reducedMotionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+
+  // Enemy skill pool (batch 2): assigned per-enemy at spawn based on tier,
+  // triggered from enemyTurn()/dealDamageToEnemy() during the counterattack
+  // phase. "berserk" is a passive threshold check, not an active trigger.
+  const ENEMY_SKILL_POOL = ["charge", "lock", "poison", "shield", "berserk"];
+  const CHARGE_TURNS = 3;
+  const CHARGE_INTERRUPT_PCT = 0.12;
+  const CHARGE_BURST_MULT = 3;
+  const CHARGE_COOLDOWN_TURNS = 4;
+  const LOCK_MIN = 3;
+  const LOCK_MAX = 5;
+  const LOCK_CAP = 4;
+  const POISON_MIN = 2;
+  const POISON_MAX = 3;
+  const POISON_CAP = 3;
+  const POISON_DMG_PCT = 0.03;
+  const SHIELD_TURNS = 2;
+  const SHIELD_OFFELEMENT_MULT = 0.25;
+  const BERSERK_HP_PCT = 0.3;
+  const BERSERK_ATK_MULT = 1.5;
+  const STATUS_SKILL_TRIGGER_CHANCE = 0.45;
 
   // Charge-bar active skills: energy comes from clearing orbs (see the
   // energyGain accumulation in resolveBoard()), casting doesn't consume a
@@ -422,12 +445,90 @@
   function makeEnemy(waveNumber) {
     const template = ENEMIES[(waveNumber - 1) % TIER_SIZE];
     const tier = Math.min(TIER_LABELS.length - 1, Math.floor((waveNumber - 1) / TIER_SIZE));
+    // Every 7th wave (7, 14, 21…) is the tier cycle's boss: bigger stats, a
+    // dual HP bar, and a guaranteed charge-ultimate skill.
+    const isBoss = waveNumber > 0 && waveNumber % TIER_SIZE === 0;
     const baseHp = 120 + (waveNumber - 1) * 55;
     const baseAtk = 24 + (waveNumber - 1) * 4;
-    const hp = Math.round(baseHp * TIER_HP_MULT[tier]);
-    const atk = Math.round(baseAtk * TIER_ATK_MULT[tier]);
+    let hp = Math.round(baseHp * TIER_HP_MULT[tier]);
+    let atk = Math.round(baseAtk * TIER_ATK_MULT[tier]);
+    if (isBoss) {
+      hp = Math.round(hp * 1.6);
+      atk = Math.round(atk * 1.15);
+    }
     const name = `${template.name}${TIER_LABELS[tier]}`;
-    return { ...template, name, hp, maxHp: hp, atk, tier, element: template.element };
+    return {
+      ...template,
+      name,
+      hp,
+      maxHp: hp,
+      atk,
+      tier,
+      element: template.element,
+      isBoss,
+      skills: assignEnemySkills(tier, isBoss),
+      chargeActive: false,
+      chargeTurnsLeft: 0,
+      chargeCooldown: 0,
+      chargeDamageTaken: 0,
+      shieldElement: null,
+      shieldTurnsLeft: 0,
+      bossSegmentBroken: false
+    };
+  }
+
+  // Skill count scales with tier: normal enemies get none, elites can roll 2,
+  // bosses always get exactly 2 with "charge" guaranteed among them.
+  function assignEnemySkills(tier, isBoss) {
+    // Wave 7 (the first boss) is still tier 0 by the tier formula, so the
+    // boss check must run before the "no skills at tier 0" early-out.
+    if (tier === 0 && !isBoss) return [];
+    let count = tier === 1 ? 1 : tier === 2 ? (Math.random() < 0.5 ? 1 : 2) : 2;
+    if (isBoss) count = 2;
+    const pool = [...ENEMY_SKILL_POOL];
+    for (let i = pool.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const picked = pool.slice(0, Math.min(count, pool.length));
+    if (isBoss && !picked.includes("charge")) picked[0] = "charge";
+    return picked;
+  }
+
+  // Counts board cells currently carrying a status flag (locked/poisoned).
+  function countFlag(flag) {
+    let count = 0;
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        if (board[r]?.[c]?.[flag]) count += 1;
+      }
+    }
+    return count;
+  }
+
+  // Checks whether a BOSS just crossed the 50% HP line into its second
+  // segment — fires clearNegativeOrbs() exactly once per fight.
+  function checkBossSegmentBreak() {
+    if (!enemy?.isBoss || enemy.bossSegmentBroken) return;
+    if (enemy.hp <= enemy.maxHp / 2) {
+      enemy.bossSegmentBroken = true;
+      clearNegativeOrbs();
+      showStoryToast(`${enemy.name}的第一道護體潰散！盤面上的負面元素珠一併淨化。`, 2200);
+    }
+  }
+
+  // Fired when a BOSS's first HP segment breaks — clears every lock/poison
+  // flag from the board so the second phase starts clean.
+  function clearNegativeOrbs() {
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        const cell = board[r][c];
+        if (cell) {
+          cell.locked = false;
+          cell.poisoned = false;
+        }
+      }
+    }
   }
 
   function elementById(id) {
@@ -503,12 +604,19 @@
     return r >= 0 && r < ROWS && c >= 0 && c < COLS;
   }
 
+  // Locked (chained) orbs never match — NaN !== NaN makes them unequal to
+  // everything, including another locked orb, so a locked cell always breaks
+  // a run instead of joining one.
+  function matchColor(cell) {
+    return cell.locked ? NaN : cell.color;
+  }
+
   function findMatches() {
     const matched = new Set();
     for (let r = 0; r < ROWS; r += 1) {
       let runStart = 0;
       for (let c = 1; c <= COLS; c += 1) {
-        const sameAsPrev = c < COLS && board[r][c].color === board[r][runStart].color;
+        const sameAsPrev = c < COLS && matchColor(board[r][c]) === matchColor(board[r][runStart]);
         if (!sameAsPrev) {
           if (c - runStart >= 3) for (let k = runStart; k < c; k += 1) matched.add(`${r},${k}`);
           runStart = c;
@@ -518,7 +626,7 @@
     for (let c = 0; c < COLS; c += 1) {
       let runStart = 0;
       for (let r = 1; r <= ROWS; r += 1) {
-        const sameAsPrev = r < ROWS && board[r][c].color === board[runStart][c].color;
+        const sameAsPrev = r < ROWS && matchColor(board[r][c]) === matchColor(board[runStart][c]);
         if (!sameAsPrev) {
           if (r - runStart >= 3) for (let k = runStart; k < r; k += 1) matched.add(`${k},${c}`);
           runStart = r;
@@ -529,6 +637,7 @@
   }
 
   function eliminateCells(matched) {
+    const toUnlock = new Set();
     for (const key of matched) {
       const [r, c] = key.split(",").map(Number);
       const gem = board[r][c];
@@ -536,7 +645,15 @@
       const y = r * CELL + CELL / 2;
       spawnBurst(x, y, COLORS[gem.color].fill, 7);
       board[r][c] = null;
+      // Clearing a match unlocks any chained orb touching the cleared cells —
+      // this is the only way to free a locked orb (design: "消掉封珠四周連帶解鎖").
+      const neighbours = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
+      for (const [nr, nc] of neighbours) {
+        const neighbour = board[nr]?.[nc];
+        if (neighbour?.locked) toUnlock.add(neighbour);
+      }
     }
+    toUnlock.forEach((cell) => { cell.locked = false; });
   }
 
   function applyGravityAndRefill() {
@@ -573,6 +690,7 @@
       const [startR, startC] = key.split(",").map(Number);
       const color = board[startR][startC].color;
       let size = 0;
+      let poisoned = false;
       const queue = [key];
       while (queue.length) {
         const current = queue.pop();
@@ -580,6 +698,7 @@
         visited.add(current);
         size += 1;
         const [r, c] = current.split(",").map(Number);
+        if (board[r][c]?.poisoned) poisoned = true;
         const neighbours = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
         for (const [nr, nc] of neighbours) {
           const neighbourKey = `${nr},${nc}`;
@@ -588,7 +707,7 @@
           }
         }
       }
-      groups.push({ color, size });
+      groups.push({ color, size, poisoned });
     }
     return groups;
   }
@@ -612,13 +731,24 @@
         if (group.color === HEAL_COLOR_ID) {
           totalHeal += group.size * getPlayerHealPerOrb();
           energyGain += group.size * 3;
+        } else if (group.poisoned) {
+          // Poisoned orbs deal no damage when cleared — clearing them is a
+          // defensive move, not an attack (design: "消毒珠不產生傷害").
+          comboCount += 1;
+          energyGain += group.size;
         } else {
           comboCount += 1;
           largestAttackGroup = Math.max(largestAttackGroup, group.size);
           const baseGroupDamage = group.size * getPlayerDamagePerOrb();
-          const multiplier = elementMultiplier(group.color, enemy?.element ?? 0);
-          if (multiplier > 1) elementalStrong += 1;
-          if (multiplier < 1) elementalWeak += 1;
+          const baseMultiplier = elementMultiplier(group.color, enemy?.element ?? 0);
+          if (baseMultiplier > 1) elementalStrong += 1;
+          if (baseMultiplier < 1) elementalWeak += 1;
+          // An active elemental shield blocks off-element damage down to a
+          // sliver instead of applying the usual advantage/disadvantage math.
+          const shieldActive = enemy?.shieldTurnsLeft > 0;
+          const effectiveMultiplier = shieldActive && group.color !== enemy.shieldElement
+            ? baseMultiplier * SHIELD_OFFELEMENT_MULT
+            : baseMultiplier;
           let groupDamage = baseGroupDamage;
           energyGain += group.size * 2;
           if (group.size >= ULTIMATE_MATCH_SIZE) {
@@ -626,7 +756,7 @@
             groupDamage = Math.round(baseGroupDamage * ULTIMATE_DAMAGE_MULT + ULTIMATE_FLAT_DAMAGE + playerLevel * 4);
             energyGain += 15;
           }
-          totalDamage += Math.max(1, Math.round(groupDamage * multiplier));
+          totalDamage += Math.max(1, Math.round(groupDamage * effectiveMultiplier));
         }
       }
       eliminateCells(matches);
@@ -662,12 +792,27 @@
     if (result.totalHeal > 0) {
       applyHeal(result.totalHeal);
     }
+
+    // Poison ticks every turn regardless of whether this turn's match cleared
+    // any poisoned orbs (design: "回合結算時每顆毒珠扣血").
+    if (running && !enemyDefeated) {
+      applyPoisonTick();
+    }
+    if (running && enemy && !enemyDefeated && enemy.shieldTurnsLeft > 0) {
+      enemy.shieldTurnsLeft -= 1;
+      if (enemy.shieldTurnsLeft <= 0) {
+        enemy.shieldElement = null;
+        showStoryToast(`${enemy.name} 的護盾已消失。`, 1500);
+      }
+    }
+
     // Skip the counterattack on the turn that lands the killing blow — the
     // freshly-spawned next-wave enemy shouldn't get a free hit before the
-    // player has even seen it.
+    // player has even seen it. Also skip if poison alone already dropped the
+    // player to 0 HP this turn, so a dead player doesn't take a second hit.
     let enemyImpactDelay = 0;
-    if (running && enemy && !enemyDefeated) {
-      enemyImpactDelay = enemyAttack();
+    if (running && enemy && !enemyDefeated && playerHp > 0) {
+      enemyImpactDelay = enemyTurn();
     }
     if (playerHp <= 0 && enemyImpactDelay > 0) {
       dying = true;
@@ -688,6 +833,15 @@
     enemy.hp = Math.max(0, enemy.hp - damage);
     const preHitMaxHp = enemy.maxHp;
     const postHitHp = enemy.hp;
+    if (enemy.chargeActive) {
+      enemy.chargeDamageTaken += damage;
+      if (enemy.chargeDamageTaken >= enemy.maxHp * CHARGE_INTERRUPT_PCT) {
+        enemy.chargeActive = false;
+        enemy.chargeCooldown = CHARGE_COOLDOWN_TURNS;
+        showStoryToast(`打斷了${enemy.name}的蓄力大招！`, 1800);
+      }
+    }
+    checkBossSegmentBreak();
     const hasUltimate = ultimateCount > 0;
     const impactDelay = launchCombatProjectile(playerStageEl, enemyStageEl, hasUltimate ? "ultimate" : "player");
     playPlayerEffect(hasUltimate ? "is-ultimate" : "is-attack", hasUltimate ? 1450 : 900);
@@ -716,9 +870,20 @@
       if (!hasUltimate) startCombatCinematic("player", impactDelay + 1580);
       floatCombatText("擊破", "break");
       scheduleStageEffect("is-break", impactDelay, 820);
+      if (enemy.isBoss) {
+        const shardsGained = 3 + Math.floor(Math.random() * 4);
+        portalStats.updateGame(gameId, (existing) => ({
+          ...existing,
+          title: gameTitle,
+          shards: (Number(existing.shards) || 0) + shardsGained,
+          updatedAt: new Date().toISOString()
+        }));
+        scheduleCombatTimeout(() => showStoryToast(`擊敗首領！獲得 ${shardsGained} 枚微光碎片。`, 2200), impactDelay + 900);
+      }
       wave += 1;
       const clearedTier = enemy.tier;
       enemy = makeEnemy(wave);
+      clearNegativeOrbs();
       timeLeft = timeBonusForTier(clearedTier);
       updateTimerUi();
       scheduleStageEffect("is-spawn", impactDelay + 760, 720);
@@ -819,8 +984,12 @@
     wake();
   }
 
+  // The enemy's normal counterattack. Applies the berserk multiplier
+  // (skills.includes("berserk") + hp <= 30%) if applicable.
   function enemyAttack() {
-    playerHp = Math.max(0, playerHp - enemy.atk);
+    const isBerserk = enemy.skills.includes("berserk") && enemy.hp / enemy.maxHp <= BERSERK_HP_PCT;
+    const atk = isBerserk ? Math.round(enemy.atk * BERSERK_ATK_MULT) : enemy.atk;
+    playerHp = Math.max(0, playerHp - atk);
     playStageEffect("is-attack");
     const impactDelay = launchCombatProjectile(enemyStageEl, playerStageEl, "enemy");
     scheduleCombatTimeout(() => {
@@ -828,11 +997,134 @@
       displayPlayerHp = playerHp;
       updateUi();
       playPlayerEffect("is-hit", 680);
-      floatPlayerText(`-${enemy.atk}`, "is-hit");
-      announce(`-${enemy.atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
+      floatPlayerText(`-${atk}`, "is-hit");
+      announce(`-${atk}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff5ebc");
     }, impactDelay);
-    floatCombatText(`-${enemy.atk}`, "attack");
+    floatCombatText(`-${atk}`, "attack");
     return impactDelay;
+  }
+
+  // Entry point for the enemy's whole turn: advances/resolves the charge
+  // ultimate (if the enemy has it), maybe triggers a status skill
+  // (lock/poison/shield), then lands the normal attack — unless the charge
+  // ultimate fired this turn, which replaces the normal attack entirely.
+  function enemyTurn() {
+    if (enemy.skills.includes("charge")) {
+      if (enemy.chargeCooldown > 0) {
+        enemy.chargeCooldown -= 1;
+      } else if (!enemy.chargeActive) {
+        enemy.chargeActive = true;
+        enemy.chargeTurnsLeft = CHARGE_TURNS;
+        enemy.chargeDamageTaken = 0;
+        showStoryToast(`${enemy.name}開始蓄力，${CHARGE_TURNS} 回合後將發動大招！`, 2000);
+      } else {
+        enemy.chargeTurnsLeft -= 1;
+        if (enemy.chargeTurnsLeft <= 0) {
+          return unleashChargeBurst();
+        }
+      }
+    }
+    maybeTriggerEnemyStatusSkill();
+    return enemyAttack();
+  }
+
+  function unleashChargeBurst() {
+    enemy.chargeActive = false;
+    enemy.chargeCooldown = CHARGE_COOLDOWN_TURNS;
+    const damage = Math.round(enemy.atk * CHARGE_BURST_MULT);
+    playerHp = Math.max(0, playerHp - damage);
+    playStageEffect("is-attack");
+    const impactDelay = launchCombatProjectile(enemyStageEl, playerStageEl, "enemy");
+    scheduleCombatTimeout(() => {
+      if (!running) return;
+      displayPlayerHp = playerHp;
+      updateUi();
+      playPlayerEffect("is-hit", 900);
+      floatPlayerText(`大招 -${damage}`, "is-hit");
+      announce(`蓄力大招 -${damage}`, boardPxWidth / 2, boardPxHeight * 0.7, "#ff2e6d");
+    }, impactDelay);
+    floatCombatText(`大招 -${damage}`, "attack");
+    showStoryToast(`${enemy.name}的蓄力大招爆發！造成 ${damage} 點傷害！`, 2200);
+    return impactDelay;
+  }
+
+  // One status skill (lock/poison/shield) may trigger per enemy turn, capped
+  // so the board never gets swamped with negative orbs.
+  function maybeTriggerEnemyStatusSkill() {
+    if (!enemy?.skills?.length) return;
+    const candidates = enemy.skills.filter((id) => id === "lock" || id === "poison" || id === "shield");
+    if (!candidates.length) return;
+    if (Math.random() > STATUS_SKILL_TRIGGER_CHANCE) return;
+    const lockedCount = countFlag("locked");
+    const poisonedCount = countFlag("poisoned");
+    const usable = candidates.filter((id) => {
+      if (id === "lock") return lockedCount < LOCK_CAP;
+      if (id === "poison") return poisonedCount < POISON_CAP;
+      if (id === "shield") return !(enemy.shieldTurnsLeft > 0);
+      return true;
+    });
+    if (!usable.length) return;
+    const pick = usable[Math.floor(Math.random() * usable.length)];
+    if (pick === "lock") triggerLockSkill();
+    else if (pick === "poison") triggerPoisonSkill();
+    else if (pick === "shield") triggerShieldSkill();
+  }
+
+  function triggerLockSkill() {
+    const free = [];
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        const gem = board[r][c];
+        if (gem && !gem.locked) free.push(gem);
+      }
+    }
+    if (free.length < LOCK_MIN) return;
+    const count = Math.min(free.length, LOCK_MIN + Math.floor(Math.random() * (LOCK_MAX - LOCK_MIN + 1)));
+    for (let i = free.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [free[i], free[j]] = [free[j], free[i]];
+    }
+    free.slice(0, count).forEach((gem) => { gem.locked = true; });
+    showStoryToast(`${enemy.name}施放封珠！部分元素珠遭鎖鏈封印。`, 1800);
+  }
+
+  function triggerPoisonSkill() {
+    const free = [];
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        const gem = board[r][c];
+        if (gem && !gem.poisoned && gem.color !== HEAL_COLOR_ID) free.push(gem);
+      }
+    }
+    if (free.length < POISON_MIN) return;
+    const count = Math.min(free.length, POISON_MIN + Math.floor(Math.random() * (POISON_MAX - POISON_MIN + 1)));
+    for (let i = free.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [free[i], free[j]] = [free[j], free[i]];
+    }
+    free.slice(0, count).forEach((gem) => { gem.poisoned = true; });
+    showStoryToast(`${enemy.name}施放毒珠！盤面出現紫色劇毒元素珠。`, 1800);
+  }
+
+  function triggerShieldSkill() {
+    const elementIds = ELEMENTS.map((element) => element.id);
+    enemy.shieldElement = elementIds[Math.floor(Math.random() * elementIds.length)];
+    enemy.shieldTurnsLeft = SHIELD_TURNS;
+    showStoryToast(`${enemy.name}展開${elementById(enemy.shieldElement).label}屬性護盾！`, 1800);
+  }
+
+  // Poisoned orbs still on the board hurt the player at the end of every
+  // turn, whether or not any were cleared this turn (design: "回合結算時每
+  // 顆毒珠扣血").
+  function applyPoisonTick() {
+    const poisonedCount = countFlag("poisoned");
+    if (poisonedCount <= 0) return;
+    const damage = Math.max(1, Math.round(playerMaxHp * POISON_DMG_PCT * poisonedCount));
+    playerHp = Math.max(0, playerHp - damage);
+    displayPlayerHp = playerHp;
+    playPlayerEffect("is-hit", 500);
+    floatPlayerText(`-${damage}`, "is-hit");
+    showStoryToast(`盤面上的毒珠持續侵蝕，扣除 ${damage} 點血量！`, 1600);
   }
 
   function checkEnd() {
@@ -1269,6 +1561,26 @@
         context.scale(position.scale || 1, position.scale || 1);
         context.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
         context.restore();
+        if (gem.poisoned) {
+          context.save();
+          context.globalAlpha = 0.34;
+          context.fillStyle = "rgba(168, 46, 224, 0.95)";
+          context.beginPath();
+          context.arc(position.x, position.y, CELL * 0.44, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
+        if (gem.locked) {
+          context.save();
+          context.strokeStyle = "rgba(190, 210, 255, 0.92)";
+          context.lineWidth = 2.4;
+          context.shadowColor = "rgba(120, 160, 255, 0.6)";
+          context.shadowBlur = 4;
+          context.setLineDash([3, 3]);
+          context.strokeRect(position.x - CELL * 0.42, position.y - CELL * 0.42, CELL * 0.84, CELL * 0.84);
+          context.setLineDash([]);
+          context.restore();
+        }
       }
     }
 
@@ -1689,6 +2001,7 @@
     if (!dragging) return;
     const current = dragging.path[dragging.path.length - 1];
     if (sameCell(current, target) || !inBounds(target.r, target.c)) return;
+    if (board[target.r]?.[target.c]?.locked) return; // can't swap through a chained orb
     const previous = dragging.path[dragging.path.length - 2];
     if (previous && sameCell(previous, target)) {
       swap(current, target);
@@ -1755,6 +2068,7 @@
     event.preventDefault();
     if (!settleActiveDrag()) return;
     const heldGem = board[cell.r][cell.c];
+    if (!heldGem || heldGem.locked) return; // can't pick up a chained orb
     dragging = { path: [{ r: cell.r, c: cell.c }], pointerId: event.pointerId, heldId: heldGem.id, pointerX: cell.pointerX, pointerY: cell.pointerY };
     cursorVisible = false;
     try { boardCanvas.setPointerCapture?.(event.pointerId); } catch {
@@ -1835,8 +2149,9 @@
     else if (key === " " || key === "Enter") {
       if (!keyboardHolding) {
         if (!settleActiveDrag()) return;
-        keyboardHolding = true;
         const heldGem = board[cursor.r][cursor.c];
+        if (!heldGem || heldGem.locked) return; // can't pick up a chained orb
+        keyboardHolding = true;
         dragging = { path: [{ r: cursor.r, c: cursor.c }], pointerId: -1, heldId: heldGem.id, pointerX: null, pointerY: null };
       } else {
         finalizeTurn(dragging ? dragging.path.length - 1 : 0);
@@ -1958,13 +2273,32 @@
 
     if (enemy) {
       const enemyElement = elementById(enemy.element);
-      setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${enemyElement.label}・${enemy.name}`);
+      const bossPrefix = enemy.isBoss ? "👑BOSS・" : "";
+      setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${bossPrefix}${enemyElement.label}・${enemy.name}`);
       setUiText(enemyHpEl, "enemyHp", `${Math.max(0, displayEnemyHp)}/${displayEnemyMaxHp}`);
-      const enemyHpPct = displayEnemyMaxHp > 0 ? displayEnemyHp / displayEnemyMaxHp : 0;
+      // BOSS enemies split their HP bar into two segments: the existing bar
+      // shows the upper half (segment 1), the extra boss-only bar shows the
+      // lower half (segment 2, stays full until segment 1 empties).
+      const half = displayEnemyMaxHp / 2;
+      let enemyHpPct;
+      let bossSegPct = 0;
+      if (enemy.isBoss && half > 0) {
+        enemyHpPct = Math.max(0, Math.min(1, (displayEnemyHp - half) / half));
+        bossSegPct = Math.max(0, Math.min(100, (displayEnemyHp / half) * 100));
+      } else {
+        enemyHpPct = displayEnemyMaxHp > 0 ? displayEnemyHp / displayEnemyMaxHp : 0;
+      }
       setBarWidth(enemyHpTrack, "enemyHpPct", enemyHpPct * 100);
+      if (bossTrackEl) bossTrackEl.hidden = !enemy.isBoss;
+      if (bossTrackFillEl) setBarWidth(bossTrackFillEl, "bossSegPct", bossSegPct);
       enemyHpCardEl?.classList.toggle("is-low", enemyHpPct > 0 && enemyHpPct <= 0.25);
       enemyHpCardEl?.classList.toggle("is-critical", enemyHpPct > 0 && enemyHpPct <= 0.2);
-      setUiText(enemyBadgeEl, "enemyBadge", `${enemyElement.label}・${enemy.name}`);
+      const chargeNote = enemy.chargeActive ? ` ⚡蓄力中(${enemy.chargeTurnsLeft})` : "";
+      const shieldNote = enemy.shieldTurnsLeft > 0 ? ` 🛡${elementById(enemy.shieldElement).label}(${enemy.shieldTurnsLeft})` : "";
+      const isBerserk = enemy.skills.includes("berserk") && enemy.hp / enemy.maxHp <= BERSERK_HP_PCT;
+      const berserkNote = isBerserk ? " 🔥狂暴" : "";
+      setUiText(enemyBadgeEl, "enemyBadge", `${enemyElement.label}・${enemy.name}${chargeNote}${shieldNote}${berserkNote}`);
+      enemyStageEl?.classList.toggle("is-berserk", isBerserk);
       // No element label here: the enemy's attack doesn't use elemental
       // multipliers, so tagging ATK with an element would misleadingly imply
       // it does — the element badge above is the only place that matters.

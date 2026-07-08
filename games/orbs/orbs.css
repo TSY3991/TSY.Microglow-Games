@@ -327,6 +327,15 @@ button {
   box-shadow: 0 0 12px rgba(255, 94, 188, 0.55);
 }
 
+/* BOSS fights show a second stacked hp-track for the lower HP segment. */
+[data-enemy-boss-track] {
+  margin-top: 4px;
+}
+
+.enemy-stage.is-berserk [data-enemy-image] {
+  filter: drop-shadow(0 0 10px rgba(255, 40, 70, 0.65)) saturate(1.35);
+}
+
 .skill-row {
   display: flex;
   align-items: center;
