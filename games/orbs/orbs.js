@@ -199,6 +199,19 @@
   const ROCK_MAX_ON_BOARD = 2;
   const ROCK_HITS_TO_BREAK = 2;
 
+  // Modes & levels (batch 4). The existing endless wave counter already
+  // cycles every TIER_SIZE (7) waves, so "5 chapters of 7 waves" falls out
+  // of that for free — chapter N is waves (N-1)*7+1..N*7, and each
+  // chapter's boss is the wave that already triggers isBoss.
+  const CHAPTER_SIZE = TIER_SIZE;
+  const CHAPTER_COUNT = 5;
+  const DAILY_MODIFIERS = [
+    { id: "no-heal", label: "今日禁用回血珠" },
+    { id: "tougher", label: "今日敵人攻擊力 +20%" },
+    { id: "swift", label: "今日戰鬥時間 -10 秒" }
+  ];
+  const DAILY_SHARD_MULT = 2;
+
   // Charge-bar active skills: energy comes from clearing orbs (see the
   // energyGain accumulation in resolveBoard()), casting doesn't consume a
   // turn or trigger a counterattack, and only one skill is equipped at a
@@ -233,6 +246,9 @@
   let equippedSkillId = SKILLS[0].id;
   let talents = { atk: 0, def: 0, sup: 0 };
   let mainElement = null;
+  let dailyMode = false;
+  let dailyRandom = null;
+  let dailyModifierId = null;
   let timeLeft = START_TIME;
   let running = false;
   let paused = false;
@@ -472,6 +488,75 @@
     talents = cleared;
   }
 
+  function readMaxChapterCleared() {
+    return Math.max(0, Number(portalStats.readGame(gameId).maxChapterCleared) || 0);
+  }
+
+  function persistChapterProgress(chapter) {
+    if (chapter <= readMaxChapterCleared()) return;
+    portalStats.updateGame(gameId, (existing) => ({
+      ...existing,
+      title: gameTitle,
+      maxChapterCleared: chapter,
+      updatedAt: new Date().toISOString()
+    }));
+  }
+
+  function readDailyLastDate() {
+    return portalStats.readGame(gameId).dailyLastDate || null;
+  }
+
+  function persistDailyLastDate(dateStr) {
+    portalStats.updateGame(gameId, (existing) => ({
+      ...existing,
+      title: gameTitle,
+      dailyLastDate: dateStr,
+      updatedAt: new Date().toISOString()
+    }));
+  }
+
+  function todayDateString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }
+
+  // Small deterministic hash + PRNG (mulberry32) so the daily challenge's
+  // board/enemy-behavior randomness is identical for every player on the
+  // same calendar day, without needing a server.
+  function hashStringToSeed(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      hash = (Math.imul(31, hash) + str.charCodeAt(i)) | 0;
+    }
+    return hash >>> 0;
+  }
+
+  function createSeededRandom(seed) {
+    let state = seed >>> 0;
+    return function seededRandom() {
+      state |= 0;
+      state = (state + 0x6d2b79f5) | 0;
+      let t = Math.imul(state ^ (state >>> 15), 1 | state);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Gameplay-affecting randomness (orb colors, enemy skill rolls) routes
+  // through here so daily-challenge runs can be seeded; cosmetic randomness
+  // (particles, floating text jitter) is left on Math.random() on purpose.
+  function nextRandom() {
+    return dailyMode && dailyRandom ? dailyRandom() : Math.random();
+  }
+
+  function chapterOf(waveNumber) {
+    return Math.min(CHAPTER_COUNT, Math.ceil(waveNumber / CHAPTER_SIZE));
+  }
+
+  function isAbyssWave(waveNumber) {
+    return waveNumber > CHAPTER_COUNT * CHAPTER_SIZE;
+  }
+
   function ensurePortalStats() {
     portalStats.ensureGame(gameId, gameTitle, { bestWave: 0, playerLevel: 1, playerXp: 0 });
   }
@@ -540,10 +625,19 @@
 
   /* ---------- board setup ---------- */
 
+  function currentColorWeights() {
+    if (dailyMode && dailyModifierId === "no-heal") {
+      return COLORS.map((color) => (color.id === HEAL_COLOR_ID ? 0 : 1));
+    }
+    return COLOR_WEIGHTS;
+  }
+
   function randomColor() {
-    let roll = Math.random() * TOTAL_COLOR_WEIGHT;
+    const weights = currentColorWeights();
+    const total = weights === COLOR_WEIGHTS ? TOTAL_COLOR_WEIGHT : weights.reduce((sum, weight) => sum + weight, 0);
+    let roll = nextRandom() * total;
     for (let i = 0; i < COLORS.length; i += 1) {
-      roll -= COLOR_WEIGHTS[i];
+      roll -= weights[i];
       if (roll <= 0) return i;
     }
     return COLORS.length - 1;
@@ -580,6 +674,9 @@
     if (isBoss) {
       hp = Math.round(hp * 1.6);
       atk = Math.round(atk * 1.15);
+    }
+    if (dailyMode && dailyModifierId === "tougher") {
+      atk = Math.round(atk * 1.2);
     }
     const name = `${template.name}${TIER_LABELS[tier]}`;
     return {
@@ -706,7 +803,12 @@
   // Time bonus after a kill shrinks as tier rises so high waves can't coast
   // on an always-full clock; floors out instead of vanishing entirely.
   function timeBonusForTier(tier) {
-    return Math.max(45, START_TIME - tier * 8);
+    const base = Math.max(45, START_TIME - tier * 8);
+    return dailyMode && dailyModifierId === "swift" ? Math.max(30, base - 10) : base;
+  }
+
+  function startingTime() {
+    return dailyMode && dailyModifierId === "swift" ? Math.max(30, START_TIME - 10) : START_TIME;
   }
 
   // Remembers which extension actually exists per art key ("webp" preferred,
@@ -1104,14 +1206,20 @@
       floatCombatText("擊破", "break");
       scheduleStageEffect("is-break", impactDelay, 820);
       if (enemy.isBoss) {
-        const shardsGained = 3 + Math.floor(Math.random() * 4);
+        const baseShards = 3 + Math.floor(nextRandom() * 4);
+        const shardsGained = dailyMode ? baseShards * DAILY_SHARD_MULT : baseShards;
         portalStats.updateGame(gameId, (existing) => ({
           ...existing,
           title: gameTitle,
           shards: (Number(existing.shards) || 0) + shardsGained,
           updatedAt: new Date().toISOString()
         }));
-        scheduleCombatTimeout(() => showStoryToast(`擊敗首領！獲得 ${shardsGained} 枚微光碎片。`, 2200), impactDelay + 900);
+        const clearedChapter = chapterOf(wave);
+        persistChapterProgress(clearedChapter);
+        const chapterNote = clearedChapter >= CHAPTER_COUNT
+          ? "，最終章通關！無盡深淵已開啟"
+          : `，第 ${clearedChapter} 章通關`;
+        scheduleCombatTimeout(() => showStoryToast(`擊敗首領！獲得 ${shardsGained} 枚微光碎片${chapterNote}。`, 2400), impactDelay + 900);
       }
       wave += 1;
       const clearedTier = enemy.tier;
@@ -1415,7 +1523,7 @@
     displayEnemyHp = enemy.hp;
     displayEnemyMaxHp = enemy.maxHp;
     skillEnergy = talents.sup >= TALENT_MAX_TIER ? TALENT_SUP_WAVE_BONUS_ENERGY : 0;
-    timeLeft = START_TIME;
+    timeLeft = startingTime();
     dragging = null;
     particles = [];
     popups = [];
@@ -1431,6 +1539,39 @@
     scheduleCombatTimeout(() => maybeShowWaveStory(1), 360);
     startTimer();
     wake();
+  }
+
+  // Every "start a brand-new run" entry point (buttons, overlay, keyboard)
+  // routes through here so daily-challenge state only survives when the new
+  // run IS the daily challenge (startDailyChallenge sets it up first, then
+  // calls this with daily: true) — any other fresh start clears it.
+  function beginFreshRun({ daily = false } = {}) {
+    if (!daily) {
+      dailyMode = false;
+      dailyRandom = null;
+      dailyModifierId = null;
+    }
+    if (running) {
+      restartGame();
+    } else {
+      startGame();
+    }
+  }
+
+  function startDailyChallenge() {
+    const today = todayDateString();
+    if (readDailyLastDate() === today) {
+      showStoryToast("今日的每日挑戰已經完成，明天再來挑戰！", 2200);
+      return;
+    }
+    const seed = hashStringToSeed(`${gameId}-${today}`);
+    dailyRandom = createSeededRandom(seed);
+    dailyMode = true;
+    dailyModifierId = DAILY_MODIFIERS[Math.floor(dailyRandom() * DAILY_MODIFIERS.length)].id;
+    persistDailyLastDate(today);
+    beginFreshRun({ daily: true });
+    const modifier = DAILY_MODIFIERS.find((entry) => entry.id === dailyModifierId);
+    scheduleCombatTimeout(() => showStoryToast(`每日挑戰開始！今日調味：${modifier?.label || ""}（碎片獎勵雙倍）`, 2800), 400);
   }
 
   function restartGame() {
@@ -2411,7 +2552,7 @@
     if (!running) {
       if (key === " " || key === "Enter") {
         event.preventDefault();
-        startGame();
+        beginFreshRun();
       }
       return;
     }
@@ -2442,7 +2583,7 @@
     } else if (key === "p" || key === "P") {
       togglePause();
     } else if (key === "r" || key === "R") {
-      restartGame();
+      beginFreshRun();
     } else {
       handled = false;
     }
@@ -2481,7 +2622,7 @@
 
   function closeInstruction(shouldStart) {
     if (instructionModal) instructionModal.hidden = true;
-    if (shouldStart && !running) startGame();
+    if (shouldStart && !running) beginFreshRun();
   }
 
   document.querySelectorAll("[data-action]").forEach((button) => {
@@ -2489,14 +2630,15 @@
       const action = button.dataset.action;
       if (action === "instructions") openInstruction();
       else if (action === "start" || action === "overlay-start") {
-        if (!running) startGame();
+        if (!running) beginFreshRun();
         else if (paused) togglePause();
       } else if (action === "pause") togglePause();
-      else if (action === "restart") restartGame();
+      else if (action === "restart") beginFreshRun();
       else if (action === "skill-cast") castSkill();
       else if (action === "skill-swap") cycleEquippedSkill();
       else if (action === "talents") openTalentModal();
       else if (action === "element-cycle") cycleMainElement();
+      else if (action === "daily-challenge") startDailyChallenge();
     });
   });
 
@@ -2629,7 +2771,8 @@
     if (enemy) {
       const enemyElement = elementById(enemy.element);
       const bossPrefix = enemy.isBoss ? "👑BOSS・" : "";
-      setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${bossPrefix}${enemyElement.label}・${enemy.name}`);
+      const chapterLabel = isAbyssWave(wave) ? "無盡深淵" : `第${chapterOf(wave)}章`;
+      setUiText(enemyNameEl, "enemyName", `第 ${wave} 波・${chapterLabel}・${bossPrefix}${enemyElement.label}・${enemy.name}`);
       setUiText(enemyHpEl, "enemyHp", `${Math.max(0, displayEnemyHp)}/${displayEnemyMaxHp}`);
       // BOSS enemies split their HP bar into two segments: the existing bar
       // shows the upper half (segment 1), the extra boss-only bar shows the
