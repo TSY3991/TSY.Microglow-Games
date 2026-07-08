@@ -2822,3 +2822,128 @@ button {
     max-width: min(80%, 250px);
   }
 }
+/* 20260708c: mobile combat strip participates in layout and character stages no longer overlap */
+@media (max-width: 860px) {
+  .combat-strip {
+    position: relative;
+    z-index: 4;
+    top: auto;
+    right: auto;
+    left: auto;
+    width: auto;
+    margin: 0 4px 7px;
+    pointer-events: auto;
+  }
+
+  .battle-stage {
+    display: grid;
+    grid-template-columns: minmax(96px, 0.38fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 6px;
+    flex: 0 1 224px;
+    min-height: 158px;
+    margin-bottom: 7px;
+    padding: 6px;
+    overflow: hidden;
+  }
+
+  .player-stage,
+  .enemy-stage {
+    position: relative;
+    inset: auto;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .player-stage {
+    grid-column: 1;
+    z-index: 3;
+  }
+
+  .enemy-stage {
+    grid-column: 2;
+    z-index: 2;
+    border: 1px solid rgba(255, 216, 120, 0.34);
+    overflow: hidden;
+  }
+
+  .player-stage img {
+    width: min(92%, 118px);
+    max-height: 118px;
+  }
+
+  .enemy-stage img {
+    width: min(86%, 236px);
+    max-height: 136px;
+  }
+
+  .enemy-badge {
+    top: 8px;
+    max-width: min(82%, 230px);
+  }
+
+  .board-wrap.is-cinematic .battle-stage,
+  .board-wrap.is-ultimate-cinematic .battle-stage {
+    grid-template-columns: minmax(116px, 0.4fr) minmax(0, 1fr);
+  }
+
+  .board-wrap.is-cinematic .player-stage,
+  .board-wrap.is-ultimate-cinematic .player-stage {
+    width: auto;
+    height: auto;
+  }
+}
+
+@media (max-width: 540px) {
+  .combat-strip {
+    margin-right: 2px;
+    margin-bottom: 6px;
+    margin-left: 2px;
+  }
+
+  .battle-stage {
+    grid-template-columns: minmax(88px, 0.36fr) minmax(0, 1fr);
+    flex-basis: 212px;
+    min-height: 150px;
+    gap: 5px;
+  }
+
+  .player-stage img {
+    width: min(92%, 104px);
+    max-height: 100px;
+  }
+
+  .enemy-stage img {
+    width: min(88%, 222px);
+    max-height: 128px;
+  }
+}
+
+@media (max-width: 380px) {
+  .combat-strip {
+    margin-bottom: 5px;
+  }
+
+  .battle-stage {
+    grid-template-columns: minmax(82px, 0.35fr) minmax(0, 1fr);
+    flex-basis: 198px;
+    min-height: 142px;
+    padding: 5px;
+  }
+
+  .player-stage img {
+    width: min(92%, 94px);
+    max-height: 90px;
+  }
+
+  .enemy-stage img {
+    width: min(90%, 206px);
+    max-height: 118px;
+  }
+}
