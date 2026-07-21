@@ -5,6 +5,7 @@
   const GAME_TITLE = "微光商業帝國";
   const ELITE_NET_WORTH = 250000;
   const MAX_LOGS = 8;
+  const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
   const portalStats = window.MicroglowGameStats;
 
   const TILE_META = {
@@ -36,6 +37,8 @@
     {
       id: "starlight-merchant",
       name: "星輝商旅",
+      title: "星路遠征隊長",
+      artIndex: 0,
       avatar: "🧭",
       perk: "現金充裕，適合穩健累積。",
       detail: "起始 $36,000・薪資 $4,800・支出 $3,000",
@@ -47,6 +50,8 @@
     {
       id: "rune-artisan",
       name: "符文工匠",
+      title: "水晶帳冊鍊金師",
+      artIndex: 1,
       avatar: "🔮",
       perk: "能力領先，資產買入最多折 10%。",
       detail: "起始 $28,000・薪資 $5,000・能力 2",
@@ -58,6 +63,8 @@
     {
       id: "moon-investor",
       name: "月影投資家",
+      title: "夜航商會策略家",
+      artIndex: 2,
       avatar: "🌙",
       perk: "支出較低，更快接近財務自由。",
       detail: "起始 $30,000・薪資 $4,500・支出 $2,550",
@@ -127,8 +134,13 @@
     circleLabel: document.querySelector("[data-circle-label]"),
     turnLabel: document.querySelector("[data-turn-label]"),
     goalProgress: document.querySelector("[data-goal-progress]"),
+    goalMeter: document.querySelector("[data-goal-meter]"),
+    playerPortrait: document.querySelector("[data-player-portrait]"),
+    playerName: document.querySelector("[data-player-name]"),
+    playerTitle: document.querySelector("[data-player-title]"),
+    eventCard: document.querySelector("[data-event-card]"),
     eventIcon: document.querySelector("[data-event-icon]"),
-    eventType: document.querySelector("[data-event-type]"),
+    eventType: document.querySelector(".event-kicker [data-event-type]"),
     eventTitle: document.querySelector("[data-event-title]"),
     eventDescription: document.querySelector("[data-event-description]"),
     offerStats: document.querySelector("[data-offer-stats]"),
@@ -192,6 +204,8 @@
       id: config.id,
       name: config.name,
       avatar: config.avatar,
+      title: config.title || "商會競爭者",
+      artIndex: Number(config.artIndex) || 0,
       color: overrides.color || "#55e6ff",
       isHuman: Boolean(overrides.isHuman),
       strategy: overrides.strategy || "balanced",
@@ -209,13 +223,13 @@
 
   function renderCharacters() {
     elements.characterGrid.replaceChildren();
-    CHARACTERS.forEach((character) => {
+    CHARACTERS.forEach((character, index) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "character-card";
       button.innerHTML = `
-        <span class="character-avatar" aria-hidden="true">${character.avatar}</span>
-        <strong>${character.name}</strong>
+        <span class="character-art art-${index}" aria-hidden="true"></span>
+        <strong>${character.name}｜${character.title}</strong>
         <p>${character.perk}</p>
         <small>${character.detail}</small>
       `;
@@ -254,7 +268,7 @@
     ];
     elements.introModal.hidden = true;
     elements.resultModal.hidden = true;
-    elements.dice.textContent = "?";
+    elements.dice.textContent = "◈";
     addLog(`${selected.name}進入微光城，商業冒險開始。`, false);
     showEvent({
       type: "income",
@@ -268,23 +282,31 @@
   }
 
   function renderBoard() {
-    renderRing(elements.basicRing, basicTiles, 9);
-    renderRing(elements.eliteRing, eliteTiles, 6);
+    renderRing(elements.basicRing, basicTiles, 33.6);
+    renderRing(elements.eliteRing, eliteTiles, 17.3);
   }
 
-  function renderRing(container, tiles, size) {
+  function renderRing(container, tiles, radius) {
     container.replaceChildren();
-    const coordinates = ringCoordinates(size);
     tiles.forEach((tile, index) => {
+      const point = circlePoint(index, tiles.length, radius);
       const cell = document.createElement("div");
       cell.className = `tile ${tile.type}`;
-      cell.style.setProperty("--row", coordinates[index].row);
-      cell.style.setProperty("--col", coordinates[index].col);
+      cell.style.setProperty("--x", `${point.left}%`);
+      cell.style.setProperty("--y", `${point.top}%`);
       cell.title = tile.label;
       cell.setAttribute("aria-label", `${index + 1}. ${tile.label}`);
       cell.innerHTML = `<span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
       container.append(cell);
     });
+  }
+
+  function circlePoint(index, count, radius) {
+    const angle = (-90 + (index / count) * 360) * (Math.PI / 180);
+    return {
+      left: 50 + Math.cos(angle) * radius,
+      top: 50 + Math.sin(angle) * radius
+    };
   }
 
   function ringCoordinates(size) {
@@ -318,10 +340,14 @@
       if (target) target.textContent = formatMoney(value);
     });
     document.querySelector('[data-stat="turn"]').textContent = String(state.round);
-    elements.circleLabel.textContent = empty || player.circle === "basic" ? "基礎圈" : "精英圈";
+    elements.circleLabel.textContent = empty || player.circle === "basic" ? "基礎城區" : "精英內城";
     elements.turnLabel.textContent = state.ended ? "本局已結束" : state.busy ? "商會正在結算" : state.started ? "輪到你擲骰" : "等待選擇角色";
     elements.goalProgress.textContent = `${formatMoney(values.passive)} / ${formatMoney(values.expense)}`;
+    elements.goalMeter.style.width = `${Math.min(100, (values.passive / Math.max(1, values.expense)) * 100)}%`;
     elements.cashflowPreview.textContent = `淨現金流 ${formatSigned(empty ? 0 : monthlyCashflow(player))}`;
+    elements.playerName.textContent = empty ? "尚未選角" : player.name;
+    elements.playerTitle.textContent = empty ? "等待進入微光城" : player.title;
+    elements.playerPortrait.className = `player-portrait character-${empty ? 0 : player.artIndex}`;
   }
 
   function renderTokens() {
@@ -333,9 +359,9 @@
       token.className = "token";
       token.dataset.tokenIndex = String(index);
       token.style.setProperty("--token-color", actor.color);
-      token.style.left = `${point.left}%`;
-      token.style.top = `${point.top}%`;
-      token.textContent = actor.avatar;
+      token.style.setProperty("--x", `${point.left}%`);
+      token.style.setProperty("--y", `${point.top}%`);
+      token.innerHTML = "<span></span>";
       token.title = actor.name;
       elements.tokens.append(token);
     });
@@ -343,15 +369,8 @@
 
   function tokenPoint(actor) {
     const isElite = actor.circle === "elite";
-    const size = isElite ? 6 : 9;
-    const coordinates = ringCoordinates(size);
-    const coordinate = coordinates[actor.position % coordinates.length];
-    const origin = isElite ? 22 : 0;
-    const span = isElite ? 56 : 100;
-    return {
-      left: origin + ((coordinate.col + 0.5) / size) * span,
-      top: origin + ((coordinate.row + 0.5) / size) * span
-    };
+    const count = isElite ? eliteTiles.length : basicTiles.length;
+    return circlePoint(actor.position % count, count, isElite ? 17.3 : 33.6);
   }
 
   function renderRanking() {
@@ -439,6 +458,7 @@
   }
 
   function showEvent(event, actions = [], stats = []) {
+    elements.eventCard.dataset.eventType = event.type || "income";
     elements.eventIcon.textContent = event.icon || TILE_META[event.type]?.icon || "✦";
     elements.eventType.textContent = event.label || TILE_META[event.type]?.label || "城市事件";
     elements.eventTitle.textContent = event.title;
@@ -483,10 +503,11 @@
   async function animateDice(result) {
     elements.dice.classList.add("is-rolling");
     for (let index = 0; index < 7; index += 1) {
-      elements.dice.textContent = String(randomInt(1, 6));
+      elements.dice.textContent = DICE_FACES[randomInt(1, 6) - 1];
       await sleep(55);
     }
-    elements.dice.textContent = String(result);
+    elements.dice.textContent = DICE_FACES[result - 1];
+    elements.dice.setAttribute("aria-label", `骰子結果 ${result}`);
     elements.dice.classList.remove("is-rolling");
   }
 
@@ -701,7 +722,8 @@
     for (const actor of opponents) {
       if (state.ended) return;
       const roll = randomInt(1, 6);
-      elements.dice.textContent = String(roll);
+      elements.dice.textContent = DICE_FACES[roll - 1];
+      elements.dice.setAttribute("aria-label", `骰子結果 ${roll}`);
       addLog(`${actor.name}擲出 ${roll}。`);
       await moveActor(actor, roll, false);
       resolveAiTile(actor, currentTile(actor));
@@ -894,7 +916,7 @@
 
   function resetToIntro() {
     state = createEmptyState();
-    elements.dice.textContent = "?";
+    elements.dice.textContent = "◈";
     elements.resultModal.hidden = true;
     elements.assetsModal.hidden = true;
     elements.instructionsModal.hidden = true;

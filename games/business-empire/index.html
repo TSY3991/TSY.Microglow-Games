@@ -4,159 +4,147 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta
-      name="description"
-      content="微光商業帝國是一款原創奇幻商業策略桌遊，透過擲骰、資產配置與現金流管理打造自己的微光帝國。"
-    >
+    <meta name="description" content="微光商業帝國是一款原創奇幻商業策略桌遊，透過擲骰、資產配置與現金流管理打造自己的微光帝國。">
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
-    <link rel="stylesheet" href="../../shared/base.css?v=20260704c">
-    <link rel="stylesheet" href="./business.css?v=20260721a">
+    <link rel="stylesheet" href="../../shared/base.css?v=20260721a">
+    <link rel="stylesheet" href="./business.css?v=20260721b">
   </head>
   <body>
     <main class="empire-shell">
       <header class="game-topbar">
         <nav class="return-nav" aria-label="返回連結">
-          <a class="back-link compact-back" href="../../">回遊戲大廳</a>
-          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>返回入口網站</a>
+          <a class="back-link compact-back" href="../../">← 遊戲大廳</a>
+          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>入口網站</a>
         </nav>
-        <div class="title-copy">
-          <p class="eyebrow">Fantasy Cashflow Quest</p>
-          <h1>微光商業帝國</h1>
+        <div class="game-brand" aria-label="微光商業帝國">
+          <span class="brand-sigil" aria-hidden="true">♜</span>
+          <div><small>MICROGLOW</small><strong>微光商業帝國</strong></div>
         </div>
         <div class="top-actions" aria-label="遊戲控制">
-          <button type="button" data-action="instructions">玩法</button>
-          <button type="button" data-action="assets">資產</button>
-          <button type="button" data-action="restart">重開</button>
+          <button type="button" data-action="instructions">玩法卷軸</button>
+          <button type="button" data-action="assets">資產背包</button>
+          <button type="button" data-action="restart">重新冒險</button>
         </div>
       </header>
 
-      <section class="status-grid" aria-label="玩家財務狀態">
-        <div class="status-card cash"><span>現金</span><strong data-stat="cash">$0</strong></div>
-        <div class="status-card income"><span>被動收入</span><strong data-stat="passive">$0</strong></div>
-        <div class="status-card expense"><span>每月支出</span><strong data-stat="expense">$0</strong></div>
-        <div class="status-card debt"><span>負債</span><strong data-stat="debt">$0</strong></div>
-        <div class="status-card worth"><span>淨資產</span><strong data-stat="worth">$0</strong></div>
-        <div class="status-card turn"><span>回合</span><strong data-stat="turn">1</strong></div>
+      <section class="adventurer-hud" aria-label="玩家財務狀態">
+        <div class="player-banner">
+          <div class="player-portrait character-0" data-player-portrait aria-hidden="true"></div>
+          <div class="player-copy"><small>商業冒險者</small><strong data-player-name>尚未選角</strong><span data-player-title>等待進入微光城</span></div>
+        </div>
+        <div class="resource cash"><span class="resource-icon">●</span><div><small>金幣</small><strong data-stat="cash">$0</strong></div></div>
+        <div class="resource income"><span class="resource-icon">✦</span><div><small>被動魔力</small><strong data-stat="passive">$0</strong></div></div>
+        <div class="resource expense"><span class="resource-icon">▼</span><div><small>每月消耗</small><strong data-stat="expense">$0</strong></div></div>
+        <div class="resource debt"><span class="resource-icon">▰</span><div><small>契約負債</small><strong data-stat="debt">$0</strong></div></div>
+        <div class="resource worth"><span class="resource-icon">♛</span><div><small>帝國淨值</small><strong data-stat="worth">$0</strong></div></div>
+        <div class="round-medallion"><small>ROUND</small><strong data-stat="turn">1</strong></div>
       </section>
 
       <section class="game-layout" aria-label="微光商業帝國遊戲區">
         <section class="board-panel" aria-label="雙圈商業棋盤">
-          <div class="board-heading">
-            <div>
-              <span class="circle-label" data-circle-label>基礎圈</span>
-              <strong data-turn-label>等待選擇角色</strong>
-            </div>
-            <div class="goal-chip"><span>勝利目標</span><strong data-goal-progress>$0 / $0</strong></div>
+          <div class="board-status">
+            <div><span class="circle-label" data-circle-label>基礎城區</span><strong data-turn-label>等待選擇角色</strong></div>
+            <div class="freedom-meter"><span>財務自由</span><div class="meter-track"><i data-goal-meter></i></div><strong data-goal-progress>$0 / $0</strong></div>
           </div>
-
-          <div class="board" data-board>
-            <div class="board-glow" aria-hidden="true"></div>
-            <div class="ring outer-ring" data-ring="basic" aria-label="32 格基礎圈"></div>
-            <div class="ring inner-ring" data-ring="elite" aria-label="20 格精英圈"></div>
-            <div class="board-core">
-              <span>MICROGLOW</span>
-              <strong>EMPIRE</strong>
-              <small>現金流能量核心</small>
+          <div class="board-frame">
+            <div class="board" data-board>
+              <div class="board-vignette" aria-hidden="true"></div>
+              <div class="ring outer-ring" data-ring="basic" aria-label="32 格基礎圈"></div>
+              <div class="ring inner-ring" data-ring="elite" aria-label="20 格精英圈"></div>
+              <div class="zone-ribbon outer-zone"><span>COMMON DISTRICT</span><strong>基礎城區</strong></div>
+              <div class="zone-ribbon inner-zone"><span>ELITE CITADEL</span><strong>精英內城</strong></div>
+              <div class="tokens-layer" data-tokens aria-hidden="true"></div>
             </div>
-            <div class="tokens-layer" data-tokens aria-hidden="true"></div>
           </div>
-
           <div class="legend" aria-label="棋盤圖例">
-            <span><i class="income"></i>收入</span>
-            <span><i class="opportunity"></i>資產</span>
-            <span><i class="risk"></i>風險</span>
-            <span><i class="learn"></i>學習</span>
-            <span><i class="loan"></i>銀行</span>
-            <span><i class="gate"></i>躍升</span>
+            <span><i class="income"></i>收入</span><span><i class="opportunity"></i>資產</span><span><i class="risk"></i>風險</span><span><i class="learn"></i>學習</span><span><i class="loan"></i>銀行</span><span><i class="gate"></i>躍升</span>
           </div>
         </section>
 
-        <aside class="control-panel" aria-live="polite">
-          <div class="event-card" data-event-card>
-            <div class="event-kicker"><span data-event-icon>✦</span><strong data-event-type>準備啟程</strong></div>
-            <h2 data-event-title>選擇你的商業冒險者</h2>
-            <p data-event-description>每位角色都有不同的起始財務狀態。選好後，第一回合就會開始。</p>
-            <div class="offer-stats" data-offer-stats hidden></div>
-            <div class="event-actions" data-event-actions></div>
+        <aside class="quest-panel" aria-live="polite">
+          <div class="event-card" data-event-card data-event-type="income">
+            <div class="event-visual" data-event-visual><span data-event-icon>✦</span><i></i><b></b></div>
+            <div class="event-content">
+              <div class="event-kicker"><span>本次遭遇</span><strong data-event-type>準備啟程</strong></div>
+              <h2 data-event-title>選擇你的商業冒險者</h2>
+              <p data-event-description>選好角色，踏上建立商業帝國的冒險。</p>
+              <div class="offer-stats" data-offer-stats hidden></div>
+              <div class="event-actions" data-event-actions></div>
+            </div>
           </div>
 
-          <div class="turn-console">
-            <div class="dice-zone">
-              <div class="dice" data-dice aria-label="骰子結果">?</div>
-              <button class="roll-button" type="button" data-action="roll" disabled>擲骰前進</button>
+          <div class="action-deck">
+            <div class="dice-altar">
+              <div class="dice" data-dice aria-label="骰子結果">◈</div>
+              <div><small>命運骰</small><strong>決定下一步</strong></div>
+              <button class="roll-button" type="button" data-action="roll" disabled>擲出骰子</button>
             </div>
-            <div class="ranking" aria-label="即時排名">
-              <div class="panel-heading"><strong>帝國排名</strong><span>依淨資產</span></div>
+            <div class="rival-board" aria-label="即時排名">
+              <div class="panel-heading"><strong>商會競逐</strong><span>帝國淨值</span></div>
               <ol data-ranking></ol>
             </div>
           </div>
 
-          <div class="log-panel">
-            <div class="panel-heading"><strong>本回合紀錄</strong><span data-cashflow-preview>淨現金流 $0</span></div>
+          <div class="story-scroll">
+            <div class="panel-heading"><strong>冒險紀錄</strong><span data-cashflow-preview>淨現金流 $0</span></div>
             <ul data-log></ul>
           </div>
         </aside>
       </section>
 
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="intro-title" data-intro-modal>
+      <div class="modal intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title" data-intro-modal>
+        <div class="intro-backdrop" aria-hidden="true"></div>
         <div class="modal-card intro-card">
-          <p class="modal-kicker">歡迎來到微光城</p>
-          <h2 id="intro-title">挑選你的商業冒險者</h2>
-          <p class="modal-lead">擲骰探索雙圈能量城市，買進會產生現金流的資產。當被動收入不低於每月支出，你就建立了自由運轉的商業帝國。</p>
-          <div class="how-to-play">
-            <div><strong>1</strong><span>擲骰移動並處理落點事件</span></div>
-            <div><strong>2</strong><span>評估資產，不讓現金與信用斷裂</span></div>
-            <div><strong>3</strong><span>累積能力，通過躍升門進入精英圈</span></div>
+          <div class="intro-heading">
+            <p class="modal-kicker">THE GATES OF MICROGLOW ARE OPEN</p>
+            <h2 id="intro-title">選擇你的商業冒險者</h2>
+            <p class="modal-lead">穿越雙圈浮空城，讓資產成為你的盟友。當被動收入足以支付每月支出，你就能加冕為微光帝國的新王者。</p>
+          </div>
+          <div class="quest-rules">
+            <div><strong>擲</strong><span>擲骰探索城市</span></div><div><strong>策</strong><span>選擇資產與風險</span></div><div><strong>冠</strong><span>建立自由現金流</span></div>
           </div>
           <div class="character-grid" data-character-grid></div>
-          <p class="modal-note">本作為原創遊戲，不使用任何外部網站的角色、美術、名稱、文案或完整規則。</p>
+          <p class="modal-note">所有角色、美術與規則皆為原創設計。</p>
         </div>
       </div>
 
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="instructions-title" data-instructions-modal hidden>
-        <div class="modal-card instructions-card">
+        <div class="modal-card parchment-card instructions-card">
           <button class="modal-close" type="button" data-modal-close aria-label="關閉玩法說明">×</button>
-          <p class="modal-kicker">遊玩方式</p>
-          <h2 id="instructions-title">讓收入替你工作</h2>
+          <p class="modal-kicker">冒險者手冊</p><h2 id="instructions-title">讓收入替你戰鬥</h2>
           <div class="instruction-list">
-            <div><strong>擲骰與事件</strong><span>每回合移動後會遇到收入、支出、資產、風險、學習、銀行或命運事件。</span></div>
-            <div><strong>買入資產</strong><span>股票、房產與副業會增加被動收入，部分資產也會增加維護支出或負債。</span></div>
-            <div><strong>月度結算</strong><span>每回合結束會結算薪資、被動收入與每月支出；現金不足時會先嘗試使用信用額度。</span></div>
-            <div><strong>精英圈</strong><span>被動收入達支出的 55%、淨資產達 $250,000 或能力達 4，即可從躍升門進入高風險高報酬的精英圈。</span></div>
-            <div><strong>勝敗條件</strong><span>被動收入不低於每月支出即獲勝；現金為負且信用不足以補足時破產。</span></div>
-            <div><strong>AI 對手</strong><span>穩健型與激進型對手會依自身策略買入資產，任何 AI 先達成財務自由，你也會輸掉本局。</span></div>
+            <div><strong>擲骰與遭遇</strong><span>每回合沿城市道路前進，處理收入、支出、資產、風險、學習、銀行或命運事件。</span></div>
+            <div><strong>收集資產卡</strong><span>股票、房產與副業會產生被動收入，部分資產也附帶維護成本或契約負債。</span></div>
+            <div><strong>月度結算</strong><span>每回合結束結算薪資、被動收入與每月支出；現金不足時會先嘗試啟用信用。</span></div>
+            <div><strong>挑戰精英內城</strong><span>被動收入達支出的 55%、淨資產達 $250,000 或能力達 4，即可通過躍升門。</span></div>
+            <div><strong>勝敗條件</strong><span>被動收入不低於每月支出即獲勝；現金為負且信用不足時破產。</span></div>
+            <div><strong>AI 對手</strong><span>銀盾理財師與赤焰開拓者會依各自策略競爭，任何對手先達財務自由，你就會落敗。</span></div>
           </div>
-          <button class="primary-button" type="button" data-modal-close>繼續遊戲</button>
+          <button class="primary-button" type="button" data-modal-close>收起卷軸</button>
         </div>
       </div>
 
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="assets-title" data-assets-modal hidden>
-        <div class="modal-card assets-card">
+        <div class="modal-card parchment-card assets-card">
           <button class="modal-close" type="button" data-modal-close aria-label="關閉資產清單">×</button>
-          <p class="modal-kicker">資產管理</p>
-          <h2 id="assets-title">你的微光資產</h2>
-          <div class="asset-summary" data-asset-summary></div>
-          <div class="asset-list" data-asset-list></div>
+          <p class="modal-kicker">資產背包</p><h2 id="assets-title">你的戰利品與契約</h2>
+          <div class="asset-summary" data-asset-summary></div><div class="asset-list" data-asset-list></div>
           <button class="secondary-button" type="button" data-repay>償還 $5,000 負債</button>
         </div>
       </div>
 
       <div class="modal result-modal" role="dialog" aria-modal="true" aria-labelledby="result-title" data-result-modal hidden>
         <div class="modal-card result-card">
-          <p class="modal-kicker" data-result-kicker>本局結算</p>
-          <div class="result-emblem" data-result-emblem>✦</div>
-          <h2 id="result-title" data-result-title>帝國建成</h2>
-          <p data-result-message></p>
+          <p class="modal-kicker" data-result-kicker>本局結算</p><div class="result-emblem" data-result-emblem>✦</div>
+          <h2 id="result-title" data-result-title>帝國建成</h2><p data-result-message></p>
           <div class="result-stats" data-result-stats></div>
-          <button class="primary-button" type="button" data-action="play-again">再玩一次</button>
-          <a class="secondary-button" href="../../">回遊戲大廳</a>
+          <button class="primary-button" type="button" data-action="play-again">再啟冒險</button><a class="secondary-button" href="../../">回遊戲大廳</a>
         </div>
       </div>
     </main>
-
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./business.js?v=20260721a"></script>
+    <script src="./business.js?v=20260721b"></script>
   </body>
 </html>
