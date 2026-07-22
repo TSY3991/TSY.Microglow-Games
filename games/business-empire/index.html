@@ -8,7 +8,7 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260721a">
-    <link rel="stylesheet" href="./business.css?v=20260721b">
+    <link rel="stylesheet" href="./business.css?v=20260722b">
   </head>
   <body>
     <main class="empire-shell">
@@ -47,6 +47,15 @@
             <div><span class="circle-label" data-circle-label>基礎城區</span><strong data-turn-label>等待選擇角色</strong></div>
             <div class="freedom-meter"><span>財務自由</span><div class="meter-track"><i data-goal-meter></i></div><strong data-goal-progress>$0 / $0</strong></div>
           </div>
+          <div class="turn-banner" data-turn-banner>
+            <div class="turn-focus">
+              <span class="turn-pointer" aria-hidden="true">▶</span>
+              <div class="turn-avatar character-0" data-active-avatar><b data-active-emblem>♙</b></div>
+              <div class="turn-copy"><small>現在行動</small><strong data-active-name>等待玩家</strong><span data-active-phase>選角後開始回合</span></div>
+            </div>
+            <div class="turn-clock" data-turn-clock><small>回合倒數</small><strong data-turn-timer>45</strong><span>秒</span></div>
+            <div class="player-seats" data-player-seats aria-label="玩家回合順序"></div>
+          </div>
           <div class="board-frame">
             <div class="board" data-board>
               <div class="board-vignette" aria-hidden="true"></div>
@@ -54,7 +63,14 @@
               <div class="ring inner-ring" data-ring="elite" aria-label="20 格精英圈"></div>
               <div class="zone-ribbon outer-zone"><span>COMMON DISTRICT</span><strong>基礎城區</strong></div>
               <div class="zone-ribbon inner-zone"><span>ELITE CITADEL</span><strong>精英內城</strong></div>
-              <div class="tokens-layer" data-tokens aria-hidden="true"></div>
+              <div class="landmarks-layer" data-landmarks aria-label="玩家持有的地標"></div>
+              <div class="tokens-layer" data-tokens aria-label="地圖上的玩家角色"></div>
+              <div class="board-command" data-board-command>
+                <small>TURN ACTION</small>
+                <strong data-board-command-label>點擊骰子開始</strong>
+                <div class="board-dice"><div class="dice" data-dice aria-label="骰子結果">◈</div></div>
+                <button class="roll-button" type="button" data-action="roll" disabled><span>ROLL</span><b>擲出骰子</b></button>
+              </div>
             </div>
           </div>
           <div class="legend" aria-label="棋盤圖例">
@@ -75,11 +91,6 @@
           </div>
 
           <div class="action-deck">
-            <div class="dice-altar">
-              <div class="dice" data-dice aria-label="骰子結果">◈</div>
-              <div><small>命運骰</small><strong>決定下一步</strong></div>
-              <button class="roll-button" type="button" data-action="roll" disabled>擲出骰子</button>
-            </div>
             <div class="rival-board" aria-label="即時排名">
               <div class="panel-heading"><strong>商會競逐</strong><span>帝國淨值</span></div>
               <ol data-ranking></ol>
@@ -119,7 +130,8 @@
             <div><strong>月度結算</strong><span>每回合結束結算薪資、被動收入與每月支出；現金不足時會先嘗試啟用信用。</span></div>
             <div><strong>挑戰精英內城</strong><span>被動收入達支出的 55%、淨資產達 $250,000 或能力達 4，即可通過躍升門。</span></div>
             <div><strong>勝敗條件</strong><span>被動收入不低於每月支出即獲勝；現金為負且信用不足時破產。</span></div>
-            <div><strong>AI 對手</strong><span>銀盾理財師與赤焰開拓者會依各自策略競爭，任何對手先達財務自由，你就會落敗。</span></div>
+            <div><strong>四人回合</strong><span>你與三名對手依序擲骰、逐格移動並處理落點事件；輪到你時有 45 秒可以行動。</span></div>
+            <div><strong>逾時代管</strong><span>未在時間內擲骰會自動擲出；事件選擇逾時則採取放棄或結束回合，確保對局持續進行。</span></div>
           </div>
           <button class="primary-button" type="button" data-modal-close>收起卷軸</button>
         </div>
@@ -145,6 +157,6 @@
     </main>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./business.js?v=20260721b"></script>
+    <script src="./business.js?v=20260722b"></script>
   </body>
 </html>

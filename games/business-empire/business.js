@@ -5,6 +5,7 @@
   const GAME_TITLE = "微光商業帝國";
   const ELITE_NET_WORTH = 250000;
   const MAX_LOGS = 8;
+  const TURN_SECONDS = 45;
   const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
   const portalStats = window.MicroglowGameStats;
 
@@ -129,6 +130,9 @@
     basicRing: document.querySelector('[data-ring="basic"]'),
     eliteRing: document.querySelector('[data-ring="elite"]'),
     tokens: document.querySelector("[data-tokens]"),
+    landmarks: document.querySelector("[data-landmarks]"),
+    boardCommand: document.querySelector("[data-board-command]"),
+    boardCommandLabel: document.querySelector("[data-board-command-label]"),
     dice: document.querySelector("[data-dice]"),
     roll: document.querySelector('[data-action="roll"]'),
     circleLabel: document.querySelector("[data-circle-label]"),
@@ -160,11 +164,19 @@
     resultEmblem: document.querySelector("[data-result-emblem]"),
     resultTitle: document.querySelector("[data-result-title]"),
     resultMessage: document.querySelector("[data-result-message]"),
-    resultStats: document.querySelector("[data-result-stats]")
+    resultStats: document.querySelector("[data-result-stats]"),
+    playerSeats: document.querySelector("[data-player-seats]"),
+    activeAvatar: document.querySelector("[data-active-avatar]"),
+    activeEmblem: document.querySelector("[data-active-emblem]"),
+    activeName: document.querySelector("[data-active-name]"),
+    activePhase: document.querySelector("[data-active-phase]"),
+    turnClock: document.querySelector("[data-turn-clock]"),
+    turnTimer: document.querySelector("[data-turn-timer]")
   };
 
   let state = createEmptyState();
   let instanceSequence = 0;
+  let turnTimerId = null;
 
   init();
 
@@ -195,7 +207,12 @@
       ended: false,
       round: 1,
       actors: [],
-      logs: []
+      logs: [],
+      activeActorId: null,
+      phase: "waiting",
+      secondsLeft: TURN_SECONDS,
+      turnExpired: false,
+      movingActorId: null
     };
   }
 
@@ -206,6 +223,8 @@
       avatar: config.avatar,
       title: config.title || "商會競爭者",
       artIndex: Number(config.artIndex) || 0,
+      variant: overrides.variant || config.variant || "",
+      seat: Number(overrides.seat) || 0,
       color: overrides.color || "#55e6ff",
       isHuman: Boolean(overrides.isHuman),
       strategy: overrides.strategy || "balanced",
@@ -243,6 +262,8 @@
     const conservative = {
       id: "ai-warden",
       name: "銀盾理財師",
+      title: "王城風險守門人",
+      artIndex: (selected.artIndex + 1) % 3,
       avatar: "🛡️",
       cash: 33000,
       salary: 4800,
@@ -252,20 +273,37 @@
     const aggressive = {
       id: "ai-pioneer",
       name: "赤焰開拓者",
+      title: "烈焰商路先鋒",
+      artIndex: (selected.artIndex + 2) % 3,
       avatar: "🔥",
       cash: 30000,
       salary: 5200,
       baseExpense: 3300,
       skill: 0
     };
+    const opportunist = {
+      id: "ai-phantom",
+      name: "幻影投機客",
+      title: "星霧市場觀察者",
+      artIndex: selected.artIndex,
+      avatar: "🜂",
+      cash: 32000,
+      salary: 4900,
+      baseExpense: 3050,
+      skill: 1
+    };
 
     state = createEmptyState();
     state.started = true;
     state.actors = [
-      makeActor(selected, { isHuman: true, color: "#55e6ff", position: 0 }),
-      makeActor(conservative, { strategy: "conservative", color: "#7ef7bd", position: 0 }),
-      makeActor(aggressive, { strategy: "aggressive", color: "#ff7ac8", position: 0 })
+      makeActor(selected, { isHuman: true, seat: 0, color: "#55e6ff", position: 0 }),
+      makeActor(conservative, { seat: 1, strategy: "conservative", color: "#7ef7bd", position: 0 }),
+      makeActor(aggressive, { seat: 2, strategy: "aggressive", color: "#ff7ac8", position: 0 }),
+      makeActor(opportunist, { seat: 3, strategy: "balanced", variant: "spectral", color: "#b68cff", position: 0 })
     ];
+    state.activeActorId = selected.id;
+    state.phase = "roll";
+    state.secondsLeft = TURN_SECONDS;
     elements.introModal.hidden = true;
     elements.resultModal.hidden = true;
     elements.dice.textContent = "◈";
@@ -277,8 +315,9 @@
       title: "能量航線已開啟",
       description: "擲骰前進，落點事件處理完畢後會進行月度現金流結算。"
     });
-    setRollEnabled(true);
     renderAll();
+    setRollEnabled(true);
+    startTurnTimer();
   }
 
   function renderBoard() {
@@ -295,8 +334,9 @@
       cell.style.setProperty("--x", `${point.left}%`);
       cell.style.setProperty("--y", `${point.top}%`);
       cell.title = tile.label;
+      cell.dataset.tileIndex = String(index);
       cell.setAttribute("aria-label", `${index + 1}. ${tile.label}`);
-      cell.innerHTML = `<span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
+      cell.innerHTML = `<span class="tile-cap"></span><span class="tile-index">${index + 1}</span><span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
       container.append(cell);
     });
   }
@@ -320,7 +360,9 @@
 
   function renderAll() {
     renderStats();
+    renderLandmarks();
     renderTokens();
+    renderTurnStage();
     renderRanking();
     renderLogs();
   }
@@ -341,7 +383,8 @@
     });
     document.querySelector('[data-stat="turn"]').textContent = String(state.round);
     elements.circleLabel.textContent = empty || player.circle === "basic" ? "基礎城區" : "精英內城";
-    elements.turnLabel.textContent = state.ended ? "本局已結束" : state.busy ? "商會正在結算" : state.started ? "輪到你擲骰" : "等待選擇角色";
+    const current = activeActor();
+    elements.turnLabel.textContent = state.ended ? "本局已結束" : current ? `輪到 ${current.name}・${phaseLabel()}` : "等待選擇角色";
     elements.goalProgress.textContent = `${formatMoney(values.passive)} / ${formatMoney(values.expense)}`;
     elements.goalMeter.style.width = `${Math.min(100, (values.passive / Math.max(1, values.expense)) * 100)}%`;
     elements.cashflowPreview.textContent = `淨現金流 ${formatSigned(empty ? 0 : monthlyCashflow(player))}`;
@@ -350,19 +393,69 @@
     elements.playerPortrait.className = `player-portrait character-${empty ? 0 : player.artIndex}`;
   }
 
+  function renderLandmarks() {
+    elements.landmarks.replaceChildren();
+    document.querySelectorAll(".tile.is-owned").forEach((tile) => {
+      tile.classList.remove("is-owned");
+      tile.style.removeProperty("--owner-color");
+    });
+    const landmarkCounts = new Map();
+    state.actors.forEach((actor) => {
+      actor.assets.forEach((asset) => {
+        if (!Number.isInteger(asset.boardPosition)) return;
+        const isElite = asset.boardCircle === "elite";
+        const count = isElite ? eliteTiles.length : basicTiles.length;
+        const point = circlePoint(asset.boardPosition % count, count, isElite ? 12.7 : 28.7);
+        const key = `${asset.boardCircle}:${asset.boardPosition}`;
+        const stack = landmarkCounts.get(key) || 0;
+        landmarkCounts.set(key, stack + 1);
+        const marker = document.createElement("div");
+        marker.className = `landmark ${asset.type}`;
+        marker.dataset.stack = String(Math.min(stack, 2));
+        marker.style.setProperty("--owner-color", actor.color);
+        marker.style.setProperty("--x", `${point.left}%`);
+        marker.style.setProperty("--y", `${point.top}%`);
+        const icons = { stock: "▲", realEstate: "♜", business: "⚙" };
+        marker.innerHTML = `<span>${icons[asset.type] || "◆"}</span><i></i>`;
+        marker.title = `${actor.name}持有：${asset.name}`;
+        elements.landmarks.append(marker);
+        const ring = isElite ? elements.eliteRing : elements.basicRing;
+        const tile = ring.children[asset.boardPosition % count];
+        if (tile) {
+          tile.classList.add("is-owned");
+          tile.style.setProperty("--owner-color", actor.color);
+        }
+      });
+    });
+  }
+
   function renderTokens() {
     elements.tokens.replaceChildren();
-    state.actors.forEach((actor, index) => {
-      if (actor.eliminated) return;
+    const occupancy = new Map();
+    state.actors.filter((actor) => !actor.eliminated).forEach((actor, index) => {
       const point = tokenPoint(actor);
+      const key = `${actor.circle}:${actor.position}`;
+      const stackIndex = occupancy.get(key) || 0;
+      occupancy.set(key, stackIndex + 1);
       const token = document.createElement("div");
       token.className = "token";
+      if (actor.id === state.activeActorId) token.classList.add("is-active");
+      if (actor.id === state.movingActorId) token.classList.add("is-moving");
       token.dataset.tokenIndex = String(index);
+      token.dataset.stackIndex = String(Math.min(3, stackIndex));
+      token.dataset.variant = actor.variant || "";
       token.style.setProperty("--token-color", actor.color);
       token.style.setProperty("--x", `${point.left}%`);
       token.style.setProperty("--y", `${point.top}%`);
-      token.innerHTML = "<span></span>";
-      token.title = actor.name;
+      token.innerHTML = `
+        <span class="pawn-name">${actor.name}</span>
+        <span class="pawn-figure character-${actor.artIndex}"><b>${actor.avatar}</b></span>
+        <i class="pawn-base"></i>
+        <em class="pawn-turn">行動中</em>
+      `;
+      token.title = `${actor.name}・${actor.circle === "elite" ? "精英內城" : "基礎城區"}第 ${actor.position + 1} 格`;
+      token.setAttribute("role", "img");
+      token.setAttribute("aria-label", token.title);
       elements.tokens.append(token);
     });
   }
@@ -371,6 +464,54 @@
     const isElite = actor.circle === "elite";
     const count = isElite ? eliteTiles.length : basicTiles.length;
     return circlePoint(actor.position % count, count, isElite ? 17.3 : 33.6);
+  }
+
+  function activeActor() {
+    return state.actors.find((actor) => actor.id === state.activeActorId) || null;
+  }
+
+  function phaseLabel() {
+    const labels = {
+      waiting: "等待開局",
+      roll: "等待擲骰",
+      dice: "骰子轉動",
+      moving: "逐格前進",
+      decision: "處理事件",
+      settling: "現金流結算",
+      ai: "對手行動"
+    };
+    return labels[state.phase] || "準備中";
+  }
+
+  function renderTurnStage() {
+    const actor = activeActor();
+    elements.activeName.textContent = actor ? actor.name : "等待玩家";
+    elements.activePhase.textContent = actor ? phaseLabel() : "選角後開始回合";
+    elements.activeEmblem.textContent = actor?.avatar || "♙";
+    elements.activeAvatar.className = `turn-avatar character-${actor?.artIndex || 0}`;
+    elements.activeAvatar.dataset.variant = actor?.variant || "";
+    elements.turnClock.classList.toggle("is-warning", Boolean(actor?.isHuman && state.secondsLeft <= 10));
+    elements.turnClock.classList.toggle("is-paused", !actor?.isHuman || !["roll", "decision"].includes(state.phase));
+    elements.turnClock.style.setProperty("--turn-progress", `${Math.max(0, Math.min(100, (state.secondsLeft / TURN_SECONDS) * 100))}%`);
+    elements.turnTimer.textContent = actor?.isHuman ? String(state.secondsLeft) : "AI";
+    elements.boardCommand.dataset.phase = state.phase;
+    elements.boardCommand.classList.toggle("is-human-turn", Boolean(actor?.isHuman));
+    elements.boardCommandLabel.textContent = !actor ? "點擊骰子開始" : state.phase === "roll" ? "輪到你・擲骰前進" : state.phase === "decision" ? "處理落點事件" : state.phase === "ai" ? `${actor.name}擲骰中` : phaseLabel();
+
+    elements.playerSeats.replaceChildren();
+    state.actors.forEach((player) => {
+      const seat = document.createElement("div");
+      seat.className = "player-seat";
+      if (player.id === state.activeActorId) seat.classList.add("is-current");
+      if (player.eliminated) seat.classList.add("is-eliminated");
+      seat.dataset.variant = player.variant || "";
+      seat.style.setProperty("--seat-color", player.color);
+      seat.innerHTML = `
+        <span class="seat-avatar character-${player.artIndex}"><b>${player.avatar}</b></span>
+        <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : "AI"}</small><strong>${player.name}</strong><em>${player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"}</em></span>
+      `;
+      elements.playerSeats.append(seat);
+    });
   }
 
   function renderRanking() {
@@ -481,23 +622,82 @@
     });
   }
 
+  function stopTurnTimer() {
+    if (turnTimerId !== null) {
+      window.clearInterval(turnTimerId);
+      turnTimerId = null;
+    }
+  }
+
+  function startTurnTimer() {
+    stopTurnTimer();
+    const actor = activeActor();
+    if (!actor?.isHuman || state.ended || !["roll", "decision"].includes(state.phase)) return;
+    renderTurnStage();
+    turnTimerId = window.setInterval(() => {
+      state.secondsLeft = Math.max(0, state.secondsLeft - 1);
+      renderTurnStage();
+      if (state.secondsLeft === 0) {
+        stopTurnTimer();
+        expireHumanTurn();
+      }
+    }, 1000);
+  }
+
+  function expireHumanTurn() {
+    const player = human();
+    if (!player || state.ended || state.activeActorId !== player.id) return;
+    state.turnExpired = true;
+    addLog(`${player.name}回合時間到，由商會自動代管。`);
+    if (state.phase === "roll") {
+      rollHuman();
+      return;
+    }
+    if (state.phase === "decision") autoResolveDecision();
+  }
+
+  function autoResolveDecision() {
+    if (state.ended || state.phase !== "decision") return;
+    const choices = [...elements.eventActions.querySelectorAll("button:not(:disabled)")];
+    const fallback = choices.at(-1);
+    if (fallback) {
+      fallback.click();
+    } else {
+      finishHumanTurn();
+    }
+  }
+
   function setRollEnabled(enabled) {
-    elements.roll.disabled = !enabled || !state.started || state.busy || state.ended;
+    const player = human();
+    elements.roll.disabled = !enabled || !state.started || state.busy || state.ended || state.phase !== "roll" || state.activeActorId !== player?.id;
   }
 
   async function rollHuman() {
-    if (!state.started || state.busy || state.ended) return;
-    state.busy = true;
-    setRollEnabled(false);
-    renderStats();
     const player = human();
+    if (!state.started || state.busy || state.ended || state.phase !== "roll" || state.activeActorId !== player?.id) return;
+    stopTurnTimer();
+    state.busy = true;
+    state.phase = "dice";
+    setRollEnabled(false);
+    renderAll();
     const roll = randomInt(1, 6);
     await animateDice(roll);
     addLog(`${player.name}擲出 ${roll}。`);
+    state.phase = "moving";
+    state.movingActorId = player.id;
+    renderAll();
     await moveActor(player, roll, true);
+    state.movingActorId = null;
+    state.phase = "decision";
     const tile = currentTile(player);
     resolveHumanTile(player, tile);
     renderAll();
+    if (state.ended) return;
+    if (state.turnExpired) {
+      window.setTimeout(autoResolveDecision, 700);
+    } else {
+      startTurnTimer();
+    }
   }
 
   async function animateDice(result) {
@@ -517,7 +717,7 @@
       actor.position = (actor.position + 1) % length;
       if (animate) {
         renderTokens();
-        await sleep(95);
+        await sleep(135);
       }
     }
     renderTokens();
@@ -607,7 +807,14 @@
 
   function buyAsset(actor, template, price) {
     actor.cash -= price;
-    actor.assets.push({ ...template, paidPrice: price, instanceId: `${template.id}-${instanceSequence += 1}` });
+    actor.assets.push({
+      ...template,
+      paidPrice: price,
+      ownerId: actor.id,
+      boardCircle: actor.circle,
+      boardPosition: actor.position,
+      instanceId: `${template.id}-${instanceSequence += 1}`
+    });
     addLog(`${actor.name}買入「${template.name}」，每月淨流入 ${formatSigned(template.monthlyIncome - template.monthlyCost)}。`);
   }
 
@@ -676,7 +883,24 @@
     showEvent({ type: tile.type, title, description }, [{ label: "結束回合", run: finishHumanTurn }], stats);
   }
 
+  function beginHumanTurn() {
+    const player = human();
+    state.activeActorId = player.id;
+    state.phase = "roll";
+    state.secondsLeft = TURN_SECONDS;
+    state.turnExpired = false;
+    state.movingActorId = null;
+    state.busy = false;
+    renderAll();
+    showEvent({ type: "income", icon: "✦", label: `第 ${state.round} 回合`, title: "輪到你行動", description: "觀察現金流與排名，在 45 秒內擲骰並處理下一個商業事件。" });
+    setRollEnabled(true);
+    startTurnTimer();
+  }
+
   async function finishHumanTurn() {
+    stopTurnTimer();
+    state.phase = "settling";
+    state.turnExpired = false;
     elements.eventActions.replaceChildren();
     const player = human();
     const result = settleActor(player);
@@ -689,15 +913,13 @@
       return;
     }
 
+    state.phase = "ai";
     renderAll();
-    showEvent({ type: "income", icon: "⌛", label: "對手回合", title: "商會正在推演對手策略", description: "銀盾理財師與赤焰開拓者將依各自風格處理本回合。" });
+    showEvent({ type: "income", icon: "⌛", label: "對手回合", title: "商會正在推演三名對手策略", description: "每位對手都會擲骰、逐格移動並依自己的風格處理落點。" });
     await runAiTurns();
     if (state.ended) return;
     state.round += 1;
-    state.busy = false;
-    renderAll();
-    showEvent({ type: "income", icon: "✦", label: `第 ${state.round} 回合`, title: "輪到你行動", description: "觀察現金流與排名，擲骰探索下一個商業事件。" });
-    setRollEnabled(true);
+    beginHumanTurn();
   }
 
   function settleActor(actor) {
@@ -721,11 +943,17 @@
     const opponents = state.actors.filter((actor) => !actor.isHuman && !actor.eliminated);
     for (const actor of opponents) {
       if (state.ended) return;
+      state.activeActorId = actor.id;
+      state.phase = "ai";
+      state.secondsLeft = 0;
+      state.movingActorId = actor.id;
+      renderAll();
+      showEvent({ type: "income", icon: actor.avatar, label: "對手擲骰", title: `${actor.name}正在行動`, description: `${actor.title}準備沿著城市道路前進。` });
       const roll = randomInt(1, 6);
-      elements.dice.textContent = DICE_FACES[roll - 1];
-      elements.dice.setAttribute("aria-label", `骰子結果 ${roll}`);
+      await animateDice(roll);
       addLog(`${actor.name}擲出 ${roll}。`);
-      await moveActor(actor, roll, false);
+      await moveActor(actor, roll, true);
+      state.movingActorId = null;
       resolveAiTile(actor, currentTile(actor));
       const settlement = settleActor(actor);
       if (settlement.failed) {
@@ -737,7 +965,7 @@
         return;
       }
       renderAll();
-      await sleep(350);
+      await sleep(520);
     }
   }
 
@@ -843,6 +1071,7 @@
   }
 
   function endGame(won, message, focusActor) {
+    stopTurnTimer();
     state.ended = true;
     state.busy = false;
     setRollEnabled(false);
@@ -915,6 +1144,7 @@
   }
 
   function resetToIntro() {
+    stopTurnTimer();
     state = createEmptyState();
     elements.dice.textContent = "◈";
     elements.resultModal.hidden = true;
