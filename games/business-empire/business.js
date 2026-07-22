@@ -10,16 +10,40 @@
   const portalStats = window.MicroglowGameStats;
 
   const TILE_META = {
-    income: { label: "收入", icon: "✦" },
-    expense: { label: "支出", icon: "◆" },
-    stock: { label: "股票", icon: "↗" },
-    realEstate: { label: "房產", icon: "⌂" },
-    business: { label: "副業", icon: "⚙" },
-    risk: { label: "風險", icon: "⚠" },
-    loan: { label: "銀行", icon: "▣" },
-    learn: { label: "學習", icon: "✧" },
-    gate: { label: "躍升門", icon: "⬡" },
-    destiny: { label: "命運", icon: "☄" }
+    income: { label: "收入", icon: "💰" },
+    expense: { label: "支出", icon: "🧾" },
+    stock: { label: "股票", icon: "🏢" },
+    realEstate: { label: "房產", icon: "🏠" },
+    business: { label: "副業", icon: "🏪" },
+    risk: { label: "風險", icon: "🌋" },
+    loan: { label: "銀行", icon: "🏦" },
+    learn: { label: "學習", icon: "🏛️" },
+    gate: { label: "躍升門", icon: "🏰" },
+    destiny: { label: "命運", icon: "🔮" }
+  };
+
+  const DIFFICULTY_CONFIG = {
+    apprentice: {
+      label: "新手",
+      description: "AI 保留較多現金，決策節奏較溫和。",
+      cashBonus: -4000,
+      skillBonus: 0,
+      strategies: ["conservative", "balanced", "balanced"]
+    },
+    guild: {
+      label: "商會",
+      description: "三種策略混合，適合第一次完整體驗。",
+      cashBonus: 0,
+      skillBonus: 0,
+      strategies: ["conservative", "aggressive", "balanced"]
+    },
+    sovereign: {
+      label: "王者",
+      description: "AI 資源與能力提升，會更積極搶占高收益地標。",
+      cashBonus: 7000,
+      skillBonus: 1,
+      strategies: ["balanced", "aggressive", "aggressive"]
+    }
   };
 
   const BASIC_TYPES = [
@@ -33,6 +57,11 @@
     "gate", "stock", "risk", "realEstate", "income", "business", "destiny", "expense", "learn", "stock",
     "gate", "realEstate", "risk", "business", "income", "loan", "destiny", "stock", "expense", "learn"
   ];
+
+  const BOARD_LAYOUTS = {
+    basic: { size: 9, minX: 5, maxX: 95, minY: 8, maxY: 92 },
+    elite: { size: 6, minX: 22, maxX: 78, minY: 28, maxY: 72 }
+  };
 
   const CHARACTERS = [
     {
@@ -171,12 +200,32 @@
     activeName: document.querySelector("[data-active-name]"),
     activePhase: document.querySelector("[data-active-phase]"),
     turnClock: document.querySelector("[data-turn-clock]"),
-    turnTimer: document.querySelector("[data-turn-timer]")
+    turnTimer: document.querySelector("[data-turn-timer]"),
+    focusButton: document.querySelector('[data-action="focus"]'),
+    audioButton: document.querySelector('[data-action="audio"]'),
+    orientationGuard: document.querySelector("[data-orientation-guard]"),
+    orientationState: document.querySelector("[data-orientation-state]"),
+    setupStages: [...document.querySelectorAll("[data-setup-stage]")],
+    setupTabs: [...document.querySelectorAll("[data-setup-tab]")],
+    difficultyButtons: [...document.querySelectorAll("[data-difficulty]")],
+    difficultyCopy: document.querySelector("[data-difficulty-copy]"),
+    setupCharacterNext: document.querySelector('[data-setup-next="3"]'),
+    characterHint: document.querySelector("[data-character-hint]"),
+    readyRoster: document.querySelector("[data-ready-roster]"),
+    readySettings: document.querySelector("[data-ready-settings]"),
+    startAdventure: document.querySelector('[data-action="start-adventure"]')
   };
 
+  let setupState = createSetupState();
   let state = createEmptyState();
   let instanceSequence = 0;
   let turnTimerId = null;
+  let audioEngine = null;
+  let musicTimerId = null;
+  let musicStep = 0;
+  let portraitBypass = false;
+  let boardFocused = false;
+  let audioEnabled = readAudioPreference();
 
   init();
 
@@ -185,7 +234,9 @@
     syncViewportSize();
     renderBoard();
     renderCharacters();
+    renderSetup();
     bindControls();
+    updateAudioButton();
     renderAll();
     addLog("歡迎來到微光城，請先選擇角色。", false);
     window.__microglowBusinessEmpire = {
@@ -197,6 +248,15 @@
       debtOf,
       netWorth,
       canEnterElite
+    };
+  }
+
+  function createSetupState() {
+    return {
+      step: 1,
+      mode: "solo",
+      difficulty: "guild",
+      characterId: null
     };
   }
 
@@ -212,7 +272,8 @@
       phase: "waiting",
       secondsLeft: TURN_SECONDS,
       turnExpired: false,
-      movingActorId: null
+      movingActorId: null,
+      difficulty: setupState?.difficulty || "guild"
     };
   }
 
@@ -246,29 +307,91 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "character-card";
-      button.innerHTML = `
-        <span class="character-art art-${index}" aria-hidden="true"></span>
-        <strong>${character.name}｜${character.title}</strong>
-        <p>${character.perk}</p>
-        <small>${character.detail}</small>
-      `;
-      button.addEventListener("click", () => startGame(character.id));
+      button.dataset.characterId = character.id;
+      button.classList.toggle("is-selected", setupState.characterId === character.id);
+      button.setAttribute("aria-pressed", String(setupState.characterId === character.id));
+      button.innerHTML =
+        '<span class="character-art art-' + index + '" aria-hidden="true"></span>' +
+        "<strong>" + character.name + "｜" + character.title + "</strong>" +
+        "<p>" + character.perk + "</p>" +
+        "<small>" + character.detail + "</small>" +
+        '<b class="character-selected-mark">已選擇</b>';
+      button.addEventListener("click", () => {
+        setupState.characterId = character.id;
+        ensureAudio();
+        playEffect("select");
+        renderCharacters();
+        renderSetup();
+      });
       elements.characterGrid.append(button);
     });
   }
 
+  function renderSetup() {
+    elements.setupStages.forEach((stage) => {
+      stage.hidden = Number(stage.dataset.setupStage) !== setupState.step;
+    });
+    elements.setupTabs.forEach((tab) => {
+      const step = Number(tab.dataset.setupTab);
+      tab.setAttribute("aria-current", step === setupState.step ? "step" : "false");
+      tab.classList.toggle("is-complete", step < setupState.step);
+    });
+    elements.difficultyButtons.forEach((button) => {
+      const selected = button.dataset.difficulty === setupState.difficulty;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    const difficulty = DIFFICULTY_CONFIG[setupState.difficulty];
+    elements.difficultyCopy.textContent = difficulty.description;
+    const selected = CHARACTERS.find((character) => character.id === setupState.characterId);
+    elements.setupCharacterNext.disabled = !selected;
+    elements.characterHint.textContent = selected ? "已選擇：" + selected.name : "請選擇一名角色";
+    if (setupState.step === 3) renderReadyRoster();
+  }
+
+  function goToSetupStep(step) {
+    const target = Math.max(1, Math.min(3, Number(step) || 1));
+    if (target === 3 && !setupState.characterId) return;
+    setupState.step = target;
+    ensureAudio();
+    playEffect("click");
+    renderSetup();
+  }
+
+  function renderReadyRoster() {
+    const selected = CHARACTERS.find((character) => character.id === setupState.characterId) || CHARACTERS[0];
+    const difficulty = DIFFICULTY_CONFIG[setupState.difficulty];
+    const roster = [
+      { avatar: selected.avatar, name: selected.name, detail: "P1・你・" + selected.title },
+      { avatar: "🛡️", name: "銀盾理財師", detail: "P2・AI・保守型" },
+      { avatar: "🔥", name: "赤焰開拓者", detail: "P3・AI・進攻型" },
+      { avatar: "🜂", name: "幻影投機客", detail: "P4・AI・平衡型" }
+    ];
+    elements.readyRoster.replaceChildren();
+    roster.forEach((member, index) => {
+      const item = document.createElement("li");
+      item.innerHTML = '<span class="ready-player-index">' + (index + 1) + '</span><b>' + member.avatar + '</b><div><strong>' + member.name + '</strong><small>' + member.detail + '</small></div><em>' + (index === 0 ? "READY" : "AI") + "</em>";
+      elements.readyRoster.append(item);
+    });
+    elements.readySettings.innerHTML =
+      "<div><span>模式</span><strong>單人競賽</strong></div>" +
+      "<div><span>難度</span><strong>" + difficulty.label + "</strong></div>" +
+      "<div><span>地圖人數</span><strong>4 / 4</strong></div>" +
+      "<div><span>回合時間</span><strong>45 秒</strong></div>";
+  }
   function startGame(characterId) {
     const selected = CHARACTERS.find((character) => character.id === characterId) || CHARACTERS[0];
+    const difficulty = DIFFICULTY_CONFIG[setupState.difficulty] || DIFFICULTY_CONFIG.guild;
     const conservative = {
       id: "ai-warden",
       name: "銀盾理財師",
       title: "王城風險守門人",
       artIndex: (selected.artIndex + 1) % 3,
       avatar: "🛡️",
-      cash: 33000,
+      cash: 33000 + difficulty.cashBonus,
       salary: 4800,
       baseExpense: 2850,
-      skill: 1
+      skill: 1 + difficulty.skillBonus
     };
     const aggressive = {
       id: "ai-pioneer",
@@ -276,10 +399,10 @@
       title: "烈焰商路先鋒",
       artIndex: (selected.artIndex + 2) % 3,
       avatar: "🔥",
-      cash: 30000,
+      cash: 30000 + difficulty.cashBonus,
       salary: 5200,
       baseExpense: 3300,
-      skill: 0
+      skill: difficulty.skillBonus
     };
     const opportunist = {
       id: "ai-phantom",
@@ -287,23 +410,27 @@
       title: "星霧市場觀察者",
       artIndex: selected.artIndex,
       avatar: "🜂",
-      cash: 32000,
+      cash: 32000 + difficulty.cashBonus,
       salary: 4900,
       baseExpense: 3050,
-      skill: 1
+      skill: 1 + difficulty.skillBonus
     };
 
     state = createEmptyState();
     state.started = true;
+    state.difficulty = setupState.difficulty;
     state.actors = [
       makeActor(selected, { isHuman: true, seat: 0, color: "#55e6ff", position: 0 }),
-      makeActor(conservative, { seat: 1, strategy: "conservative", color: "#7ef7bd", position: 0 }),
-      makeActor(aggressive, { seat: 2, strategy: "aggressive", color: "#ff7ac8", position: 0 }),
-      makeActor(opportunist, { seat: 3, strategy: "balanced", variant: "spectral", color: "#b68cff", position: 0 })
+      makeActor(conservative, { seat: 1, strategy: difficulty.strategies[0], color: "#7ef7bd", position: 0 }),
+      makeActor(aggressive, { seat: 2, strategy: difficulty.strategies[1], color: "#ff7ac8", position: 0 }),
+      makeActor(opportunist, { seat: 3, strategy: difficulty.strategies[2], variant: "spectral", color: "#b68cff", position: 0 })
     ];
     state.activeActorId = selected.id;
     state.phase = "roll";
     state.secondsLeft = TURN_SECONDS;
+    setBoardFocus(false);
+    ensureAudio();
+    playEffect("start");
     elements.introModal.hidden = true;
     elements.resultModal.hidden = true;
     elements.dice.textContent = "◈";
@@ -321,31 +448,48 @@
   }
 
   function renderBoard() {
-    renderRing(elements.basicRing, basicTiles, 33.6);
-    renderRing(elements.eliteRing, eliteTiles, 17.3);
+    renderRing(elements.basicRing, basicTiles, "basic");
+    renderRing(elements.eliteRing, eliteTiles, "elite");
   }
 
-  function renderRing(container, tiles, radius) {
+  function renderRing(container, tiles, circle) {
     container.replaceChildren();
     tiles.forEach((tile, index) => {
-      const point = circlePoint(index, tiles.length, radius);
+      const point = squarePoint(circle, index);
       const cell = document.createElement("div");
       cell.className = `tile ${tile.type}`;
+      if (point.corner) cell.classList.add("is-corner");
       cell.style.setProperty("--x", `${point.left}%`);
       cell.style.setProperty("--y", `${point.top}%`);
       cell.title = tile.label;
       cell.dataset.tileIndex = String(index);
+      cell.dataset.edge = point.edge;
       cell.setAttribute("aria-label", `${index + 1}. ${tile.label}`);
       cell.innerHTML = `<span class="tile-cap"></span><span class="tile-index">${index + 1}</span><span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
       container.append(cell);
     });
   }
 
-  function circlePoint(index, count, radius) {
-    const angle = (-90 + (index / count) * 360) * (Math.PI / 180);
+  function squarePoint(circle, index, inward = 0) {
+    const layout = BOARD_LAYOUTS[circle] || BOARD_LAYOUTS.basic;
+    const coordinates = ringCoordinates(layout.size);
+    const coordinate = coordinates[index % coordinates.length];
+
+    const left = layout.minX + (coordinate.col / (layout.size - 1)) * (layout.maxX - layout.minX);
+    const top = layout.minY + (coordinate.row / (layout.size - 1)) * (layout.maxY - layout.minY);
+    const edge = coordinate.row === 0
+      ? "top"
+      : coordinate.col === layout.size - 1
+        ? "right"
+        : coordinate.row === layout.size - 1
+          ? "bottom"
+          : "left";
     return {
-      left: 50 + Math.cos(angle) * radius,
-      top: 50 + Math.sin(angle) * radius
+      left: left + (50 - left) * inward,
+      top: top + (50 - top) * inward,
+      edge,
+      corner: (coordinate.row === 0 || coordinate.row === layout.size - 1)
+        && (coordinate.col === 0 || coordinate.col === layout.size - 1)
     };
   }
 
@@ -405,7 +549,7 @@
         if (!Number.isInteger(asset.boardPosition)) return;
         const isElite = asset.boardCircle === "elite";
         const count = isElite ? eliteTiles.length : basicTiles.length;
-        const point = circlePoint(asset.boardPosition % count, count, isElite ? 12.7 : 28.7);
+        const point = squarePoint(isElite ? "elite" : "basic", asset.boardPosition % count, isElite ? 0.2 : 0.14);
         const key = `${asset.boardCircle}:${asset.boardPosition}`;
         const stack = landmarkCounts.get(key) || 0;
         landmarkCounts.set(key, stack + 1);
@@ -415,7 +559,7 @@
         marker.style.setProperty("--owner-color", actor.color);
         marker.style.setProperty("--x", `${point.left}%`);
         marker.style.setProperty("--y", `${point.top}%`);
-        const icons = { stock: "▲", realEstate: "♜", business: "⚙" };
+        const icons = { stock: "🏙️", realEstate: "🏘️", business: "🏬" };
         marker.innerHTML = `<span>${icons[asset.type] || "◆"}</span><i></i>`;
         marker.title = `${actor.name}持有：${asset.name}`;
         elements.landmarks.append(marker);
@@ -463,7 +607,7 @@
   function tokenPoint(actor) {
     const isElite = actor.circle === "elite";
     const count = isElite ? eliteTiles.length : basicTiles.length;
-    return circlePoint(actor.position % count, count, isElite ? 17.3 : 33.6);
+    return squarePoint(isElite ? "elite" : "basic", actor.position % count, isElite ? 0.11 : 0.09);
   }
 
   function activeActor() {
@@ -599,6 +743,7 @@
   }
 
   function showEvent(event, actions = [], stats = []) {
+    if (actions.length && boardFocused && activeActor()?.isHuman) setBoardFocus(false);
     elements.eventCard.dataset.eventType = event.type || "income";
     elements.eventIcon.textContent = event.icon || TILE_META[event.type]?.icon || "✦";
     elements.eventType.textContent = event.label || TILE_META[event.type]?.label || "城市事件";
@@ -620,6 +765,134 @@
       button.addEventListener("click", action.run, { once: true });
       elements.eventActions.append(button);
     });
+    if (state.started && actions.length && activeActor()?.isHuman) playEffect(event.type || "event");
+  }
+
+  function readAudioPreference() {
+    try {
+      return window.localStorage.getItem("microglow-business-audio") !== "off";
+    } catch {
+      return true;
+    }
+  }
+
+  function getAudioEngine() {
+    if (!audioEnabled) return null;
+    if (!audioEngine) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      const context = new AudioContextClass();
+      const master = context.createGain();
+      master.gain.value = 0.22;
+      master.connect(context.destination);
+      audioEngine = { context, master };
+    }
+    if (audioEngine.context.state === "suspended") {
+      audioEngine.context.resume().catch(() => {});
+    }
+    return audioEngine;
+  }
+
+  function ensureAudio() {
+    const engine = getAudioEngine();
+    if (engine) startMusic();
+    return engine;
+  }
+
+  function playTone(frequency, duration = 0.16, volume = 0.025, delay = 0, type = "sine") {
+    const engine = getAudioEngine();
+    if (!engine) return;
+    const { context, master } = engine;
+    const start = context.currentTime + delay;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), start + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(gain);
+    gain.connect(master);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.03);
+  }
+
+  function startMusic() {
+    if (!audioEnabled || musicTimerId !== null) return;
+    const notes = [
+      [164.81, 246.94, 329.63],
+      [146.83, 220, 293.66],
+      [130.81, 196, 261.63],
+      [146.83, 220, 329.63]
+    ];
+    const playMeasure = () => {
+      const chord = notes[musicStep % notes.length];
+      chord.forEach((note, index) => playTone(note, 1.35, index === 0 ? 0.012 : 0.007, index * 0.05, index === 0 ? "triangle" : "sine"));
+      musicStep += 1;
+    };
+    playMeasure();
+    musicTimerId = window.setInterval(playMeasure, 1500);
+  }
+
+  function stopMusic() {
+    if (musicTimerId !== null) {
+      window.clearInterval(musicTimerId);
+      musicTimerId = null;
+    }
+  }
+
+  function playEffect(name) {
+    if (!audioEnabled) return;
+    const effect = {
+      click: [[392, 0], [523.25, 0.07]],
+      select: [[440, 0], [659.25, 0.08]],
+      start: [[261.63, 0], [392, 0.09], [523.25, 0.18], [783.99, 0.28]],
+      dice: [[110, 0], [146.83, 0.08], [196, 0.16]],
+      step: [[246.94, 0]],
+      income: [[392, 0], [523.25, 0.08], [659.25, 0.16]],
+      gate: [[329.63, 0], [493.88, 0.1], [783.99, 0.21]],
+      expense: [[220, 0], [174.61, 0.1]],
+      risk: [[185, 0], [138.59, 0.12]],
+      stock: [[293.66, 0], [440, 0.1]],
+      realEstate: [[261.63, 0], [392, 0.1]],
+      business: [[329.63, 0], [493.88, 0.1]],
+      loan: [[196, 0], [293.66, 0.12]],
+      learn: [[440, 0], [587.33, 0.1]],
+      destiny: [[349.23, 0], [554.37, 0.1]],
+      buy: [[392, 0], [587.33, 0.08], [783.99, 0.17]],
+      victory: [[261.63, 0], [329.63, 0.1], [392, 0.2], [523.25, 0.32], [783.99, 0.47]],
+      lose: [[220, 0], [185, 0.16], [146.83, 0.34]]
+    }[name] || [[330, 0], [440, 0.09]];
+    effect.forEach(([frequency, delay], index) => {
+      playTone(frequency, name === "step" ? 0.06 : 0.18, name === "step" ? 0.012 : 0.03, delay, index % 2 ? "sine" : "triangle");
+    });
+  }
+
+  function toggleAudio() {
+    audioEnabled = !audioEnabled;
+    try {
+      window.localStorage.setItem("microglow-business-audio", audioEnabled ? "on" : "off");
+    } catch {}
+    if (audioEnabled) {
+      ensureAudio();
+      playEffect("select");
+    } else {
+      stopMusic();
+      audioEngine?.context.suspend().catch(() => {});
+    }
+    updateAudioButton();
+  }
+
+  function updateAudioButton() {
+    elements.audioButton.textContent = audioEnabled ? "♫ 音樂：開" : "♫ 音樂：關";
+    elements.audioButton.setAttribute("aria-pressed", String(audioEnabled));
+  }
+
+  function setBoardFocus(enabled) {
+    boardFocused = Boolean(enabled && state.started);
+    document.body.classList.toggle("board-focus-mode", boardFocused);
+    elements.focusButton.textContent = boardFocused ? "返回事件" : "放大棋盤";
+    elements.focusButton.setAttribute("aria-pressed", String(boardFocused));
   }
 
   function stopTurnTimer() {
@@ -701,6 +974,8 @@
   }
 
   async function animateDice(result) {
+    ensureAudio();
+    playEffect("dice");
     elements.dice.classList.add("is-rolling");
     for (let index = 0; index < 7; index += 1) {
       elements.dice.textContent = DICE_FACES[randomInt(1, 6) - 1];
@@ -717,6 +992,7 @@
       actor.position = (actor.position + 1) % length;
       if (animate) {
         renderTokens();
+        playEffect("step");
         await sleep(135);
       }
     }
@@ -807,6 +1083,7 @@
 
   function buyAsset(actor, template, price) {
     actor.cash -= price;
+    if (actor.isHuman) playEffect("buy");
     actor.assets.push({
       ...template,
       paidPrice: price,
@@ -1074,6 +1351,8 @@
     stopTurnTimer();
     state.ended = true;
     state.busy = false;
+    setBoardFocus(false);
+    playEffect(won ? "victory" : "lose");
     setRollEnabled(false);
     const player = human();
     const score = scoreOf(player);
@@ -1145,13 +1424,17 @@
 
   function resetToIntro() {
     stopTurnTimer();
+    setBoardFocus(false);
+    setupState = createSetupState();
     state = createEmptyState();
     elements.dice.textContent = "◈";
     elements.resultModal.hidden = true;
     elements.assetsModal.hidden = true;
     elements.instructionsModal.hidden = true;
     elements.introModal.hidden = false;
-    showEvent({ type: "income", title: "選擇你的商業冒險者", description: "每位角色都有不同的起始財務狀態。選好後，第一回合就會開始。" });
+    renderCharacters();
+    renderSetup();
+    showEvent({ type: "income", title: "整備你的商業遠征隊", description: "先選模式、地圖與對手難度，再挑選角色確認四人隊伍。" });
     setRollEnabled(false);
     renderAll();
   }
@@ -1162,6 +1445,32 @@
     document.querySelector('[data-action="assets"]').addEventListener("click", openAssets);
     document.querySelector('[data-action="restart"]').addEventListener("click", resetToIntro);
     document.querySelector('[data-action="play-again"]').addEventListener("click", resetToIntro);
+    elements.focusButton.addEventListener("click", () => setBoardFocus(!boardFocused));
+    elements.audioButton.addEventListener("click", toggleAudio);
+    elements.startAdventure.addEventListener("click", () => {
+      if (setupState.characterId) startGame(setupState.characterId);
+    });
+    document.querySelectorAll("[data-setup-next]").forEach((button) => {
+      button.addEventListener("click", () => goToSetupStep(button.dataset.setupNext));
+    });
+    document.querySelectorAll("[data-setup-back]").forEach((button) => {
+      button.addEventListener("click", () => goToSetupStep(button.dataset.setupBack));
+    });
+    elements.setupTabs.forEach((button) => {
+      button.addEventListener("click", () => goToSetupStep(button.dataset.setupTab));
+    });
+    elements.difficultyButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setupState.difficulty = button.dataset.difficulty;
+        ensureAudio();
+        playEffect("select");
+        renderSetup();
+      });
+    });
+    document.querySelector('[data-action="portrait-bypass"]').addEventListener("click", () => {
+      portraitBypass = true;
+      syncOrientationGuard();
+    });
 
     document.querySelectorAll("[data-modal-close]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1205,9 +1514,22 @@
 
   function syncViewportSize() {
     const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
-    document.documentElement.style.setProperty("--empire-height", `${height}px`);
+    const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
+    document.documentElement.style.setProperty("--empire-height", height + "px");
+    document.documentElement.style.setProperty("--empire-width", width + "px");
+    syncOrientationGuard();
   }
 
+  function syncOrientationGuard() {
+    const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
+    const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
+    const touchDevice = navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+    const mobilePortrait = touchDevice && width <= 900 && height > width;
+    if (!mobilePortrait) portraitBypass = false;
+    elements.orientationGuard.hidden = !mobilePortrait || portraitBypass;
+    elements.orientationState.textContent = mobilePortrait ? "目前偵測：直向模式" : "目前偵測：橫向模式";
+    document.documentElement.dataset.mobileOrientation = mobilePortrait ? "portrait" : "landscape";
+  }
   function sleep(milliseconds) {
     return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
   }

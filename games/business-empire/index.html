@@ -8,7 +8,7 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260721a">
-    <link rel="stylesheet" href="./business.css?v=20260722b">
+    <link rel="stylesheet" href="./business.css?v=20260722e">
   </head>
   <body>
     <main class="empire-shell">
@@ -22,6 +22,8 @@
           <div><small>MICROGLOW</small><strong>微光商業帝國</strong></div>
         </div>
         <div class="top-actions" aria-label="遊戲控制">
+          <button type="button" data-action="focus">放大棋盤</button>
+          <button type="button" data-action="audio" aria-pressed="true">♫ 音樂：開</button>
           <button type="button" data-action="instructions">玩法卷軸</button>
           <button type="button" data-action="assets">資產背包</button>
           <button type="button" data-action="restart">重新冒險</button>
@@ -53,11 +55,17 @@
               <div class="turn-avatar character-0" data-active-avatar><b data-active-emblem>♙</b></div>
               <div class="turn-copy"><small>現在行動</small><strong data-active-name>等待玩家</strong><span data-active-phase>選角後開始回合</span></div>
             </div>
+            <div class="board-command" data-board-command>
+              <small>TURN ACTION</small>
+              <strong data-board-command-label>點擊骰子開始</strong>
+              <div class="board-dice"><div class="dice" data-dice aria-label="骰子結果">◈</div></div>
+              <button class="roll-button" type="button" data-action="roll" disabled><span>ROLL</span><b>擲出骰子</b></button>
+            </div>
             <div class="turn-clock" data-turn-clock><small>回合倒數</small><strong data-turn-timer>45</strong><span>秒</span></div>
             <div class="player-seats" data-player-seats aria-label="玩家回合順序"></div>
           </div>
           <div class="board-frame">
-            <div class="board" data-board>
+            <div class="board rectangle-board" data-board>
               <div class="board-vignette" aria-hidden="true"></div>
               <div class="ring outer-ring" data-ring="basic" aria-label="32 格基礎圈"></div>
               <div class="ring inner-ring" data-ring="elite" aria-label="20 格精英圈"></div>
@@ -65,12 +73,7 @@
               <div class="zone-ribbon inner-zone"><span>ELITE CITADEL</span><strong>精英內城</strong></div>
               <div class="landmarks-layer" data-landmarks aria-label="玩家持有的地標"></div>
               <div class="tokens-layer" data-tokens aria-label="地圖上的玩家角色"></div>
-              <div class="board-command" data-board-command>
-                <small>TURN ACTION</small>
-                <strong data-board-command-label>點擊骰子開始</strong>
-                <div class="board-dice"><div class="dice" data-dice aria-label="骰子結果">◈</div></div>
-                <button class="roll-button" type="button" data-action="roll" disabled><span>ROLL</span><b>擲出骰子</b></button>
-              </div>
+
             </div>
           </div>
           <div class="legend" aria-label="棋盤圖例">
@@ -106,20 +109,70 @@
 
       <div class="modal intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title" data-intro-modal>
         <div class="intro-backdrop" aria-hidden="true"></div>
-        <div class="modal-card intro-card">
-          <div class="intro-heading">
-            <p class="modal-kicker">THE GATES OF MICROGLOW ARE OPEN</p>
-            <h2 id="intro-title">選擇你的商業冒險者</h2>
-            <p class="modal-lead">穿越雙圈浮空城，讓資產成為你的盟友。當被動收入足以支付每月支出，你就能加冕為微光帝國的新王者。</p>
+        <div class="modal-card intro-card setup-card">
+          <div class="setup-hero">
+            <div>
+              <p class="modal-kicker">MICROGLOW ADVENTURE LOBBY</p>
+              <h2 id="intro-title">整備你的商業遠征隊</h2>
+              <p class="modal-lead">先選模式與地圖，再挑選角色和對手難度。完成整備後，四名冒險者才會一同進入棋盤。</p>
+            </div>
+            <div class="setup-map-emblem" aria-hidden="true"><span>4</span><small>PLAYERS</small></div>
           </div>
-          <div class="quest-rules">
-            <div><strong>擲</strong><span>擲骰探索城市</span></div><div><strong>策</strong><span>選擇資產與風險</span></div><div><strong>冠</strong><span>建立自由現金流</span></div>
-          </div>
-          <div class="character-grid" data-character-grid></div>
-          <p class="modal-note">所有角色、美術與規則皆為原創設計。</p>
+
+          <nav class="setup-progress" aria-label="冒險設定進度">
+            <button type="button" data-setup-tab="1" aria-current="step"><b>1</b><span>模式與地圖</span></button>
+            <button type="button" data-setup-tab="2"><b>2</b><span>選擇角色</span></button>
+            <button type="button" data-setup-tab="3"><b>3</b><span>隊伍確認</span></button>
+          </nav>
+
+          <section class="setup-stage" data-setup-stage="1">
+            <div class="setup-section-heading"><div><small>GAME MODE</small><h3>選擇遊戲方式</h3></div><span>目前開放單人四方競賽</span></div>
+            <div class="mode-grid">
+              <button class="mode-card is-selected" type="button" data-mode="solo">
+                <i>⚔</i><span><small>立即可玩</small><strong>單人競賽</strong><em>你與 3 名 AI 輪流擲骰，完整進行現金流對局。</em></span><b>已選擇</b>
+              </button>
+              <button class="mode-card is-locked" type="button" disabled><i>⌁</i><span><small>線上服務規劃中</small><strong>隨機匹配</strong><em>配對其他玩家，依相同規則進行四人回合。</em></span><b>待上線</b></button>
+              <button class="mode-card is-locked" type="button" disabled><i>♟</i><span><small>線上服務規劃中</small><strong>好友房</strong><em>建立房碼並邀請好友加入限定人數地圖。</em></span><b>待上線</b></button>
+            </div>
+            <div class="map-and-level">
+              <article class="map-choice is-selected">
+                <div class="map-thumb"><span>浮空商都</span><b>32 + 20 格雙圈地圖</b></div>
+                <div><small>SELECTED MAP</small><strong>微光帝國・浮空商都</strong><p>4 人限定｜基礎城區 → 精英內城｜回合上限 45 秒</p></div>
+              </article>
+              <div class="difficulty-choice">
+                <small>AI CHALLENGE</small><strong>對手難度</strong>
+                <div class="difficulty-buttons" data-difficulty-buttons>
+                  <button type="button" data-difficulty="apprentice">新手</button>
+                  <button class="is-selected" type="button" data-difficulty="guild">商會</button>
+                  <button type="button" data-difficulty="sovereign">王者</button>
+                </div>
+                <p data-difficulty-copy>三種策略混合，適合第一次完整體驗。</p>
+              </div>
+            </div>
+            <div class="setup-footer"><span>線上匹配與好友房需要後端服務，本版不會顯示成可用功能。</span><button class="primary-button" type="button" data-setup-next="2">下一步・選擇角色</button></div>
+          </section>
+
+          <section class="setup-stage" data-setup-stage="2" hidden>
+            <div class="setup-section-heading"><div><small>CHOOSE ADVENTURER</small><h3>選擇你的商業冒險者</h3></div><span>角色起始資源與能力不同</span></div>
+            <div class="character-grid" data-character-grid></div>
+            <div class="setup-footer"><button class="secondary-button" type="button" data-setup-back="1">返回模式</button><span data-character-hint>請選擇一名角色</span><button class="primary-button" type="button" data-setup-next="3" disabled>下一步・確認隊伍</button></div>
+          </section>
+
+          <section class="setup-stage" data-setup-stage="3" hidden>
+            <div class="ready-layout">
+              <div class="ready-map"><div class="ready-route" aria-hidden="true"><i></i><i></i><i></i><i></i><span>VS</span></div><small>微光帝國・浮空商都</small><strong>四人商會競逐即將開始</strong><p>每人依序擲骰、逐格移動、處理事件並完成月度結算。</p></div>
+              <div class="ready-roster">
+                <div class="setup-section-heading"><div><small>READY PARTY</small><h3>冒險隊伍</h3></div><span>1 玩家 + 3 AI</span></div>
+                <ol data-ready-roster></ol>
+                <div class="ready-settings" data-ready-settings></div>
+              </div>
+            </div>
+            <div class="setup-footer"><button class="secondary-button" type="button" data-setup-back="2">重選角色</button><span>進入後會自動啟用背景音樂，可隨時關閉。</span><button class="primary-button start-adventure" type="button" data-action="start-adventure">進入浮空商都</button></div>
+          </section>
+
+          <p class="modal-note">所有角色、美術、文案與規則皆為原創設計；線上模式標示僅代表後續規劃。</p>
         </div>
       </div>
-
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="instructions-title" data-instructions-modal hidden>
         <div class="modal-card parchment-card instructions-card">
           <button class="modal-close" type="button" data-modal-close aria-label="關閉玩法說明">×</button>
@@ -155,8 +208,18 @@
         </div>
       </div>
     </main>
+    <div class="orientation-guard" data-orientation-guard hidden role="dialog" aria-modal="true" aria-labelledby="orientation-title">
+      <div class="orientation-card">
+        <div class="rotate-device" aria-hidden="true"><span>↻</span></div>
+        <p class="modal-kicker">LANDSCAPE MODE</p>
+        <h2 id="orientation-title">請將手機旋轉為橫向</h2>
+        <p>橫屏能顯示更大的棋盤、完整玩家列與事件卡，操作會更接近桌遊。</p>
+        <small data-orientation-state>目前偵測：直向模式</small>
+        <button class="secondary-button" type="button" data-action="portrait-bypass">仍以直向遊玩</button>
+      </div>
+    </div>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./business.js?v=20260722b"></script>
+    <script src="./business.js?v=20260722e"></script>
   </body>
 </html>
