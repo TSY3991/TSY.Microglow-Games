@@ -6,6 +6,10 @@
   const ELITE_NET_WORTH = 250000;
   const MAX_LOGS = 8;
   const TURN_SECONDS = 45;
+  const PLAYER_STEP_MS = 360;
+  const AI_STEP_MS = 300;
+  const DICE_SPIN_FRAMES = 9;
+  const DICE_FRAME_MS = 85;
   const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
   const portalStats = window.MicroglowGameStats;
 
@@ -58,9 +62,22 @@
     "gate", "realEstate", "risk", "business", "income", "loan", "destiny", "stock", "expense", "learn"
   ];
 
+  const BASIC_TILE_LABELS = [
+    "起點", "星幣薪資", "極光通訊", "裝備維修", "商學院", "魔藥攤", "商會分紅", "飛艇故障",
+    "水晶套房", "微光銀行", "專案獎金", "飛龍科技", "命運卡", "年度稅費", "飛毯外送", "技能工坊",
+    "精英之門", "授權收入", "符文店面", "市場震盪", "能源基金", "旺季獎金", "王城銀行", "設備汰換",
+    "直播工坊", "機遇卡", "額外收入", "投資講堂", "浮空倉庫", "魔力風暴", "星界通訊", "旅費支出"
+  ];
+
+  const ELITE_TILE_LABELS = [
+    "王者之門", "鳳凰控股", "巨龍風險", "雲端商塔", "帝國分紅", "傳送門網", "皇室命運", "併購支出",
+    "王者學院", "星界能源", "終局之門", "龍港物流", "黑曜危機", "魔像工坊", "王城收益", "帝國銀行",
+    "星辰命運", "商會控股", "擴張成本", "領袖研習"
+  ];
+
   const BOARD_LAYOUTS = {
-    basic: { size: 9, minX: 5, maxX: 95, minY: 8, maxY: 92 },
-    elite: { size: 6, minX: 22, maxX: 78, minY: 28, maxY: 72 }
+    basic: { size: 9, minX: 4.5, maxX: 95.5, minY: 5, maxY: 95 },
+    elite: { size: 6, minX: 17.5, maxX: 82.5, minY: 23.5, maxY: 76.5 }
   };
 
   const CHARACTERS = [
@@ -152,14 +169,19 @@
     ["倉庫能量超支", 2900]
   ];
 
-  const basicTiles = BASIC_TYPES.map((type, index) => ({ ...TILE_META[type], type, index }));
-  const eliteTiles = ELITE_TYPES.map((type, index) => ({ ...TILE_META[type], type, index }));
+  const basicTiles = BASIC_TYPES.map((type, index) => ({ ...TILE_META[type], label: BASIC_TILE_LABELS[index], type, index }));
+  const eliteTiles = ELITE_TYPES.map((type, index) => ({ ...TILE_META[type], label: ELITE_TILE_LABELS[index], type, index }));
 
   const elements = {
     basicRing: document.querySelector('[data-ring="basic"]'),
     eliteRing: document.querySelector('[data-ring="elite"]'),
     tokens: document.querySelector("[data-tokens]"),
     landmarks: document.querySelector("[data-landmarks]"),
+    tileInspector: document.querySelector("[data-tile-inspector]"),
+    tileInspectorIcon: document.querySelector("[data-tile-inspector-icon]"),
+    tileInspectorPosition: document.querySelector("[data-tile-inspector-position]"),
+    tileInspectorName: document.querySelector("[data-tile-inspector-name]"),
+    tileInspectorType: document.querySelector("[data-tile-inspector-type]"),
     boardCommand: document.querySelector("[data-board-command]"),
     boardCommandLabel: document.querySelector("[data-board-command-label]"),
     dice: document.querySelector("[data-dice]"),
@@ -225,6 +247,7 @@
   let musicStep = 0;
   let portraitBypass = false;
   let boardFocused = false;
+  let tileInspectorTimerId = null;
   let audioEnabled = readAudioPreference();
 
   init();
@@ -466,6 +489,7 @@
       cell.dataset.edge = point.edge;
       cell.setAttribute("aria-label", `${index + 1}. ${tile.label}`);
       cell.innerHTML = `<span class="tile-cap"></span><span class="tile-index">${index + 1}</span><span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
+      cell.addEventListener("click", () => showTileInspector(tile, index, circle));
       container.append(cell);
     });
   }
@@ -502,6 +526,21 @@
     return coordinates;
   }
 
+  function showTileInspector(tile, index, circle) {
+    if (tileInspectorTimerId !== null) window.clearTimeout(tileInspectorTimerId);
+    elements.tileInspectorIcon.textContent = tile.icon;
+    elements.tileInspectorPosition.textContent = (circle === "elite" ? "精英內城" : "基礎城區") + "・第 " + (index + 1) + " 格";
+    elements.tileInspectorName.textContent = tile.label;
+    elements.tileInspectorType.textContent = TILE_META[tile.type]?.label || "城市事件";
+    elements.tileInspector.hidden = false;
+    tileInspectorTimerId = window.setTimeout(hideTileInspector, 3200);
+  }
+
+  function hideTileInspector() {
+    if (tileInspectorTimerId !== null) window.clearTimeout(tileInspectorTimerId);
+    tileInspectorTimerId = null;
+    elements.tileInspector.hidden = true;
+  }
   function renderAll() {
     renderStats();
     renderLandmarks();
@@ -977,9 +1016,9 @@
     ensureAudio();
     playEffect("dice");
     elements.dice.classList.add("is-rolling");
-    for (let index = 0; index < 7; index += 1) {
+    for (let index = 0; index < DICE_SPIN_FRAMES; index += 1) {
       elements.dice.textContent = DICE_FACES[randomInt(1, 6) - 1];
-      await sleep(55);
+      await sleep(DICE_FRAME_MS);
     }
     elements.dice.textContent = DICE_FACES[result - 1];
     elements.dice.setAttribute("aria-label", `骰子結果 ${result}`);
@@ -993,7 +1032,7 @@
       if (animate) {
         renderTokens();
         playEffect("step");
-        await sleep(135);
+        await sleep(actor.isHuman ? PLAYER_STEP_MS : AI_STEP_MS);
       }
     }
     renderTokens();
@@ -1447,6 +1486,7 @@
     document.querySelector('[data-action="play-again"]').addEventListener("click", resetToIntro);
     elements.focusButton.addEventListener("click", () => setBoardFocus(!boardFocused));
     elements.audioButton.addEventListener("click", toggleAudio);
+    elements.tileInspector.addEventListener("click", hideTileInspector);
     elements.startAdventure.addEventListener("click", () => {
       if (setupState.characterId) startGame(setupState.characterId);
     });

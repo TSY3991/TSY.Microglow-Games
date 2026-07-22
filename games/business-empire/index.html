@@ -8,7 +8,7 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260721a">
-    <link rel="stylesheet" href="./business.css?v=20260722e">
+    <link rel="stylesheet" href="./business.css?v=20260722g">
   </head>
   <body>
     <main class="empire-shell">
@@ -22,6 +22,7 @@
           <div><small>MICROGLOW</small><strong>微光商業帝國</strong></div>
         </div>
         <div class="top-actions" aria-label="遊戲控制">
+          <button class="account-status-button" type="button" data-action="account" aria-label="帳號狀態">訪客試玩</button>
           <button type="button" data-action="focus">放大棋盤</button>
           <button type="button" data-action="audio" aria-pressed="true">♫ 音樂：開</button>
           <button type="button" data-action="instructions">玩法卷軸</button>
@@ -69,9 +70,13 @@
               <div class="board-vignette" aria-hidden="true"></div>
               <div class="ring outer-ring" data-ring="basic" aria-label="32 格基礎圈"></div>
               <div class="ring inner-ring" data-ring="elite" aria-label="20 格精英圈"></div>
-              <div class="zone-ribbon outer-zone"><span>COMMON DISTRICT</span><strong>基礎城區</strong></div>
-              <div class="zone-ribbon inner-zone"><span>ELITE CITADEL</span><strong>精英內城</strong></div>
+
               <div class="landmarks-layer" data-landmarks aria-label="玩家持有的地標"></div>
+              <button class="tile-inspector" type="button" data-tile-inspector hidden aria-live="polite" aria-label="關閉棋格資訊">
+                <span class="tile-inspector-icon" data-tile-inspector-icon>🏠</span>
+                <span class="tile-inspector-copy"><small data-tile-inspector-position>基礎城區・第 1 格</small><strong data-tile-inspector-name>水晶套房</strong><em data-tile-inspector-type>房產機會</em></span>
+                <b aria-hidden="true">×</b>
+              </button>
               <div class="tokens-layer" data-tokens aria-label="地圖上的玩家角色"></div>
 
             </div>
@@ -107,7 +112,38 @@
         </aside>
       </section>
 
-      <div class="modal intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title" data-intro-modal>
+      <div class="modal account-modal" role="dialog" aria-modal="true" aria-labelledby="account-title" data-account-modal>
+        <div class="account-backdrop" aria-hidden="true"></div>
+        <div class="modal-card account-card">
+          <button class="account-close" type="button" data-account-close hidden aria-label="關閉帳號視窗">×</button>
+          <section class="account-hero">
+            <p class="modal-kicker">MICROGLOW PLAYER ACCESS</p><div class="account-sigil" aria-hidden="true">♜</div>
+            <h1 id="account-title">進入微光商業帝國</h1>
+            <p>正式會員可使用雲端進度、好友、房間與排行榜；想先看看玩法，也能直接用訪客帳號開始。</p>
+            <ul class="account-benefits" aria-label="會員功能"><li><span>☁</span><b>跨裝置保存</b></li><li><span>♟</span><b>好友與房間</b></li><li><span>♛</span><b>正式排行榜</b></li></ul>
+          </section>
+          <section class="account-options">
+            <div class="account-member-panel">
+              <div class="account-tabs" role="tablist" aria-label="會員帳號"><button class="is-active" type="button" role="tab" aria-selected="true" data-auth-tab="login">會員登入</button><button type="button" role="tab" aria-selected="false" data-auth-tab="signup">免費註冊</button></div>
+              <form class="account-form" data-auth-form novalidate>
+                <label><span>Email</span><input type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" required data-auth-email></label>
+                <label><span>密碼</span><input type="password" autocomplete="current-password" minlength="8" placeholder="至少 8 個字元" required data-auth-password></label>
+                <button class="primary-button account-submit" type="submit" data-auth-submit>登入並繼續</button>
+                <p class="account-status" data-auth-status aria-live="polite">會員連線會使用 Supabase 安全登入。</p>
+              </form>
+            </div>
+            <div class="account-divider"><span>或</span></div>
+            <div class="guest-trial-panel">
+              <div class="guest-icon" aria-hidden="true">🎲</div>
+              <div><small>NO REGISTRATION</small><h2>訪客帳號試玩</h2><p>立即進入單人 AI 對局。本機會保留試玩紀錄；好友、配對、房間與正式排行榜須登入會員。</p></div>
+              <button class="secondary-button guest-trial-button" type="button" data-action="guest-trial">直接開始試玩</button>
+              <small class="guest-note" data-guest-note>尚未連接匿名雲端時，將以本機訪客模式執行。</small>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title" data-intro-modal hidden>
         <div class="intro-backdrop" aria-hidden="true"></div>
         <div class="modal-card intro-card setup-card">
           <div class="setup-hero">
@@ -131,8 +167,8 @@
               <button class="mode-card is-selected" type="button" data-mode="solo">
                 <i>⚔</i><span><small>立即可玩</small><strong>單人競賽</strong><em>你與 3 名 AI 輪流擲骰，完整進行現金流對局。</em></span><b>已選擇</b>
               </button>
-              <button class="mode-card is-locked" type="button" disabled><i>⌁</i><span><small>線上服務規劃中</small><strong>隨機匹配</strong><em>配對其他玩家，依相同規則進行四人回合。</em></span><b>待上線</b></button>
-              <button class="mode-card is-locked" type="button" disabled><i>♟</i><span><small>線上服務規劃中</small><strong>好友房</strong><em>建立房碼並邀請好友加入限定人數地圖。</em></span><b>待上線</b></button>
+              <button class="mode-card is-locked" type="button" disabled data-member-only><i>⌁</i><span><small>會員限定・規劃中</small><strong>隨機匹配</strong><em>配對其他玩家，依相同規則進行四人回合。</em></span><b>需登入</b></button>
+              <button class="mode-card is-locked" type="button" disabled data-member-only><i>♟</i><span><small>會員限定・規劃中</small><strong>好友房</strong><em>建立房碼並邀請好友加入限定人數地圖。</em></span><b>需登入</b></button>
             </div>
             <div class="map-and-level">
               <article class="map-choice is-selected">
@@ -220,6 +256,7 @@
     </div>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./business.js?v=20260722e"></script>
+    <script src="./business-auth.js?v=20260722a"></script>
+    <script src="./business.js?v=20260722g"></script>
   </body>
 </html>

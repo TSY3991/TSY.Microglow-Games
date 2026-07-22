@@ -810,3 +810,303 @@ body.board-focus-mode .board { height: 100%; }
     aspect-ratio: 16 / 9;
   }
 }
+/* gameplay-v6: readable board and deliberate movement */
+.rectangle-board .zone-ribbon,
+.legend {
+  display: none;
+}
+.rectangle-board .tile {
+  grid-template-rows: 18% minmax(20px,1fr) minmax(21px,auto);
+  border-radius: 9px;
+}
+.rectangle-board .outer-ring .tile[data-edge="top"],
+.rectangle-board .outer-ring .tile[data-edge="bottom"] {
+  width: 11.1%;
+  aspect-ratio: 1.82;
+}
+.rectangle-board .outer-ring .tile[data-edge="left"],
+.rectangle-board .outer-ring .tile[data-edge="right"] {
+  width: 5.1%;
+  aspect-ratio: .82;
+}
+.rectangle-board .inner-ring .tile[data-edge="top"],
+.rectangle-board .inner-ring .tile[data-edge="bottom"] {
+  width: 12%;
+  aspect-ratio: 1.95;
+}
+.rectangle-board .inner-ring .tile[data-edge="left"],
+.rectangle-board .inner-ring .tile[data-edge="right"] {
+  width: 5%;
+  aspect-ratio: .84;
+}
+.rectangle-board .outer-ring .tile.is-corner {
+  width: 6%;
+  aspect-ratio: 1;
+}
+.rectangle-board .inner-ring .tile.is-corner {
+  width: 5.9%;
+  aspect-ratio: 1;
+}
+.rectangle-board .tile-icon {
+  align-self: center;
+  font-size: clamp(.86rem,1.8vmin,1.36rem);
+}
+.rectangle-board .tile-label,
+.rectangle-board .inner-ring .tile-label {
+  display: grid;
+  min-height: 21px;
+  place-items: center;
+  overflow: hidden;
+  padding: 2px 4px 4px;
+  color: #f8f0d8;
+  font-size: clamp(.46rem,1.05vmin,.78rem);
+  font-weight: 1000;
+  line-height: 1.05;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+}
+.rectangle-board .inner-ring .tile-label {
+  font-size: clamp(.42rem,.92vmin,.7rem);
+}
+.rectangle-board .tile-index {
+  top: 3px;
+  right: 4px;
+  color: rgba(1,7,13,.84);
+  font-size: clamp(.34rem,.66vmin,.48rem);
+}
+.rectangle-board .board-vignette::before {
+  inset: 1.5%;
+  border-width: clamp(42px,7.8vmin,74px);
+}
+.rectangle-board .board-vignette::after {
+  inset: 19.5% 15.5%;
+  border-width: clamp(32px,5.7vmin,54px);
+}
+.token {
+  --token-size: clamp(38px,6.4vmin,68px);
+  transition: top .3s cubic-bezier(.2,.72,.28,1),left .3s cubic-bezier(.2,.72,.28,1),filter .24s ease,transform .24s ease;
+}
+.token.is-moving .pawn-figure {
+  animation: pawn-hop .42s ease-out;
+}
+.landmark {
+  width: clamp(24px,4.2vmin,44px);
+  height: clamp(31px,5.2vmin,54px);
+}
+.landmark span {
+  font-size: clamp(.78rem,1.75vmin,1.32rem);
+}
+
+@media (min-width: 901px) {
+  .game-layout {
+    grid-template-columns: minmax(0,1fr) minmax(290px,.34fr);
+    gap: 6px;
+  }
+  .board-panel {
+    grid-template-rows: auto minmax(0,1fr);
+    gap: 3px;
+    padding: 4px;
+  }
+  .board-status {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .rectangle-board .tile {
+    border-radius: 5px;
+  }
+  .rectangle-board .tile-icon {
+    font-size: clamp(.56rem,2.25vmin,.88rem);
+  }
+  .rectangle-board .tile-label,
+  .rectangle-board .inner-ring .tile-label {
+    min-height: 12px;
+    padding: 1px 2px 2px;
+    font-size: clamp(.34rem,1.35vmin,.5rem);
+    line-height: 1;
+  }
+  .rectangle-board .tile-index {
+    display: none;
+  }
+  .token {
+    --token-size: clamp(26px,8vmin,36px);
+  }
+  .landmark {
+    width: clamp(20px,6.4vmin,28px);
+    height: clamp(25px,8vmin,35px);
+  }
+}
+.tile-inspector {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 16;
+  display: grid;
+  grid-template-columns: 58px minmax(150px,1fr) 22px;
+  width: min(320px,52%);
+  min-height: 78px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 2px solid rgba(246,207,116,.72);
+  border-radius: 16px;
+  color: var(--ink);
+  background: linear-gradient(145deg,rgba(8,24,39,.98),rgba(4,11,21,.98));
+  box-shadow: 0 15px 38px rgba(0,0,0,.72),0 0 26px rgba(84,221,245,.18),inset 0 0 0 1px rgba(255,255,255,.06);
+  text-align: left;
+  transform: translate(-50%,-50%);
+  cursor: pointer;
+}
+.tile-inspector[hidden] {
+  display: none;
+}
+.tile-inspector-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border: 1px solid rgba(84,221,245,.55);
+  border-radius: 13px;
+  background: radial-gradient(circle,rgba(84,221,245,.2),rgba(3,10,18,.78));
+  font-size: 1.8rem;
+}
+.tile-inspector-copy {
+  display: grid;
+  gap: 2px;
+}
+.tile-inspector-copy small {
+  color: var(--cyan);
+  font-size: .64rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+.tile-inspector-copy strong {
+  color: var(--gold-bright);
+  font-size: 1.08rem;
+}
+.tile-inspector-copy em {
+  color: var(--mint);
+  font-size: .72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+.tile-inspector > b {
+  align-self: start;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .tile-inspector {
+    grid-template-columns: 38px minmax(100px,1fr) 16px;
+    width: min(230px,56%);
+    min-height: 52px;
+    gap: 6px;
+    padding: 5px 7px;
+    border-radius: 10px;
+  }
+  .tile-inspector-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 1.15rem;
+  }
+  .tile-inspector-copy small {
+    font-size: .43rem;
+  }
+  .tile-inspector-copy strong {
+    font-size: .72rem;
+  }
+  .tile-inspector-copy em {
+    font-size: .48rem;
+  }
+}
+/* gameplay-v6 sizing correction */
+.board-frame {
+  container-type: size;
+}
+.rectangle-board .tile-label,
+.rectangle-board .inner-ring .tile-label {
+  font-size: clamp(.7rem,1.35vmin,.84rem);
+}
+.rectangle-board .inner-ring .tile-label {
+  font-size: clamp(.64rem,1.2vmin,.76rem);
+}
+
+@supports (width: 1cqw) {
+  .rectangle-board {
+    width: min(100cqw,calc(100cqh * 16 / 9));
+    height: auto;
+    min-height: 0;
+    max-width: none;
+    max-height: none;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .rectangle-board .tile-label,
+  .rectangle-board .inner-ring .tile-label {
+    font-size: clamp(.42rem,1.6vmin,.56rem);
+  }
+}
+/* gameplay-v6 mobile board priority */
+@media (max-width: 900px) and (orientation: landscape) {
+  .empire-shell,
+  body.board-focus-mode .empire-shell {
+    grid-template-rows: auto minmax(0,1fr);
+  }
+  .adventurer-hud {
+    display: none;
+  }
+  .game-layout {
+    grid-template-columns: minmax(0,1fr) 220px;
+    grid-template-rows: minmax(0,1fr);
+  }
+  .board-panel,
+  body.board-focus-mode .board-panel {
+    grid-template-rows: auto minmax(0,1fr);
+    height: 100%;
+  }
+  .board-frame {
+    min-height: 0;
+    height: 100%;
+  }
+  body.board-focus-mode .game-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* account access and guest trial */
+.account-modal{z-index:90;padding:clamp(10px,2vw,28px);background:radial-gradient(circle at 24% 20%,rgba(84,221,245,.16),transparent 34%),radial-gradient(circle at 78% 72%,rgba(171,113,255,.18),transparent 35%),rgba(1,6,13,.94)}
+.account-backdrop{position:absolute;inset:0;background:linear-gradient(rgba(2,9,17,.38),rgba(2,9,17,.8)),url("./assets/empire-board.webp") center/cover no-repeat;filter:saturate(.72) brightness(.42)}
+.account-card{position:relative;z-index:1;display:grid;grid-template-columns:minmax(280px,.88fr) minmax(430px,1.12fr);width:min(1120px,96vw);max-height:min(760px,94vh);overflow:auto;padding:0;border:1px solid rgba(246,207,116,.52);border-radius:28px;background:linear-gradient(145deg,rgba(5,18,31,.98),rgba(9,10,27,.98));box-shadow:0 28px 80px rgba(0,0,0,.72),0 0 42px rgba(84,221,245,.13)}
+.account-close{position:absolute;top:12px;right:14px;z-index:3;width:38px;height:38px;border:1px solid rgba(246,207,116,.45);border-radius:50%;color:var(--ink);background:rgba(2,9,17,.74);font-size:1.15rem;cursor:pointer}
+.account-hero{display:flex;min-height:520px;flex-direction:column;justify-content:center;padding:clamp(28px,4vw,62px);border-right:1px solid rgba(246,207,116,.2);background:radial-gradient(circle at 50% 28%,rgba(84,221,245,.18),transparent 30%),linear-gradient(160deg,rgba(5,26,42,.96),rgba(12,8,29,.95))}
+.account-sigil{display:grid;width:86px;height:86px;margin:18px 0;place-items:center;border:1px solid rgba(246,207,116,.72);border-radius:24px;color:var(--gold-bright);background:radial-gradient(circle,rgba(246,207,116,.22),rgba(3,12,22,.82));box-shadow:0 0 28px rgba(246,207,116,.16);font-size:2.5rem}
+.account-hero h1{margin:0;color:#fff3cc;font-family:Georgia,"Noto Serif TC",serif;font-size:clamp(2rem,3.3vw,3.7rem);line-height:1.05}
+.account-hero>p:not(.modal-kicker){margin:18px 0 24px;color:#a9bdd1;font-size:.95rem;line-height:1.8}
+.account-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0;list-style:none}
+.account-benefits li{display:grid;min-height:82px;place-items:center;gap:4px;padding:10px 6px;border:1px solid rgba(84,221,245,.17);border-radius:14px;color:#dbeeff;background:rgba(3,12,22,.56);text-align:center}
+.account-benefits span{color:var(--cyan);font-size:1.2rem}.account-benefits b{font-size:.7rem}
+.account-options{display:grid;align-content:center;gap:18px;padding:clamp(26px,4vw,56px)}
+.account-member-panel,.guest-trial-panel{padding:20px;border:1px solid rgba(246,207,116,.22);border-radius:19px;background:rgba(2,10,19,.72)}
+.account-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:18px;padding:4px;border-radius:12px;background:rgba(255,255,255,.04)}
+.account-tabs button{min-height:40px;border:0;border-radius:9px;color:#8fa8bf;background:transparent;font-weight:900;cursor:pointer}
+.account-tabs button.is-active{color:#06111d;background:linear-gradient(135deg,var(--gold-bright),#f1b948)}
+.account-form{display:grid;gap:13px}.account-form label{display:grid;gap:6px;color:#d7c89f;font-size:.72rem;font-weight:900}
+.account-form input{min-height:48px;padding:0 14px;border:1px solid rgba(84,221,245,.22);border-radius:11px;outline:0;color:#f5f8fb;background:rgba(0,5,11,.7)}
+.account-form input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(84,221,245,.1)}
+.account-submit{width:100%;margin-top:3px}.account-status{min-height:20px;margin:0;color:#8399ad;font-size:.68rem;line-height:1.5}
+.account-status[data-tone="warning"]{color:#f0c66e}.account-status[data-tone="error"]{color:#ff8797}.account-status[data-tone="success"]{color:var(--mint)}
+.account-divider{display:flex;align-items:center;gap:12px;color:#62788b;font-size:.68rem}.account-divider:before,.account-divider:after{height:1px;flex:1;background:rgba(246,207,116,.16);content:""}
+.guest-trial-panel{display:grid;grid-template-columns:54px minmax(0,1fr);align-items:center;gap:12px;border-color:rgba(84,221,245,.34);background:linear-gradient(135deg,rgba(9,41,55,.82),rgba(13,13,34,.8))}
+.guest-icon{display:grid;width:54px;height:54px;place-items:center;border:1px solid rgba(84,221,245,.55);border-radius:15px;background:rgba(3,18,29,.8);font-size:1.55rem}
+.guest-trial-panel small{color:var(--cyan);font-size:.57rem;font-weight:900;letter-spacing:.12em}.guest-trial-panel h2{margin:3px 0 5px;color:#fff0bc;font-size:1.18rem}.guest-trial-panel p{margin:0;color:#9fb3c7;font-size:.7rem;line-height:1.55}
+.guest-trial-button,.guest-note{grid-column:1/-1}.guest-trial-button{width:100%}.guest-note{color:#71879b!important;letter-spacing:0!important}
+.account-status-button{border-color:rgba(84,221,245,.4)!important;color:var(--cyan)!important}.account-status-button.is-member{border-color:rgba(95,238,181,.5)!important;color:var(--mint)!important}
+body[data-account-type="guest"] [data-member-only]{opacity:.48;filter:saturate(.45)}
+@media(max-width:760px){.account-card{grid-template-columns:1fr;max-height:94vh;border-radius:20px}.account-hero{min-height:auto;padding:24px;border-right:0;border-bottom:1px solid rgba(246,207,116,.18)}.account-sigil{width:58px;height:58px;margin:10px 0;border-radius:16px;font-size:1.7rem}.account-hero h1{font-size:1.65rem}.account-hero>p:not(.modal-kicker){margin:10px 0 14px;font-size:.75rem}.account-benefits{display:none}.account-options{gap:10px;padding:16px}.account-member-panel,.guest-trial-panel{padding:14px}}
+@media(max-width:900px) and (orientation:landscape){.account-modal{padding:4px}.account-card{grid-template-columns:.72fr 1.28fr;max-height:calc(100vh - 8px);border-radius:14px}.account-hero{min-height:0;padding:18px}.account-sigil{width:44px;height:44px;margin:6px 0;border-radius:12px;font-size:1.35rem}.account-hero h1{font-size:1.25rem}.account-hero>p:not(.modal-kicker){margin:7px 0;font-size:.56rem;line-height:1.45}.account-benefits{display:none}.account-options{gap:7px;padding:13px}.account-member-panel,.guest-trial-panel{padding:9px}.account-tabs{margin-bottom:8px}.account-tabs button{min-height:29px;font-size:.58rem}.account-form{grid-template-columns:1fr 1fr;gap:6px}.account-form input{min-height:31px;font-size:.6rem}.account-form label{font-size:.5rem}.account-submit,.account-status{grid-column:1/-1}.account-submit{min-height:30px;font-size:.56rem}.account-status{min-height:12px;font-size:.48rem}.guest-trial-panel{grid-template-columns:38px minmax(0,1fr) 130px}.guest-icon{width:38px;height:38px;font-size:1rem}.guest-trial-panel h2{font-size:.75rem}.guest-trial-panel p{font-size:.48rem}.guest-trial-button{grid-column:3;grid-row:1;min-height:34px;font-size:.54rem}.guest-note{grid-column:1/-1;font-size:.42rem!important}.account-divider{font-size:.45rem}}
