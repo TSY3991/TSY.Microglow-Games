@@ -379,7 +379,7 @@ button:disabled { cursor: not-allowed; filter: grayscale(.7); opacity: .45; }
 .landmark { width: clamp(24px,3.8vmin,39px); height: clamp(30px,4.8vmin,48px); }
 .landmark span { font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; font-size: clamp(.76rem,1.52vmin,1.15rem); }
 
-.setup-card { width: min(1160px,100%); max-height: min(94dvh,920px); overflow: auto; }
+.setup-card { width: min(1760px,96vw); max-height: min(96dvh,1080px); overflow: auto; }
 .setup-hero { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 20px; align-items: center; padding-bottom: 13px; border-bottom: 1px solid rgba(246,207,116,.13); }
 .setup-hero h2 { margin-bottom: 5px; }
 .setup-map-emblem {

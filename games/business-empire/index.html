@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="description" content="微光商業帝國是一款原創奇幻商業策略桌遊，透過擲骰、資產配置與現金流管理打造自己的微光帝國。">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com; connect-src 'self' https://xduwufkfmzovlwcyodcp.supabase.co wss://xduwufkfmzovlwcyodcp.supabase.co; frame-src https://challenges.cloudflare.com">
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260721a">
-    <link rel="stylesheet" href="./business.css?v=20260722g">
+    <link rel="stylesheet" href="./business.css?v=20260723b">
   </head>
   <body>
     <main class="empire-shell">
@@ -139,6 +140,7 @@
               <button class="secondary-button guest-trial-button" type="button" data-action="guest-trial">直接開始試玩</button>
               <small class="guest-note" data-guest-note>尚未連接匿名雲端時，將以本機訪客模式執行。</small>
             </div>
+            <div data-turnstile-widget aria-hidden="true"></div>
           </section>
         </div>
       </div>
@@ -256,6 +258,9 @@
     </div>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="./supabase-client.js?v=20260723a"></script>
     <script src="./business-auth.js?v=20260722a"></script>
     <script src="./business.js?v=20260722g"></script>
   </body>
