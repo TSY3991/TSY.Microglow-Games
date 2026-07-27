@@ -9,7 +9,7 @@
     >
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://xduwufkfmzovlwcyodcp.supabase.co wss://xduwufkfmzovlwcyodcp.supabase.co"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com; connect-src 'self' https://xduwufkfmzovlwcyodcp.supabase.co wss://xduwufkfmzovlwcyodcp.supabase.co; frame-src https://challenges.cloudflare.com"
     >
     <title>多人連線大廳｜TSY.Microglow Games</title>
     <link rel="icon" href="../assets/logo-mark.png" type="image/png">
@@ -36,8 +36,13 @@
         <div class="mp-gate-card">
           <p class="mp-gate-kicker">SIGN IN REQUIRED</p>
           <h2>請先登入或以訪客身分開始</h2>
-          <p data-mp-gate-message>需要有登入狀態（含訪客）才能使用好友、房間與配對功能。</p>
-          <a class="primary-link" data-mp-gate-link href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html">前往登入</a>
+          <p data-mp-gate-message>點「以訪客身分開始」立即體驗，或直接登入正式會員。</p>
+          <div class="mp-gate-actions">
+            <button type="button" class="primary-link" data-mp-guest-start>以訪客身分開始</button>
+            <a class="secondary-link" data-mp-gate-link href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html">前往登入</a>
+          </div>
+          <p class="mp-status" data-mp-guest-start-feedback></p>
+          <div data-turnstile-widget aria-hidden="true"></div>
         </div>
       </section>
 
@@ -159,9 +164,10 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="../shared/microglow-auth.js?v=20260728a"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="../shared/microglow-auth.js?v=20260728b"></script>
     <script src="../shared/microglow-auth-status.js?v=20260728a"></script>
     <script src="../shared/multiplayer-client.js?v=20260728a"></script>
-    <script src="./multiplayer.js?v=20260728a"></script>
+    <script src="./multiplayer.js?v=20260728b"></script>
   </body>
 </html>

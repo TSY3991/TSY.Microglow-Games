@@ -8,6 +8,8 @@
     gate: document.querySelector("[data-mp-gate]"),
     gateMessage: document.querySelector("[data-mp-gate-message]"),
     gateLink: document.querySelector("[data-mp-gate-link]"),
+    guestStartButton: document.querySelector("[data-mp-guest-start]"),
+    guestStartFeedback: document.querySelector("[data-mp-guest-start-feedback]"),
     app: document.querySelector("[data-mp-app]"),
     guestBanner: document.querySelector("[data-mp-guest-banner]"),
     upgradeLink: document.querySelector("[data-mp-upgrade-link]"),
@@ -49,6 +51,57 @@
   let queueUnsubscribe = null;
   let invitesUnsubscribe = null;
   let presenceTimerId = null;
+
+  const TURNSTILE_SITE_KEY = "0x4AAAAAAD7mtP2SYLK59ifA";
+  const CAPTCHA_TIMEOUT_MS = 15000;
+  const turnstileContainer = document.querySelector("[data-turnstile-widget]");
+  let turnstileWidgetId = null;
+  let turnstileToken = null;
+  let turnstileResolvers = [];
+  let turnstileRenderAttempts = 0;
+
+  function resolveTurnstileToken(token) {
+    turnstileToken = token;
+    turnstileResolvers.splice(0).forEach((resolve) => resolve(token));
+  }
+
+  function renderTurnstile() {
+    if (!turnstileContainer || typeof window.turnstile === "undefined" || turnstileWidgetId !== null) return;
+    turnstileRenderAttempts += 1;
+    turnstileWidgetId = window.turnstile.render(turnstileContainer, {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: resolveTurnstileToken,
+      "expired-callback": () => { turnstileToken = null; },
+      "error-callback": () => {
+        turnstileToken = null;
+        turnstileWidgetId = null;
+        if (turnstileRenderAttempts < 4) window.setTimeout(renderTurnstile, 1500);
+      }
+    });
+  }
+
+  function waitForTurnstile() {
+    if (window.turnstile && typeof window.turnstile.render === "function") {
+      window.setTimeout(renderTurnstile, 400);
+      return;
+    }
+    window.setTimeout(waitForTurnstile, 200);
+  }
+
+  function getCaptchaToken() {
+    const wait = turnstileToken
+      ? Promise.resolve((() => {
+          const token = turnstileToken;
+          turnstileToken = null;
+          if (turnstileWidgetId !== null && window.turnstile) window.turnstile.reset(turnstileWidgetId);
+          return token;
+        })())
+      : new Promise((resolve) => turnstileResolvers.push(resolve));
+    return Promise.race([
+      wait,
+      new Promise((_, reject) => window.setTimeout(() => reject(new Error("安全驗證逾時，請再試一次。")), CAPTCHA_TIMEOUT_MS))
+    ]);
+  }
 
   function setStatus(el, message, tone) {
     if (!el) return;
@@ -506,5 +559,30 @@
     return div.innerHTML;
   }
 
+  function bindGateControls() {
+    if (!elements.guestStartButton) return;
+    elements.guestStartButton.addEventListener("click", async () => {
+      if (!auth || !auth.signInAnonymously) {
+        setStatus(elements.guestStartFeedback, "訪客登入功能載入失敗，請重新整理頁面。", "error");
+        return;
+      }
+      elements.guestStartButton.disabled = true;
+      setStatus(elements.guestStartFeedback, "正在建立訪客身分…");
+      try {
+        const captchaToken = await getCaptchaToken();
+        const result = await auth.signInAnonymously({ captchaToken });
+        if (result.error) throw result.error;
+        setStatus(elements.guestStartFeedback, "");
+        await init();
+      } catch (error) {
+        setStatus(elements.guestStartFeedback, error.message || "訪客登入失敗，請再試一次。", "error");
+      } finally {
+        elements.guestStartButton.disabled = false;
+      }
+    });
+  }
+
+  waitForTurnstile();
+  bindGateControls();
   init();
 })();
