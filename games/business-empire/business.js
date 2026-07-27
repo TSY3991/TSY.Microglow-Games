@@ -6,8 +6,8 @@
   const ELITE_NET_WORTH = 250000;
   const MAX_LOGS = 8;
   const TURN_SECONDS = 45;
-  const PLAYER_STEP_MS = 360;
-  const AI_STEP_MS = 300;
+  const PLAYER_STEP_MS = 300;
+  const AI_STEP_MS = 220;
   const DICE_SPIN_FRAMES = 9;
   const DICE_FRAME_MS = 85;
   const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
@@ -561,8 +561,9 @@
       worth: empty ? 0 : netWorth(player)
     };
     Object.entries(values).forEach(([key, value]) => {
-      const target = document.querySelector(`[data-stat="${key}"]`);
-      if (target) target.textContent = formatMoney(value);
+      document.querySelectorAll(`[data-stat="${key}"], [data-mobile-stat="${key}"]`).forEach((target) => {
+        target.textContent = formatMoney(value);
+      });
     });
     document.querySelector('[data-stat="turn"]').textContent = String(state.round);
     elements.circleLabel.textContent = empty || player.circle === "basic" ? "基礎城區" : "精英內城";
@@ -801,10 +802,26 @@
       button.type = "button";
       button.textContent = action.label;
       button.disabled = Boolean(action.disabled);
-      button.addEventListener("click", action.run, { once: true });
+      button.addEventListener("click", (clickEvent) => {
+        closeMobileEventDrawer();
+        action.run(clickEvent);
+      }, { once: true });
       elements.eventActions.append(button);
     });
     if (state.started && actions.length && activeActor()?.isHuman) playEffect(event.type || "event");
+    syncMobileEventDrawer(actions.length > 0 && Boolean(activeActor()?.isHuman));
+  }
+
+  function isMobileLandscape() {
+    return window.matchMedia("(max-width: 900px) and (orientation: landscape)").matches;
+  }
+
+  function syncMobileEventDrawer(shouldOpen) {
+    document.body.classList.toggle("mobile-event-open", Boolean(shouldOpen) && isMobileLandscape());
+  }
+
+  function closeMobileEventDrawer() {
+    document.body.classList.remove("mobile-event-open");
   }
 
   function readAudioPreference() {
@@ -932,6 +949,18 @@
     document.body.classList.toggle("board-focus-mode", boardFocused);
     elements.focusButton.textContent = boardFocused ? "返回事件" : "放大棋盤";
     elements.focusButton.setAttribute("aria-pressed", String(boardFocused));
+    if (boardFocused) window.requestAnimationFrame(centerActiveToken);
+  }
+
+  function centerActiveToken() {
+    const frame = document.querySelector("[data-board-frame]");
+    const activeToken = elements.tokens.querySelector(".token.is-active");
+    if (!frame || !activeToken) return;
+    const frameRect = frame.getBoundingClientRect();
+    const tokenRect = activeToken.getBoundingClientRect();
+    const deltaX = (tokenRect.left + tokenRect.width / 2) - (frameRect.left + frameRect.width / 2);
+    const deltaY = (tokenRect.top + tokenRect.height / 2) - (frameRect.top + frameRect.height / 2);
+    frame.scrollBy({ left: deltaX, top: deltaY, behavior: "smooth" });
   }
 
   function stopTurnTimer() {
@@ -1531,11 +1560,16 @@
       if (event.key === "Escape") {
         [elements.instructionsModal, elements.assetsModal].forEach((modal) => { modal.hidden = true; });
       }
-      if ((event.key === "Enter" || event.key === " ") && !elements.roll.disabled && !document.querySelector(".modal:not([hidden])")) {
+      if ((event.key === "Enter" || event.key === " ") && !elements.roll.disabled && !document.querySelector(".modal:not([hidden])") && !document.body.classList.contains("mobile-portrait-preview")) {
         event.preventDefault();
         rollHuman();
       }
     });
+
+    const boardFrameEl = document.querySelector("[data-board-frame]");
+    boardFrameEl?.addEventListener("scroll", () => {
+      boardFrameEl.classList.add("has-scrolled");
+    }, { passive: true, once: true });
 
     document.addEventListener("touchstart", (event) => {
       if (event.touches.length > 1) event.preventDefault();
@@ -1569,6 +1603,7 @@
     elements.orientationGuard.hidden = !mobilePortrait || portraitBypass;
     elements.orientationState.textContent = mobilePortrait ? "目前偵測：直向模式" : "目前偵測：橫向模式";
     document.documentElement.dataset.mobileOrientation = mobilePortrait ? "portrait" : "landscape";
+    document.body.classList.toggle("mobile-portrait-preview", mobilePortrait && portraitBypass);
   }
   function sleep(milliseconds) {
     return new Promise((resolve) => window.setTimeout(resolve, milliseconds));

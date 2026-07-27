@@ -1110,3 +1110,122 @@ body.board-focus-mode .board { height: 100%; }
 body[data-account-type="guest"] [data-member-only]{opacity:.48;filter:saturate(.45)}
 @media(max-width:760px){.account-card{grid-template-columns:1fr;max-height:94vh;border-radius:20px}.account-hero{min-height:auto;padding:24px;border-right:0;border-bottom:1px solid rgba(246,207,116,.18)}.account-sigil{width:58px;height:58px;margin:10px 0;border-radius:16px;font-size:1.7rem}.account-hero h1{font-size:1.65rem}.account-hero>p:not(.modal-kicker){margin:10px 0 14px;font-size:.75rem}.account-benefits{display:none}.account-options{gap:10px;padding:16px}.account-member-panel,.guest-trial-panel{padding:14px}}
 @media(max-width:900px) and (orientation:landscape){.account-modal{padding:4px}.account-card{grid-template-columns:.72fr 1.28fr;max-height:calc(100vh - 8px);border-radius:14px}.account-hero{min-height:0;padding:18px}.account-sigil{width:44px;height:44px;margin:6px 0;border-radius:12px;font-size:1.35rem}.account-hero h1{font-size:1.25rem}.account-hero>p:not(.modal-kicker){margin:7px 0;font-size:.56rem;line-height:1.45}.account-benefits{display:none}.account-options{gap:7px;padding:13px}.account-member-panel,.guest-trial-panel{padding:9px}.account-tabs{margin-bottom:8px}.account-tabs button{min-height:29px;font-size:.58rem}.account-form{grid-template-columns:1fr 1fr;gap:6px}.account-form input{min-height:31px;font-size:.6rem}.account-form label{font-size:.5rem}.account-submit,.account-status{grid-column:1/-1}.account-submit{min-height:30px;font-size:.56rem}.account-status{min-height:12px;font-size:.48rem}.guest-trial-panel{grid-template-columns:38px minmax(0,1fr) 130px}.guest-icon{width:38px;height:38px;font-size:1rem}.guest-trial-panel h2{font-size:.75rem}.guest-trial-panel p{font-size:.48rem}.guest-trial-button{grid-column:3;grid-row:1;min-height:34px;font-size:.54rem}.guest-note{grid-column:1/-1;font-size:.42rem!important}.account-divider{font-size:.45rem}}
+
+/* =========================================================================
+   Mobile usability correction — 2026-07-27
+   Scope: mobile landscape (<=900px landscape) + the "直向預覽" bypass state.
+   Deliberately appended after the existing scattered landscape media
+   queries above (not merged into them) so this block wins on source order
+   at equal specificity without restructuring what already works elsewhere.
+   ========================================================================= */
+
+/* A. mobile financial bar — hidden by default, shown only in mobile landscape */
+.mobile-stat-bar { display: none; }
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .empire-shell, body.board-focus-mode .empire-shell {
+    grid-template-rows: auto auto minmax(0,1fr);
+  }
+  .mobile-stat-bar {
+    display: flex; gap: 4px; min-width: 0; margin: 0; padding: 3px 4px;
+  }
+  .mobile-stat {
+    flex: 1 1 0; display: grid; min-width: 0; justify-items: center; gap: 1px;
+    padding: 2px 3px; border: 1px solid rgba(246,207,116,.18); border-radius: 6px;
+    background: rgba(6,16,27,.82);
+  }
+  .mobile-stat small { color: var(--muted); font-size: 9px; font-weight: 850; line-height: 1; }
+  .mobile-stat strong {
+    max-width: 100%; overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 950;
+    line-height: 1.2; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mobile-stat.income strong { color: var(--mint); }
+  .mobile-stat.expense strong { color: var(--danger); }
+  .mobile-stat.worth strong { color: var(--gold-bright); }
+}
+
+/* B/C. board-first single-column layout with a real focus-mode enlargement */
+@media (max-width: 900px) and (orientation: landscape) {
+  .game-layout { grid-template-columns: 1fr; grid-template-rows: minmax(0,1fr); position: relative; }
+  .board-panel { width: 100%; }
+  .board-frame {
+    justify-content: flex-start; align-items: flex-start; overflow: auto;
+    -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; overscroll-behavior: contain;
+  }
+  .rectangle-board, .board.rectangle-board {
+    width: 96vw; max-width: none; height: auto; aspect-ratio: 16 / 9; flex: none;
+  }
+  body.board-focus-mode .rectangle-board,
+  body.board-focus-mode .board.rectangle-board {
+    width: 122vw;
+  }
+
+  .board-drag-hint {
+    position: absolute; left: 50%; bottom: 6px; z-index: 20; transform: translateX(-50%);
+    padding: 3px 10px; border: 1px solid rgba(246,207,116,.3); border-radius: 99px;
+    color: var(--ink); background: rgba(3,10,18,.82);
+    font-size: 10px; font-weight: 800; white-space: nowrap; pointer-events: none;
+    opacity: 1; transition: opacity .3s ease;
+  }
+  .board-frame.has-scrolled .board-drag-hint { opacity: 0; }
+
+  /* quest-panel becomes a slide-in decision drawer instead of a permanent column */
+  .quest-panel {
+    position: absolute; inset: 0 0 0 auto; z-index: 40;
+    width: min(320px,84vw); height: 100%;
+    grid-template-columns: 1fr; grid-template-rows: minmax(0,1fr);
+    transform: translateX(100%); transition: transform .22s ease;
+    box-shadow: -8px 0 26px rgba(0,0,0,.55);
+  }
+  body.mobile-event-open .quest-panel { transform: translateX(0); }
+  .quest-panel .action-deck,
+  .quest-panel .story-scroll { display: none; }
+  .quest-panel .event-card { grid-row: 1; height: 100%; }
+}
+
+/* D/E. decision-drawer readability, touch targets, tile/token legibility */
+@media (max-width: 900px) and (orientation: landscape) {
+  .event-content h2 { font-size: 18px; line-height: 1.25; }
+  .event-content > p { font-size: 14px; line-height: 1.4; }
+  .event-actions { gap: 6px; }
+  .event-actions button { min-height: 44px; padding: 0 12px; font-size: 12px; }
+  .board-command .roll-button { min-height: 44px; }
+  .board-command .dice { width: 40px; height: 40px; }
+  .return-nav a, .top-actions button { min-height: 44px; }
+
+  .rectangle-board .tile-label,
+  .rectangle-board .inner-ring .tile-label {
+    font-size: 11px; line-height: 1.05; min-height: 0;
+  }
+  .rectangle-board .inner-ring .tile-label { font-size: 10px; }
+  .rectangle-board .tile-icon,
+  .rectangle-board .tile.is-corner .tile-icon { font-size: 18px; }
+  .token { --token-size: clamp(34px,9vmin,46px); }
+}
+
+/* G. 直向預覽 (mobile-portrait-preview) — reached via "仍以直向遊玩" bypass */
+.portrait-preview-banner { display: none; }
+body.mobile-portrait-preview .portrait-preview-banner {
+  position: fixed; left: 50%; top: max(8px,env(safe-area-inset-top)); z-index: 95;
+  display: flex; align-items: center; gap: 6px; transform: translateX(-50%);
+  padding: 6px 14px; border: 1px solid rgba(255,116,130,.5); border-radius: 99px;
+  background: rgba(20,4,8,.9); color: #ffd7dc; font-size: 11px; font-weight: 900;
+  white-space: nowrap;
+}
+body.mobile-portrait-preview [data-action="roll"],
+body.mobile-portrait-preview .event-actions button {
+  pointer-events: none; opacity: .4; filter: grayscale(.6);
+}
+
+/* Desktop account modal: keep the title intact and avoid a nested scrollbar. */
+@media (min-width: 901px) {
+  .account-card {
+    max-height: calc(100dvh - clamp(20px,4vw,56px));
+    overflow: hidden;
+  }
+
+  .account-hero h1 {
+    font-size: clamp(2rem,2.35vw,2.8rem);
+    white-space: nowrap;
+  }
+}

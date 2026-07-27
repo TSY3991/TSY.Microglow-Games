@@ -9,7 +9,7 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260721a">
-    <link rel="stylesheet" href="./business.css?v=20260723b">
+    <link rel="stylesheet" href="./business.css?v=20260727b">
   </head>
   <body>
     <main class="empire-shell">
@@ -45,6 +45,13 @@
         <div class="round-medallion"><small>ROUND</small><strong data-stat="turn">1</strong></div>
       </section>
 
+      <section class="mobile-stat-bar" aria-label="手機財務摘要">
+        <div class="mobile-stat cash"><small>金幣</small><strong data-mobile-stat="cash">$0</strong></div>
+        <div class="mobile-stat income"><small>被動</small><strong data-mobile-stat="passive">$0</strong></div>
+        <div class="mobile-stat expense"><small>支出</small><strong data-mobile-stat="expense">$0</strong></div>
+        <div class="mobile-stat worth"><small>淨值</small><strong data-mobile-stat="worth">$0</strong></div>
+      </section>
+
       <section class="game-layout" aria-label="微光商業帝國遊戲區">
         <section class="board-panel" aria-label="雙圈商業棋盤">
           <div class="board-status">
@@ -66,7 +73,8 @@
             <div class="turn-clock" data-turn-clock><small>回合倒數</small><strong data-turn-timer>45</strong><span>秒</span></div>
             <div class="player-seats" data-player-seats aria-label="玩家回合順序"></div>
           </div>
-          <div class="board-frame">
+          <div class="board-frame" data-board-frame>
+            <div class="board-drag-hint" data-board-drag-hint aria-hidden="true">← 拖曳查看完整棋盤 →</div>
             <div class="board rectangle-board" data-board>
               <div class="board-vignette" aria-hidden="true"></div>
               <div class="ring outer-ring" data-ring="basic" aria-label="32 格基礎圈"></div>
@@ -246,12 +254,13 @@
         </div>
       </div>
     </main>
+    <div class="portrait-preview-banner" data-portrait-preview-banner aria-hidden="true">⚠ 直向預覽模式・請橫向手機以進行完整對局</div>
     <div class="orientation-guard" data-orientation-guard hidden role="dialog" aria-modal="true" aria-labelledby="orientation-title">
       <div class="orientation-card">
         <div class="rotate-device" aria-hidden="true"><span>↻</span></div>
         <p class="modal-kicker">LANDSCAPE MODE</p>
         <h2 id="orientation-title">請將手機旋轉為橫向</h2>
-        <p>橫屏能顯示更大的棋盤、完整玩家列與事件卡，操作會更接近桌遊。</p>
+        <p>完整對局需要橫向畫面；直向只能預覽棋盤，不能擲骰或處理事件。</p>
         <small data-orientation-state>目前偵測：直向模式</small>
         <button class="secondary-button" type="button" data-action="portrait-bypass">仍以直向遊玩</button>
       </div>
@@ -262,6 +271,6 @@
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="./supabase-client.js?v=20260723a"></script>
     <script src="./business-auth.js?v=20260722a"></script>
-    <script src="./business.js?v=20260722g"></script>
+    <script src="./business.js?v=20260727a"></script>
   </body>
 </html>
