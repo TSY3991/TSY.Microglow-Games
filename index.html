@@ -41,8 +41,9 @@
           <span>本機最高分會存在你的瀏覽器中</span>
         </div>
 
-        <div class="game-grid">
-          <article class="game-card">
+        <!-- Update data-updated-at whenever a game receives a meaningful public update. -->
+        <div class="game-grid" data-sort-by-updated>
+          <article class="game-card" data-updated-at="2026-07-06">
             <div class="game-thumb neon-blocks" aria-hidden="true">
               <span></span>
               <span></span>
@@ -58,7 +59,7 @@
             <a class="primary-link" href="./games/tetris/">開始遊玩</a>
           </article>
 
-          <article class="game-card">
+          <article class="game-card" data-updated-at="2026-07-06">
             <div class="game-thumb snake-preview" aria-hidden="true">
               <span></span>
               <span></span>
@@ -75,7 +76,7 @@
             <a class="primary-link" href="./games/snake/">開始遊玩</a>
           </article>
 
-          <article class="game-card">
+          <article class="game-card" data-updated-at="2026-07-06">
             <div class="game-thumb downstairs-preview" aria-hidden="true">
               <span></span>
               <span></span>
@@ -91,7 +92,7 @@
             <a class="primary-link" href="./games/downstairs/">開始遊玩</a>
           </article>
 
-          <article class="game-card">
+          <article class="game-card" data-updated-at="2026-07-04">
             <div class="game-thumb gem-preview" aria-hidden="true">
               <span></span>
               <span></span>
@@ -108,7 +109,7 @@
             <a class="primary-link" href="./games/gem/">開始遊玩</a>
           </article>
 
-          <article class="game-card">
+          <article class="game-card" data-updated-at="2026-07-08">
             <div class="game-thumb orbs-preview" aria-hidden="true">
               <span></span>
               <span></span>
@@ -124,7 +125,7 @@
             <a class="primary-link" href="./games/orbs/">開始遊玩</a>
           </article>
 
-          <article class="game-card">
+          <article class="game-card" data-updated-at="2026-07-23">
             <div class="game-thumb empire-preview" aria-hidden="true">
               <span></span>
               <span></span>
@@ -140,7 +141,7 @@
             </div>
             <a class="primary-link" href="./games/business-empire/">開始遊玩</a>
           </article>
-          <article class="game-card is-coming">
+          <article class="game-card is-coming" data-sort-last="true">
             <div class="game-thumb muted-thumb" aria-hidden="true">
               <span></span>
               <span></span>
@@ -156,6 +157,26 @@
         </div>
       </section>
     </main>
+    <script>
+      document.querySelectorAll("[data-sort-by-updated]").forEach((grid) => {
+        const cards = Array.from(grid.children).map((card, index) => {
+          const parsedDate = Date.parse(card.dataset.updatedAt || "");
+          return {
+            card,
+            index,
+            updatedAt: Number.isNaN(parsedDate) ? 0 : parsedDate,
+            sortLast: card.dataset.sortLast === "true"
+          };
+        });
+
+        cards
+          .sort((a, b) => {
+            if (a.sortLast !== b.sortLast) return a.sortLast ? 1 : -1;
+            return b.updatedAt - a.updatedAt || a.index - b.index;
+          })
+          .forEach(({ card }) => grid.append(card));
+      });
+    </script>
     <script src="./shared/portal-return.js?v=20260704c"></script>
   </body>
 </html>
