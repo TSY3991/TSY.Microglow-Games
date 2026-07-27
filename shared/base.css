@@ -127,6 +127,70 @@ p {
   z-index: 10;
 }
 
+.account-status-link {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius);
+  color: #eaffff;
+  background: rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.account-status-link span {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  color: #0b333f;
+  background: #eaffff;
+  font-size: 0.85rem;
+}
+
+.account-status-link div {
+  display: grid;
+  min-width: 0;
+  text-align: left;
+}
+
+.account-status-link small {
+  overflow: hidden;
+  color: rgba(234, 255, 255, 0.68);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-status-link strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-status-link.is-guest {
+  border-color: rgba(255, 215, 106, 0.4);
+  background: rgba(255, 215, 106, 0.14);
+}
+
+.account-status-link.is-signed-in {
+  border-color: rgba(47, 215, 255, 0.4);
+  background: rgba(47, 215, 255, 0.14);
+}
+
 .hero-copy {
   padding-top: 48px;
   color: #ffffff;

@@ -7,14 +7,22 @@
       name="description"
       content="TSY.Microglow 遊戲大廳，集中放置可在桌機與手機遊玩的輕量小遊戲。"
     >
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://xduwufkfmzovlwcyodcp.supabase.co"
+    >
     <title>TSY.Microglow 遊戲大廳</title>
     <link rel="icon" href="./assets/logo-mark.png" type="image/png">
-    <link rel="stylesheet" href="./shared/base.css?v=20260721a">
+    <link rel="stylesheet" href="./shared/base.css?v=20260727a">
   </head>
   <body>
     <main class="lobby-shell">
       <header class="lobby-hero" aria-labelledby="page-title">
         <a class="back-link" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>回入口網站</a>
+        <a class="account-status-link" href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html" data-portal-auth>
+          <span aria-hidden="true">☾</span>
+          <div><small data-portal-auth-meta>微光帳號</small><strong data-portal-auth-label>登入／註冊</strong></div>
+        </a>
         <div class="hero-copy">
           <p class="eyebrow">Microglow Mini Games</p>
           <h1 id="page-title">遊戲大廳</h1>
@@ -178,5 +186,8 @@
       });
     </script>
     <script src="./shared/portal-return.js?v=20260704c"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="./shared/microglow-auth.js?v=20260727a"></script>
+    <script src="./shared/microglow-auth-status.js?v=20260727a"></script>
   </body>
 </html>
