@@ -1229,3 +1229,63 @@ body.mobile-portrait-preview .event-actions button {
     white-space: nowrap;
   }
 }
+
+/* Desktop setup flow: keep secondary game information comfortably readable. */
+@media (min-width: 901px) {
+  .setup-hero .modal-kicker { font-size: .72rem; }
+  .setup-hero .modal-lead { font-size: .92rem; }
+  .setup-map-emblem small { font-size: .58rem; }
+  .setup-progress button { font-size: .82rem; }
+  .setup-section-heading small { font-size: .65rem; }
+  .setup-section-heading h3 { font-size: 1.15rem; }
+  .setup-section-heading > span { font-size: .76rem; }
+
+  .mode-card small,.mode-card > b { font-size: .61rem; }
+  .mode-card strong { font-size: .94rem; }
+  .mode-card em { font-size: .71rem; line-height: 1.4; }
+  .map-thumb span { font-size: .9rem; }
+  .map-thumb b,
+  .map-choice small,
+  .difficulty-choice > small { font-size: .61rem; }
+  .map-choice strong,.difficulty-choice > strong { font-size: .93rem; }
+  .map-choice p,.difficulty-choice p { font-size: .71rem; }
+  .difficulty-buttons button { font-size: .72rem; }
+
+  .character-card > strong { font-size: 1.05rem; }
+  .character-card > p { font-size: .8rem; }
+  .character-card > small { font-size: .74rem; }
+  .character-selected-mark { font-size: .62rem; }
+
+  .ready-map > small { font-size: .68rem; }
+  .ready-map > strong { font-size: 1.22rem; }
+  .ready-map > p { font-size: .78rem; }
+  .ready-roster ol { gap: 6px; }
+  .ready-roster li {
+    grid-template-columns: 26px 38px minmax(0,1fr) auto;
+    gap: 7px;
+    padding: 6px 9px;
+  }
+  .ready-player-index { width: 24px; height: 24px; font-size: .7rem; }
+  .ready-roster li > b { width: 36px; height: 36px; font-size: 1.25rem; }
+  .ready-roster li strong { font-size: .92rem; }
+  .ready-roster li small { font-size: .7rem; line-height: 1.35; }
+  .ready-roster li em { font-size: .65rem; }
+  .ready-settings div { padding: 7px; }
+  .ready-settings span { font-size: .62rem; }
+  .ready-settings strong { font-size: .8rem; }
+  .setup-footer > span { font-size: .7rem; }
+  .setup-footer .primary-button,.setup-footer .secondary-button {
+    min-height: 44px;
+    font-size: .84rem;
+  }
+  .setup-card > .modal-note { font-size: .72rem; }
+}
+
+/* Preserve the larger type on shorter desktop viewports by tightening spacing. */
+@media (min-width: 901px) and (max-height: 760px) {
+  .setup-card { padding: 16px; }
+  .setup-hero { padding-bottom: 8px; }
+  .setup-progress { margin: 8px 0; }
+  .setup-footer { margin-top: 8px; padding-top: 6px; }
+  .setup-card > .modal-note { margin-top: 6px; }
+}
