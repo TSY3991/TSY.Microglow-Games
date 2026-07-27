@@ -330,7 +330,7 @@
 
   function renderCharacters() {
     elements.characterGrid.replaceChildren();
-    CHARACTERS.forEach((character, index) => {
+    CHARACTERS.forEach((character) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "character-card";
@@ -338,7 +338,7 @@
       button.classList.toggle("is-selected", setupState.characterId === character.id);
       button.setAttribute("aria-pressed", String(setupState.characterId === character.id));
       button.innerHTML =
-        '<span class="character-art art-' + index + '" aria-hidden="true"></span>' +
+        '<span class="character-art" style="--sprite:url(\'./assets/tokens/' + character.spriteId + '.png\')" aria-hidden="true"></span>' +
         "<strong>" + character.name + "｜" + character.title + "</strong>" +
         "<p>" + character.perk + "</p>" +
         "<small>" + character.detail + "</small>" +
@@ -581,7 +581,9 @@
     elements.cashflowPreview.textContent = `淨現金流 ${formatSigned(empty ? 0 : monthlyCashflow(player))}`;
     elements.playerName.textContent = empty ? "尚未選角" : player.name;
     elements.playerTitle.textContent = empty ? "等待進入微光城" : player.title;
-    elements.playerPortrait.className = `player-portrait character-${empty ? 0 : player.artIndex}`;
+    elements.playerPortrait.className = "player-portrait";
+    if (!empty && player.spriteId) elements.playerPortrait.style.setProperty("--sprite", `url("./assets/tokens/${player.spriteId}.png")`);
+    else elements.playerPortrait.style.removeProperty("--sprite");
   }
 
   function renderLandmarks() {
@@ -681,8 +683,10 @@
     elements.activeName.textContent = actor ? actor.name : "等待玩家";
     elements.activePhase.textContent = actor ? phaseLabel() : "選角後開始回合";
     elements.activeEmblem.textContent = actor?.avatar || "♙";
-    elements.activeAvatar.className = `turn-avatar character-${actor?.artIndex || 0}`;
+    elements.activeAvatar.className = "turn-avatar";
     elements.activeAvatar.dataset.variant = actor?.variant || "";
+    if (actor?.spriteId) elements.activeAvatar.style.setProperty("--sprite", `url("./assets/tokens/${actor.spriteId}.png")`);
+    else elements.activeAvatar.style.removeProperty("--sprite");
     elements.turnClock.classList.toggle("is-warning", Boolean(actor?.isHuman && state.secondsLeft <= 10));
     elements.turnClock.classList.toggle("is-paused", !actor?.isHuman || !["roll", "decision"].includes(state.phase));
     elements.turnClock.style.setProperty("--turn-progress", `${Math.max(0, Math.min(100, (state.secondsLeft / TURN_SECONDS) * 100))}%`);
@@ -700,7 +704,7 @@
       seat.dataset.variant = player.variant || "";
       seat.style.setProperty("--seat-color", player.color);
       seat.innerHTML = `
-        <span class="seat-avatar character-${player.artIndex}"><b>${player.avatar}</b></span>
+        <span class="seat-avatar" style="--sprite:url('./assets/tokens/${player.spriteId}.png')"><b>${player.avatar}</b></span>
         <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : "AI"}</small><strong>${player.name}</strong><em>${player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"}</em></span>
       `;
       elements.playerSeats.append(seat);

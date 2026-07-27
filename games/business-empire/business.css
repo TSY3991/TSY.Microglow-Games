@@ -1309,3 +1309,30 @@ body.mobile-portrait-preview .event-actions button {
     font-size: .62rem;
   }
 }
+
+/* =========================================================================
+   Character portrait consistency — 2026-07-27
+   The generated per-character sprites (assets/tokens/*.png) were wired into
+   the board tokens only. This block extends the same art, via the --sprite
+   custom property set inline by business.js, to the HUD portrait, the
+   character-select card, the turn banner avatar and the seat list — so the
+   same character looks the same everywhere instead of falling back to the
+   old shared 3-frame sheet. Falls back to the old sheet when --sprite is
+   unset (e.g. before a character is chosen).
+   ========================================================================= */
+.player-portrait {
+  background-image: linear-gradient(90deg,transparent 70%,#0c2031), var(--sprite, url("./assets/adventurers.webp"));
+  background-size: auto 100%, auto 230%;
+  background-position: center, center top;
+}
+.character-art {
+  background-image: linear-gradient(180deg,transparent 68%,rgba(7,15,26,.9)), var(--sprite, url("./assets/adventurers.webp"));
+  background-size: auto 100%, contain;
+  background-position: center, center;
+}
+.turn-avatar,
+.seat-avatar {
+  background-image: linear-gradient(0deg,rgba(84,221,245,.35),transparent 55%), var(--sprite, url("./assets/adventurers.webp"));
+  background-size: auto 100%, auto 230%;
+  background-position: center, center top;
+}
