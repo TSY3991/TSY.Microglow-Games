@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="TSY.Microglow 多人連線大廳，管理好友、好友房與隨機配對。"
+    >
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://xduwufkfmzovlwcyodcp.supabase.co wss://xduwufkfmzovlwcyodcp.supabase.co"
+    >
+    <title>多人連線大廳｜TSY.Microglow Games</title>
+    <link rel="icon" href="../assets/logo-mark.png" type="image/png">
+    <link rel="stylesheet" href="../shared/base.css?v=20260727a">
+    <link rel="stylesheet" href="./multiplayer.css?v=20260727a">
+  </head>
+  <body>
+    <main class="lobby-shell mp-shell">
+      <header class="mp-topbar">
+        <a class="back-link compact-back" href="../">← 遊戲大廳</a>
+        <a class="account-status-link" href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html" data-portal-auth>
+          <span aria-hidden="true">☾</span>
+          <div><small data-portal-auth-meta>微光帳號</small><strong data-portal-auth-label>登入／註冊</strong></div>
+        </a>
+      </header>
+
+      <section class="mp-hero">
+        <p class="eyebrow">Microglow Multiplayer</p>
+        <h1>多人連線大廳</h1>
+        <p>邀請好友、開房間、或加入隨機配對，一起遊玩微光商業帝國（2–4 人）。</p>
+      </section>
+
+      <section class="mp-gate" data-mp-gate hidden>
+        <div class="mp-gate-card">
+          <p class="mp-gate-kicker">MEMBER ONLY</p>
+          <h2>多人功能僅限正式會員</h2>
+          <p data-mp-gate-message>訪客試玩帳號無法使用好友、房間與配對功能，請先登入或註冊正式會員。</p>
+          <a class="primary-link" data-mp-gate-link href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html">前往登入</a>
+        </div>
+      </section>
+
+      <section class="mp-app" data-mp-app hidden>
+        <nav class="mp-tabs" aria-label="多人功能分頁">
+          <button type="button" class="is-active" data-mp-tab="friends" aria-current="page">好友</button>
+          <button type="button" data-mp-tab="room">好友房</button>
+          <button type="button" data-mp-tab="queue">隨機配對</button>
+        </nav>
+
+        <section class="mp-panel" data-mp-panel="friends">
+          <div class="mp-card">
+            <h2>搜尋玩家</h2>
+            <p class="mp-hint">輸入完整暱稱，或至少 3 個字元的開頭進行搜尋。</p>
+            <form class="mp-search-form" data-mp-search-form>
+              <input type="text" placeholder="暱稱（username）" autocomplete="off" data-mp-search-input>
+              <button type="submit" class="primary-link">搜尋</button>
+            </form>
+            <ul class="mp-list" data-mp-search-results></ul>
+          </div>
+
+          <div class="mp-card">
+            <h2>好友邀請</h2>
+            <ul class="mp-list" data-mp-friend-invites>
+              <li class="mp-empty">目前沒有待處理的好友邀請。</li>
+            </ul>
+          </div>
+
+          <div class="mp-card">
+            <h2>好友名單</h2>
+            <ul class="mp-list" data-mp-friend-list>
+              <li class="mp-empty">還沒有好友，先搜尋暱稱送出邀請吧。</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="mp-panel" data-mp-panel="room" hidden>
+          <div class="mp-card" data-mp-room-invites-card>
+            <h2>房間邀請</h2>
+            <ul class="mp-list" data-mp-room-invites>
+              <li class="mp-empty">目前沒有待處理的房間邀請。</li>
+            </ul>
+          </div>
+
+          <div class="mp-card" data-mp-no-room-card>
+            <h2>建立或加入好友房</h2>
+            <div class="mp-actions">
+              <button type="button" class="primary-link" data-mp-action="create-room">建立房間</button>
+            </div>
+            <form class="mp-search-form" data-mp-join-form>
+              <input type="text" placeholder="房間代碼" autocomplete="off" maxlength="6" data-mp-room-code-input>
+              <button type="submit" class="primary-link">加入房間</button>
+            </form>
+          </div>
+
+          <div class="mp-card" data-mp-room-card hidden>
+            <h2>目前房間 <span class="mp-room-code" data-mp-room-code></span></h2>
+            <p class="mp-hint" data-mp-room-status></p>
+            <ul class="mp-list" data-mp-room-members></ul>
+            <form class="mp-search-form" data-mp-invite-form>
+              <input type="text" placeholder="邀請好友暱稱" autocomplete="off" data-mp-invite-input>
+              <button type="submit" class="primary-link">送出邀請</button>
+            </form>
+            <div class="mp-actions">
+              <button type="button" class="primary-link" data-mp-action="toggle-ready">準備／取消準備</button>
+              <button type="button" class="primary-link" data-mp-action="start-match" hidden data-mp-host-only>開始比賽</button>
+              <button type="button" class="mp-danger" data-mp-action="leave-room">離開房間</button>
+            </div>
+            <p class="mp-status" data-mp-room-feedback></p>
+          </div>
+        </section>
+
+        <section class="mp-panel" data-mp-panel="queue" hidden>
+          <div class="mp-card">
+            <h2>隨機配對</h2>
+            <p class="mp-hint">系統每分鐘檢查一次配對，不保證立即配對成功。</p>
+            <div class="mp-actions">
+              <button type="button" class="primary-link" data-mp-action="enqueue">加入配對佇列</button>
+              <button type="button" class="mp-danger" data-mp-action="cancel-queue" hidden>取消配對</button>
+            </div>
+            <p class="mp-status" data-mp-queue-status></p>
+          </div>
+        </section>
+
+        <section class="mp-panel mp-match-result" data-mp-match-result hidden>
+          <div class="mp-card">
+            <h2>比賽已建立</h2>
+            <p data-mp-match-id></p>
+            <p>連線對戰畫面開發中，敬請期待。</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="../shared/microglow-auth.js?v=20260727a"></script>
+    <script src="../shared/microglow-auth-status.js?v=20260727a"></script>
+    <script src="../shared/multiplayer-client.js?v=20260727a"></script>
+    <script src="./multiplayer.js?v=20260727a"></script>
+  </body>
+</html>

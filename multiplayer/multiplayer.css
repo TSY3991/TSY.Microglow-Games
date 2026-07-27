@@ -1,0 +1,275 @@
+.mp-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.mp-topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+
+/* base.css's .account-status-link is absolutely positioned for the lobby
+   hero badge; here it flows inline within the topbar row instead. */
+.mp-topbar .account-status-link {
+  position: static;
+}
+
+.mp-hero {
+  display: grid;
+  gap: 6px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(8, 30, 38, 0.94), rgba(11, 51, 57, 0.9));
+  color: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.mp-hero h1 {
+  margin: 0;
+  font-size: 1.7rem;
+}
+
+.mp-hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.mp-hero .eyebrow {
+  margin: 0;
+  color: var(--cyan);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.mp-gate-card,
+.mp-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 14px 34px rgba(20, 46, 50, 0.08);
+}
+
+.mp-gate-card {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.mp-gate-kicker {
+  margin: 0;
+  color: var(--teal);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.mp-gate-card h2 {
+  margin: 0;
+}
+
+.mp-gate-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mp-tabs button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  background: var(--panel);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mp-tabs button.is-active {
+  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+}
+
+.mp-app {
+  display: grid;
+  gap: 16px;
+}
+
+.mp-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.mp-card h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+
+.mp-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.mp-search-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mp-search-form input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: #ffffff;
+  font-size: 0.92rem;
+}
+
+.mp-search-form button,
+.mp-actions button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  cursor: pointer;
+}
+
+.mp-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.mp-list .mp-empty {
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  border-style: dashed;
+}
+
+.mp-list-name {
+  font-weight: 800;
+}
+
+.mp-list-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.mp-list-actions button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.mp-accept {
+  color: #ffffff;
+  background: var(--teal);
+}
+
+.mp-decline {
+  color: var(--muted);
+  background: rgba(90, 114, 118, 0.14);
+}
+
+.mp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mp-danger {
+  color: #ffffff;
+  border-radius: var(--radius);
+  background: #d64545;
+}
+
+.mp-room-code {
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: var(--teal-deep);
+  background: rgba(13, 148, 136, 0.14);
+  font-family: monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+}
+
+.mp-status {
+  min-height: 18px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.mp-status[data-tone="error"] {
+  color: #b3261e;
+}
+
+.mp-status[data-tone="success"] {
+  color: var(--teal-deep);
+}
+
+button[data-mp-host-only] {
+  color: #ffffff;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .mp-hero {
+    padding: 14px 16px;
+  }
+
+  .mp-hero h1 {
+    font-size: 1.3rem;
+  }
+
+  .mp-tabs button {
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mp-search-form {
+    flex-direction: column;
+  }
+
+  .mp-search-form button {
+    width: 100%;
+  }
+}
