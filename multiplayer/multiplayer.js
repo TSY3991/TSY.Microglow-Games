@@ -9,6 +9,13 @@
     gateMessage: document.querySelector("[data-mp-gate-message]"),
     gateLink: document.querySelector("[data-mp-gate-link]"),
     app: document.querySelector("[data-mp-app]"),
+    guestBanner: document.querySelector("[data-mp-guest-banner]"),
+    upgradeLink: document.querySelector("[data-mp-upgrade-link]"),
+    permanentOnlyCards: [...document.querySelectorAll("[data-mp-permanent-only]")],
+    myCode: document.querySelector("[data-mp-my-code]"),
+    codeFeedback: document.querySelector("[data-mp-code-feedback]"),
+    codeInviteForm: document.querySelector("[data-mp-code-invite-form]"),
+    codeInviteInput: document.querySelector("[data-mp-code-invite-input]"),
     tabs: [...document.querySelectorAll("[data-mp-tab]")],
     panels: [...document.querySelectorAll("[data-mp-panel]")],
     searchForm: document.querySelector("[data-mp-search-form]"),
@@ -26,7 +33,7 @@
     roomStatus: document.querySelector("[data-mp-room-status]"),
     roomMembers: document.querySelector("[data-mp-room-members]"),
     inviteForm: document.querySelector("[data-mp-invite-form]"),
-    inviteInput: document.querySelector("[data-mp-invite-input]"),
+    inviteSelect: document.querySelector("[data-mp-invite-select]"),
     roomFeedback: document.querySelector("[data-mp-room-feedback]"),
     startMatchButton: document.querySelector('[data-mp-action="start-match"]'),
     queueStatus: document.querySelector("[data-mp-queue-status]"),
@@ -74,21 +81,36 @@
     }
 
     const user = data?.session?.user;
-    if (!user || auth.isAnonymousUser(user)) {
-      showGate(user ? "訪客試玩帳號無法使用好友、房間與配對功能，請先登入或註冊正式會員。" : undefined);
+    if (!user) {
+      showGate();
       return;
     }
 
     currentUserId = user.id;
+    const isGuest = auth.isAnonymousUser(user);
     elements.gate.hidden = true;
     elements.app.hidden = false;
+    elements.guestBanner.hidden = !isGuest;
+    if (isGuest) {
+      elements.upgradeLink.href = auth.getPortalLoginUrl(window.location.href);
+    }
+    elements.permanentOnlyCards.forEach((card) => { card.hidden = isGuest; });
 
     bindControls();
-    await Promise.all([loadFriends(), loadFriendInvites(), loadMyRoom(), loadQueueStatus()]);
+    await Promise.all([loadFriends(), loadFriendInvites(), loadMyRoom(), loadQueueStatus(), loadMyCode()]);
     invitesUnsubscribe = mp.subscribeInvites(currentUserId, () => {
       loadFriendInvites();
       loadRoomInvitesIfNoRoom();
     });
+  }
+
+  async function loadMyCode() {
+    try {
+      const code = await mp.getMyPlayerCode();
+      elements.myCode.textContent = code || "------";
+    } catch (error) {
+      elements.myCode.textContent = "------";
+    }
   }
 
   function showGate(message) {
@@ -101,6 +123,30 @@
   function bindControls() {
     elements.tabs.forEach((tab) => {
       tab.addEventListener("click", () => selectTab(tab.dataset.mpTab));
+    });
+
+    document.querySelector('[data-mp-action="copy-code"]').addEventListener("click", async () => {
+      const code = elements.myCode.textContent.trim();
+      if (!code || code === "------") return;
+      try {
+        await navigator.clipboard.writeText(code);
+        setStatus(elements.codeFeedback, "已複製到剪貼簿。", "success");
+      } catch (error) {
+        setStatus(elements.codeFeedback, "複製失敗，請手動選取文字複製。", "error");
+      }
+    });
+
+    elements.codeInviteForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const code = elements.codeInviteInput.value.trim();
+      if (!code) return;
+      try {
+        await mp.sendFriendInviteByCode(code);
+        elements.codeInviteInput.value = "";
+        setStatus(elements.codeFeedback, "邀請已送出。", "success");
+      } catch (error) {
+        setStatus(elements.codeFeedback, error.message || "送出失敗", "error");
+      }
     });
 
     elements.searchForm.addEventListener("submit", async (event) => {
@@ -143,14 +189,11 @@
     elements.inviteForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!currentRoom) return;
-      const username = elements.inviteInput.value.trim();
-      if (!username) return;
+      const friendId = elements.inviteSelect.value;
+      if (!friendId) return;
       try {
-        const matches = await mp.searchProfiles(username);
-        const target = matches.find((profile) => profile.username === username) || matches[0];
-        if (!target) throw new Error("找不到這個暱稱的玩家");
-        await mp.inviteFriendToRoom(currentRoom.room_id, target.id);
-        elements.inviteInput.value = "";
+        await mp.inviteFriendToRoom(currentRoom.room_id, friendId);
+        elements.inviteSelect.value = "";
         setStatus(elements.roomFeedback, "邀請已送出。", "success");
       } catch (error) {
         setStatus(elements.roomFeedback, error.message || "邀請失敗", "error");
@@ -303,15 +346,18 @@
       const friends = await mp.listFriends();
       const profiles = await mp.getProfiles(friends.map((friend) => friend.friendId));
       elements.friendList.replaceChildren();
+      elements.inviteSelect.replaceChildren(new Option("選擇要邀請的好友…", ""));
       if (friends.length === 0) {
-        elements.friendList.append(emptyItem("還沒有好友，先搜尋暱稱送出邀請吧。"));
+        elements.friendList.append(emptyItem("還沒有好友，可以用玩家代碼或搜尋暱稱送出邀請。"));
         return;
       }
       friends.forEach((friend) => {
         const profile = profiles[friend.friendId];
+        const label = profile?.username || profile?.display_name || "未知玩家";
         const li = document.createElement("li");
-        li.innerHTML = `<span class="mp-list-name">${escapeHtml(profile?.username || profile?.display_name || "未知玩家")}</span>`;
+        li.innerHTML = `<span class="mp-list-name">${escapeHtml(label)}</span>`;
         elements.friendList.append(li);
+        elements.inviteSelect.append(new Option(label, friend.friendId));
       });
     } catch (error) {
       elements.friendList.replaceChildren(emptyItem(error.message || "載入好友失敗"));

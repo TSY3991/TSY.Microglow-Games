@@ -13,8 +13,8 @@
     >
     <title>多人連線大廳｜TSY.Microglow Games</title>
     <link rel="icon" href="../assets/logo-mark.png" type="image/png">
-    <link rel="stylesheet" href="../shared/base.css?v=20260727a">
-    <link rel="stylesheet" href="./multiplayer.css?v=20260727a">
+    <link rel="stylesheet" href="../shared/base.css?v=20260728a">
+    <link rel="stylesheet" href="./multiplayer.css?v=20260728a">
   </head>
   <body>
     <main class="lobby-shell mp-shell">
@@ -34,11 +34,16 @@
 
       <section class="mp-gate" data-mp-gate hidden>
         <div class="mp-gate-card">
-          <p class="mp-gate-kicker">MEMBER ONLY</p>
-          <h2>多人功能僅限正式會員</h2>
-          <p data-mp-gate-message>訪客試玩帳號無法使用好友、房間與配對功能，請先登入或註冊正式會員。</p>
+          <p class="mp-gate-kicker">SIGN IN REQUIRED</p>
+          <h2>請先登入或以訪客身分開始</h2>
+          <p data-mp-gate-message>需要有登入狀態（含訪客）才能使用好友、房間與配對功能。</p>
           <a class="primary-link" data-mp-gate-link href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html">前往登入</a>
         </div>
+      </section>
+
+      <section class="mp-guest-banner" data-mp-guest-banner hidden>
+        <p><strong>訪客模式</strong>：好友與房間資料存在這個瀏覽器裡，換裝置或清除資料會遺失。想永久保存，可以升級為正式會員（原有資料會自動保留）。</p>
+        <a class="primary-link" data-mp-upgrade-link href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html">升級為正式會員</a>
       </section>
 
       <section class="mp-app" data-mp-app hidden>
@@ -50,8 +55,27 @@
 
         <section class="mp-panel" data-mp-panel="friends">
           <div class="mp-card">
+            <h2>我的玩家代碼</h2>
+            <p class="mp-hint">分享這組代碼給朋友，讓對方用「用代碼加好友」加你——訪客帳號也能用。</p>
+            <div class="mp-code-display">
+              <strong data-mp-my-code>------</strong>
+              <button type="button" class="primary-link" data-mp-action="copy-code">複製</button>
+            </div>
+            <p class="mp-status" data-mp-code-feedback></p>
+          </div>
+
+          <div class="mp-card">
+            <h2>用代碼加好友</h2>
+            <p class="mp-hint">輸入朋友分享給你的 6 碼玩家代碼。</p>
+            <form class="mp-search-form" data-mp-code-invite-form>
+              <input type="text" placeholder="玩家代碼" autocomplete="off" maxlength="6" data-mp-code-invite-input>
+              <button type="submit" class="primary-link">送出邀請</button>
+            </form>
+          </div>
+
+          <div class="mp-card" data-mp-permanent-only>
             <h2>搜尋玩家</h2>
-            <p class="mp-hint">輸入完整暱稱，或至少 3 個字元的開頭進行搜尋。</p>
+            <p class="mp-hint">輸入完整暱稱，或至少 3 個字元的開頭進行搜尋（僅限正式會員）。</p>
             <form class="mp-search-form" data-mp-search-form>
               <input type="text" placeholder="暱稱（username）" autocomplete="off" data-mp-search-input>
               <button type="submit" class="primary-link">搜尋</button>
@@ -98,7 +122,9 @@
             <p class="mp-hint" data-mp-room-status></p>
             <ul class="mp-list" data-mp-room-members></ul>
             <form class="mp-search-form" data-mp-invite-form>
-              <input type="text" placeholder="邀請好友暱稱" autocomplete="off" data-mp-invite-input>
+              <select data-mp-invite-select>
+                <option value="">選擇要邀請的好友…</option>
+              </select>
               <button type="submit" class="primary-link">送出邀請</button>
             </form>
             <div class="mp-actions">
@@ -133,9 +159,9 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="../shared/microglow-auth.js?v=20260727a"></script>
-    <script src="../shared/microglow-auth-status.js?v=20260727a"></script>
-    <script src="../shared/multiplayer-client.js?v=20260727a"></script>
-    <script src="./multiplayer.js?v=20260727a"></script>
+    <script src="../shared/microglow-auth.js?v=20260728a"></script>
+    <script src="../shared/microglow-auth-status.js?v=20260728a"></script>
+    <script src="../shared/multiplayer-client.js?v=20260728a"></script>
+    <script src="./multiplayer.js?v=20260728a"></script>
   </body>
 </html>

@@ -12,7 +12,15 @@
     return auth.client;
   }
 
-  async function requireUserId() {
+  async function requireAnyUserId() {
+    const { data, error } = await client().auth.getSession();
+    if (error) throw error;
+    const user = data?.session?.user;
+    if (!user) throw new Error("需要登入");
+    return user.id;
+  }
+
+  async function requirePermanentUserId() {
     const { data, error } = await client().auth.getSession();
     if (error) throw error;
     const user = data?.session?.user;
@@ -37,7 +45,7 @@
   async function searchProfiles(query) {
     const trimmed = (query || "").trim();
     if (trimmed.length === 0) return [];
-    const userId = await requireUserId();
+    const userId = await requirePermanentUserId();
     let request = client()
       .from("profiles")
       .select("id, username, display_name")
@@ -53,7 +61,7 @@
   }
 
   async function listFriends() {
-    const userId = await requireUserId();
+    const userId = await requireAnyUserId();
     const { data, error } = await client()
       .from("friendships")
       .select("id, user_a, user_b, created_at")
@@ -68,7 +76,7 @@
   }
 
   async function listFriendInvites() {
-    const userId = await requireUserId();
+    const userId = await requireAnyUserId();
     const { data, error } = await client()
       .from("friend_invites")
       .select("id, sender_id, receiver_id, status, created_at, expires_at")
@@ -104,6 +112,24 @@
       p_invite_id: inviteId,
       p_accept: accept
     });
+  }
+
+  async function sendFriendInviteByCode(playerCode) {
+    return callRpc("send_friend_invite_by_code", {
+      p_player_code: (playerCode || "").trim(),
+      p_request_id: newRequestId()
+    });
+  }
+
+  async function getMyPlayerCode() {
+    const userId = await requireAnyUserId();
+    const { data, error } = await client()
+      .from("profiles")
+      .select("player_code")
+      .eq("id", userId)
+      .single();
+    if (error) throw error;
+    return data?.player_code || null;
   }
 
   // ---- Friend rooms ----
@@ -165,7 +191,7 @@
   }
 
   async function getMyRoom() {
-    const userId = await requireUserId();
+    const userId = await requireAnyUserId();
     const { data, error } = await client()
       .from("room_members")
       .select("room_id, status, is_ready, seat_number, game_rooms(id, room_code, status, host_user_id, max_players)")
@@ -189,7 +215,7 @@
   }
 
   async function listRoomInvites() {
-    const userId = await requireUserId();
+    const userId = await requireAnyUserId();
     const { data, error } = await client()
       .from("room_invites")
       .select("id, room_id, sender_id, receiver_id, status, created_at, expires_at")
@@ -218,7 +244,7 @@
   }
 
   async function getMyQueueEntry() {
-    const userId = await requireUserId();
+    const userId = await requireAnyUserId();
     const { data, error } = await client()
       .from("match_queue")
       .select("id, status, queued_at, expires_at, matched_room_id")
@@ -262,12 +288,15 @@
   window.MicroglowMultiplayer = {
     GAME_KEY,
     MAP_KEY,
-    requireUserId,
+    requireAnyUserId,
+    requirePermanentUserId,
     searchProfiles,
     listFriends,
     listFriendInvites,
     getProfiles,
     sendFriendInvite,
+    sendFriendInviteByCode,
+    getMyPlayerCode,
     respondFriendInvite,
     createFriendRoom,
     joinRoomByCode,
