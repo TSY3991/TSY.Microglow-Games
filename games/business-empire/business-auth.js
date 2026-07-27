@@ -17,6 +17,7 @@
   const adapter = window.MicroglowSupabaseAuth || window.MicroglowAuth || null;
   let authMode = "login";
   let activeAccount = null;
+  let pendingResume = false;
 
   function readLocalAccount() {
     try {
@@ -55,7 +56,16 @@
     status.dataset.tone = tone || "info";
   }
 
-  function applyAccount(account) {
+  function setResumeControl(enabled) {
+    if (!closeButton) return;
+    closeButton.classList.toggle("is-resume", enabled);
+    closeButton.textContent = enabled ? "繼續 →" : "×";
+    closeButton.setAttribute("aria-label", enabled ? "使用目前帳號繼續" : "關閉帳號視窗");
+  }
+
+  function applyAccount(account, options) {
+    const advance = options?.advance !== false;
+    pendingResume = !advance;
     activeAccount = account;
     document.body.dataset.accountType = account.type;
     document.body.dataset.accountCloud = account.cloud ? "true" : "false";
@@ -66,8 +76,17 @@
     }
 
     if (closeButton) closeButton.hidden = false;
-    if (modal) modal.hidden = true;
-    if (introModal) introModal.hidden = false;
+    setResumeControl(!advance);
+    if (advance) {
+      if (modal) modal.hidden = true;
+      if (introModal) introModal.hidden = false;
+    } else {
+      if (modal) modal.hidden = false;
+      if (introModal) introModal.hidden = true;
+      selectTab("login");
+      const accountLabel = account.label || (account.type === "member" ? "會員帳號" : "訪客帳號");
+      setStatus(`已偵測到 ${accountLabel}。按右上角「繼續」進入遊戲，或改用其他帳號。`, "success");
+    }
 
     window.dispatchEvent(new CustomEvent("microglow:account-ready", {
       detail: {
@@ -185,7 +204,7 @@
             id: session.user.id,
             label: session.user.email || (guest ? "匿名訪客" : "正式會員"),
             cloud: true
-          });
+          }, { advance: false });
           return;
         }
       } catch (_) {
@@ -195,7 +214,7 @@
 
     const localGuest = readLocalAccount();
     if (localGuest) {
-      applyAccount(localGuest);
+      applyAccount(localGuest, { advance: false });
       return;
     }
 
@@ -209,10 +228,16 @@
   guestButton?.addEventListener("click", startGuestTrial);
   form?.addEventListener("submit", handleMemberSubmit);
   closeButton?.addEventListener("click", () => {
-    if (activeAccount && modal) modal.hidden = true;
+    if (!activeAccount || !modal) return;
+    modal.hidden = true;
+    if (pendingResume && introModal) introModal.hidden = false;
+    pendingResume = false;
+    setResumeControl(false);
   });
   accountButton?.addEventListener("click", () => {
     if (!modal) return;
+    pendingResume = false;
+    setResumeControl(false);
     modal.hidden = false;
     if (closeButton) closeButton.hidden = !activeAccount;
     setStatus(activeAccount?.type === "guest" ? "目前是訪客模式；登入會員後才會開放線上功能。" : "可檢視或切換帳號。", "info");

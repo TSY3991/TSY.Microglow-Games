@@ -136,18 +136,12 @@ button:focus-visible,a:focus-visible { outline: 3px solid var(--gold); outline-o
 .token[data-stack-index="2"] { margin: 5px 0 0 -17px; }
 .token[data-stack-index="3"] { margin: 17px 0 0 0; }
 .pawn-figure {
-  position: absolute; inset: 0 3px 9px; z-index: 2; display: block; overflow: hidden;
-  border: 2px solid #fff4c9; border-radius: 46% 46% 35% 35%;
-  background-color: #101d2b; background-image: linear-gradient(0deg,var(--token-color),transparent 48%),url("./assets/adventurers.webp");
-  background-size: 100% 100%,300% auto; background-position: center,0% 28%; background-repeat: no-repeat;
-  box-shadow: 0 0 0 2px color-mix(in srgb,var(--token-color),#06101b 34%),0 0 17px color-mix(in srgb,var(--token-color),transparent 38%),inset 0 -10px 12px rgba(0,0,0,.42);
+  position: absolute; inset: calc(var(--token-size) * -.12) calc(var(--token-size) * -.22) 8px; z-index: 2;
+  display: block; overflow: visible;
+  background-image: var(--token-sprite); background-position: center bottom; background-repeat: no-repeat; background-size: contain;
+  filter: drop-shadow(0 4px 2px rgba(0,0,0,.92)) drop-shadow(0 0 8px color-mix(in srgb,var(--token-color),transparent 42%));
 }
-.pawn-figure.character-1 { background-position: center,50% 28%; }
-.pawn-figure.character-2 { background-position: center,100% 28%; }
-.pawn-figure b {
-  position: absolute; right: -1px; bottom: -1px; display: grid; width: 17px; height: 17px; place-items: center;
-  border: 1px solid #fff4c9; border-radius: 50%; background: #0a1725; font-size: .55rem; font-style: normal;
-}
+.pawn-figure b { display: none; }
 .pawn-base {
   position: absolute; left: 50%; bottom: 3px; z-index: 1; display: block; width: 76%; height: 16%;
   border: 2px solid #fff2bf; border-radius: 50%; background: radial-gradient(ellipse,var(--token-color),#132130 72%);
@@ -166,10 +160,12 @@ button:focus-visible,a:focus-visible { outline: 3px solid var(--gold); outline-o
   font-size: .46rem; font-style: normal; font-weight: 1000; transform: translateX(-50%);
 }
 .token.is-active { z-index: 12; filter: drop-shadow(0 8px 8px rgba(0,0,0,.78)) drop-shadow(0 0 12px var(--token-color)); transform: translate(-50%,-70%) scale(1.13); }
+.token[data-edge="top"] { transform: translate(-50%,-38%); }
+.token[data-edge="top"].is-active { transform: translate(-50%,-39%) scale(1.13); }
 .token.is-active .pawn-turn { display: block; }
 .token.is-active .pawn-figure { animation: active-pawn-pulse .9s ease-in-out infinite alternate; }
 .token.is-moving .pawn-figure { animation: pawn-hop .22s ease-out; }
-.token[data-variant="spectral"] .pawn-figure { filter: hue-rotate(78deg) saturate(1.25); }
+.token[data-variant="spectral"] .pawn-figure { filter: drop-shadow(0 4px 2px rgba(0,0,0,.92)) drop-shadow(0 0 12px #b68cff); }
 .legend { display: flex; flex-wrap: wrap; gap: 5px 12px; align-items: center; justify-content: center; color: var(--muted); font-size: .6rem; font-weight: 850; }.legend span { display: inline-flex; gap: 4px; align-items: center; }.legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 6px currentColor; }.legend i.income { color: var(--mint); background: var(--mint); }.legend i.opportunity { color: var(--gold); background: var(--gold); }.legend i.risk { color: var(--danger); background: var(--danger); }.legend i.learn { color: var(--violet); background: var(--violet); }.legend i.loan { color: #75aaff; background: #75aaff; }.legend i.gate { color: #fff2a8; background: #fff2a8; }.quest-panel { display: grid; grid-template-rows: minmax(0,1fr) auto minmax(82px,.34fr); gap: 7px; padding: 8px; overflow: hidden; }
 .event-card,.action-deck,.story-scroll { border: 1px solid rgba(246,207,116,.16); border-radius: 13px; background: rgba(5,15,26,.78); }
 .event-card { display: grid; grid-template-columns: minmax(105px,.7fr) minmax(0,1.3fr); min-height: 0; overflow: hidden; }
@@ -779,6 +775,9 @@ body.board-focus-mode .board { height: 100%; }
 .rectangle-board .token {
   z-index: 9;
 }
+.rectangle-board .token.is-active {
+  z-index: 14;
+}
 
 @media (max-width: 900px) and (orientation: landscape) {
   .rectangle-board .board-vignette::before {
@@ -1200,7 +1199,9 @@ body[data-account-type="guest"] [data-member-only]{opacity:.48;filter:saturate(.
   .rectangle-board .inner-ring .tile-label { font-size: 10px; }
   .rectangle-board .tile-icon,
   .rectangle-board .tile.is-corner .tile-icon { font-size: 18px; }
-  .token { --token-size: clamp(34px,9vmin,46px); }
+  .token { --token-size: clamp(46px,13vmin,58px); }
+  .token[data-edge="top"].is-active { transform: translate(-50%,-22%) scale(1.13); }
+  .pawn-name { max-width: 88px; font-size: 10px; }
 }
 
 /* G. 直向預覽 (mobile-portrait-preview) — reached via "仍以直向遊玩" bypass */
@@ -1288,4 +1289,23 @@ body.mobile-portrait-preview .event-actions button {
   .setup-progress { margin: 8px 0; }
   .setup-footer { margin-top: 8px; padding-top: 6px; }
   .setup-card > .modal-note { margin-top: 6px; }
+}
+
+/* Restored sessions stay on the access screen until the player explicitly continues. */
+.account-close.is-resume {
+  width: auto;
+  min-width: 92px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 950;
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .account-close.is-resume {
+    min-width: 76px;
+    height: 34px;
+    padding: 0 10px;
+    font-size: .62rem;
+  }
 }

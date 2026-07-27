@@ -86,6 +86,7 @@
       name: "星輝商旅",
       title: "星路遠征隊長",
       artIndex: 0,
+      spriteId: "starlight-merchant",
       avatar: "🧭",
       perk: "現金充裕，適合穩健累積。",
       detail: "起始 $36,000・薪資 $4,800・支出 $3,000",
@@ -99,6 +100,7 @@
       name: "符文工匠",
       title: "水晶帳冊鍊金師",
       artIndex: 1,
+      spriteId: "rune-artisan",
       avatar: "🔮",
       perk: "能力領先，資產買入最多折 10%。",
       detail: "起始 $28,000・薪資 $5,000・能力 2",
@@ -112,6 +114,7 @@
       name: "月影投資家",
       title: "夜航商會策略家",
       artIndex: 2,
+      spriteId: "moon-investor",
       avatar: "🌙",
       perk: "支出較低，更快接近財務自由。",
       detail: "起始 $30,000・薪資 $4,500・支出 $2,550",
@@ -307,6 +310,7 @@
       avatar: config.avatar,
       title: config.title || "商會競爭者",
       artIndex: Number(config.artIndex) || 0,
+      spriteId: overrides.spriteId || config.spriteId || config.id,
       variant: overrides.variant || config.variant || "",
       seat: Number(overrides.seat) || 0,
       color: overrides.color || "#55e6ff",
@@ -410,6 +414,7 @@
       name: "銀盾理財師",
       title: "王城風險守門人",
       artIndex: (selected.artIndex + 1) % 3,
+      spriteId: "ai-warden",
       avatar: "🛡️",
       cash: 33000 + difficulty.cashBonus,
       salary: 4800,
@@ -421,6 +426,7 @@
       name: "赤焰開拓者",
       title: "烈焰商路先鋒",
       artIndex: (selected.artIndex + 2) % 3,
+      spriteId: "ai-pioneer",
       avatar: "🔥",
       cash: 30000 + difficulty.cashBonus,
       salary: 5200,
@@ -432,6 +438,7 @@
       name: "幻影投機客",
       title: "星霧市場觀察者",
       artIndex: selected.artIndex,
+      spriteId: "ai-phantom",
       avatar: "🜂",
       cash: 32000 + difficulty.cashBonus,
       salary: 4900,
@@ -628,12 +635,14 @@
       token.dataset.tokenIndex = String(index);
       token.dataset.stackIndex = String(Math.min(3, stackIndex));
       token.dataset.variant = actor.variant || "";
+      token.dataset.edge = point.edge;
       token.style.setProperty("--token-color", actor.color);
+      token.style.setProperty("--token-sprite", `url("./assets/tokens/${actor.spriteId}.png")`);
       token.style.setProperty("--x", `${point.left}%`);
       token.style.setProperty("--y", `${point.top}%`);
       token.innerHTML = `
         <span class="pawn-name">${actor.name}</span>
-        <span class="pawn-figure character-${actor.artIndex}"><b>${actor.avatar}</b></span>
+        <span class="pawn-figure"><b>${actor.avatar}</b></span>
         <i class="pawn-base"></i>
         <em class="pawn-turn">行動中</em>
       `;
