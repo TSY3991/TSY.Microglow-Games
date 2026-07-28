@@ -203,6 +203,14 @@
     eventDescription: document.querySelector("[data-event-description]"),
     offerStats: document.querySelector("[data-offer-stats]"),
     eventActions: document.querySelector("[data-event-actions]"),
+    boardEventDock: document.querySelector("[data-board-event-dock]"),
+    boardEventVisual: document.querySelector("[data-board-event-visual]"),
+    boardEventIcon: document.querySelector("[data-board-event-icon]"),
+    boardEventType: document.querySelector("[data-board-event-type]"),
+    boardEventTitle: document.querySelector("[data-board-event-title]"),
+    boardEventDescription: document.querySelector("[data-board-event-description]"),
+    boardEventStats: document.querySelector("[data-board-event-stats]"),
+    boardEventActions: document.querySelector("[data-board-event-actions]"),
     ranking: document.querySelector("[data-ranking]"),
     log: document.querySelector("[data-log]"),
     cashflowPreview: document.querySelector("[data-cashflow-preview]"),
@@ -495,7 +503,7 @@
       cell.dataset.tileIndex = String(index);
       cell.dataset.edge = point.edge;
       cell.setAttribute("aria-label", `${index + 1}. ${tile.label}`);
-      cell.innerHTML = `<span class="tile-cap"></span><span class="tile-index">${index + 1}</span><span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
+      cell.innerHTML = `<span class="tile-cap"></span><span class="tile-index">${index + 1}</span><span class="tile-building" aria-hidden="true"><i></i><i></i><i></i></span><span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
       cell.addEventListener("click", () => showTileInspector(tile, index, circle));
       container.append(cell);
     });
@@ -809,7 +817,14 @@
       item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
       elements.offerStats.append(item);
     });
-    elements.eventActions.replaceChildren();
+    renderEventActions(elements.eventActions, actions);
+    syncBoardEvent(event, actions, stats);
+    if (state.started && actions.length && activeActor()?.isHuman) playEffect(event.type || "event");
+    syncMobileEventDrawer(actions.length > 0 && Boolean(activeActor()?.isHuman));
+  }
+
+  function renderEventActions(container, actions) {
+    container?.replaceChildren();
     actions.forEach((action) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -819,10 +834,28 @@
         closeMobileEventDrawer();
         action.run(clickEvent);
       }, { once: true });
-      elements.eventActions.append(button);
+      container.append(button);
     });
-    if (state.started && actions.length && activeActor()?.isHuman) playEffect(event.type || "event");
-    syncMobileEventDrawer(actions.length > 0 && Boolean(activeActor()?.isHuman));
+  }
+
+  function syncBoardEvent(event, actions, stats) {
+    if (!elements.boardEventDock) return;
+    const eventType = event.type || "income";
+    elements.boardEventDock.dataset.eventType = eventType;
+    elements.boardEventVisual.dataset.eventType = eventType;
+    elements.boardEventIcon.textContent = event.icon || TILE_META[eventType]?.icon || "✦";
+    elements.boardEventType.textContent = event.label || TILE_META[eventType]?.label || "城市事件";
+    elements.boardEventTitle.textContent = event.title;
+    elements.boardEventDescription.textContent = event.description;
+    elements.boardEventStats.hidden = stats.length === 0;
+    elements.boardEventStats.replaceChildren();
+    stats.forEach(([label, value]) => {
+      const item = document.createElement("div");
+      item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+      elements.boardEventStats.append(item);
+    });
+    renderEventActions(elements.boardEventActions, actions);
+    elements.boardEventDock.classList.toggle("has-actions", actions.some((action) => !action.disabled));
   }
 
   function isMobileLandscape() {

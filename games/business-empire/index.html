@@ -9,7 +9,7 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260727a">
-    <link rel="stylesheet" href="./business.css?v=20260727e">
+    <link rel="stylesheet" href="./business.css?v=20260727f">
   </head>
   <body>
     <main class="empire-shell">
@@ -77,6 +77,16 @@
             <div class="board-drag-hint" data-board-drag-hint aria-hidden="true">← 拖曳查看完整棋盤 →</div>
             <div class="board rectangle-board" data-board>
               <div class="board-vignette" aria-hidden="true"></div>
+              <section class="board-event-dock" data-board-event-dock aria-live="polite">
+                <div class="board-event-visual" data-board-event-visual><span data-board-event-icon>✦</span></div>
+                <div class="board-event-copy">
+                  <small data-board-event-type>本次遭遇</small>
+                  <strong data-board-event-title>整備你的商業遠征隊</strong>
+                  <p data-board-event-description>擲骰前先觀察棋盤與現金流，事件會在這裡即時顯示。</p>
+                  <div class="board-event-stats" data-board-event-stats hidden></div>
+                  <div class="board-event-actions" data-board-event-actions></div>
+                </div>
+              </section>
               <div class="ring outer-ring" data-ring="basic" aria-label="32 格基礎圈"></div>
               <div class="ring inner-ring" data-ring="elite" aria-label="20 格精英圈"></div>
 
@@ -271,6 +281,6 @@
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="./supabase-client.js?v=20260723a"></script>
     <script src="./business-auth.js?v=20260727a"></script>
-    <script src="./business.js?v=20260727e"></script>
+    <script src="./business.js?v=20260727f"></script>
   </body>
 </html>
