@@ -803,6 +803,51 @@
     return Math.min(0.1, actor.skill * 0.02);
   }
 
+  // Shared tile-outcome rolls used by both the human decision UI (resolveHumanTile)
+  // and the AI heuristics (resolveAiTile) so the two paths can't drift apart.
+  function rollIncomeEvent() {
+    return randomItem(INCOME_EVENTS);
+  }
+
+  function rollExpenseEvent(actor) {
+    const [title, baseAmount] = randomItem(EXPENSE_EVENTS);
+    const reduction = Math.min(0.3, actor.skill * 0.04);
+    const amount = Math.round(baseAmount * (1 - reduction));
+    return { title, amount, reduction };
+  }
+
+  function rollRiskEvent(actor) {
+    const successChance = Math.min(0.75, 0.48 + actor.skill * 0.05);
+    const success = Math.random() < successChance;
+    const magnitude = actor.circle === "elite" ? randomInt(7000, 15000) : randomInt(2200, 6200);
+    return { success, amount: success ? magnitude : -magnitude, successChance };
+  }
+
+  function rollDestinyEvent(actor) {
+    const outcomes = actor.circle === "elite"
+      ? [
+          ["古龍合約提前解鎖", 11000],
+          ["跨界商路臨時封閉", -8500],
+          ["星港稅務返還", 7200],
+          ["合作夥伴退出專案", -6200]
+        ]
+      : [
+          ["遇見神秘天使投資人", 5200],
+          ["遺失一批魔法貨物", -3600],
+          ["城市祭典帶來訂單", 4300],
+          ["供應商臨時漲價", -2800]
+        ];
+    return randomItem(outcomes);
+  }
+
+  function pickAssetOffer(actor, type) {
+    const source = actor.circle === "elite" ? ELITE_ASSETS : BASIC_ASSETS;
+    const template = randomItem(source[type]);
+    const discount = discountFor(actor);
+    const price = Math.round(template.price * (1 - discount));
+    return { template, price, discount, netIncome: template.monthlyIncome - template.monthlyCost };
+  }
+
   function formatMoney(value) {
     const rounded = Math.round(Math.abs(value));
     const formatted = new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 0 }).format(rounded);
@@ -1157,7 +1202,7 @@
     }
 
     if (tile.type === "income") {
-      const [title, amount] = randomItem(INCOME_EVENTS);
+      const [title, amount] = rollIncomeEvent();
       actor.cash += amount;
       addLog(`${title}，現金 ${formatSigned(amount)}。`);
       presentContinue(tile, title, `機會能量轉為現金，你獲得 ${formatMoney(amount)}。`, [["現金變動", formatSigned(amount)]]);
@@ -1165,9 +1210,7 @@
     }
 
     if (tile.type === "expense") {
-      const [title, baseAmount] = randomItem(EXPENSE_EVENTS);
-      const reduction = Math.min(0.3, actor.skill * 0.04);
-      const amount = Math.round(baseAmount * (1 - reduction));
+      const { title, amount, reduction } = rollExpenseEvent(actor);
       actor.cash -= amount;
       addLog(`${title}，現金 ${formatSigned(-amount)}。`);
       presentContinue(tile, title, `突發支出已支付${reduction ? "，能力降低了損失" : ""}。`, [["現金變動", formatSigned(-amount)]]);
@@ -1175,13 +1218,11 @@
     }
 
     if (tile.type === "risk") {
-      const successChance = Math.min(0.75, 0.48 + actor.skill * 0.05);
-      const success = Math.random() < successChance;
-      const amount = actor.circle === "elite" ? randomInt(7000, 15000) : randomInt(2200, 6200);
-      actor.cash += success ? amount : -amount;
+      const { success, amount, successChance } = rollRiskEvent(actor);
+      actor.cash += amount;
       const title = success ? "風險轉為紅利" : "市場能量逆流";
-      addLog(`${title}，現金 ${formatSigned(success ? amount : -amount)}。`);
-      presentContinue(tile, title, success ? "判斷成功，高風險行動帶來額外報酬。" : "市場走勢反轉，你承擔了這次損失。", [["現金變動", formatSigned(success ? amount : -amount)], ["成功機率", `${Math.round(successChance * 100)}%`]]);
+      addLog(`${title}，現金 ${formatSigned(amount)}。`);
+      presentContinue(tile, title, success ? "判斷成功，高風險行動帶來額外報酬。" : "市場走勢反轉，你承擔了這次損失。", [["現金變動", formatSigned(amount)], ["成功機率", `${Math.round(successChance * 100)}%`]]);
       return;
     }
 
@@ -1208,11 +1249,7 @@
   }
 
   function presentAssetOffer(actor, type) {
-    const source = actor.circle === "elite" ? ELITE_ASSETS : BASIC_ASSETS;
-    const template = randomItem(source[type]);
-    const discount = discountFor(actor);
-    const price = Math.round(template.price * (1 - discount));
-    const netIncome = template.monthlyIncome - template.monthlyCost;
+    const { template, price, discount, netIncome } = pickAssetOffer(actor, type);
     showEvent({
       type,
       title: template.name,
@@ -1284,20 +1321,7 @@
   }
 
   function resolveDestiny(actor, tile) {
-    const outcomes = actor.circle === "elite"
-      ? [
-          ["古龍合約提前解鎖", 11000],
-          ["跨界商路臨時封閉", -8500],
-          ["星港稅務返還", 7200],
-          ["合作夥伴退出專案", -6200]
-        ]
-      : [
-          ["遇見神秘天使投資人", 5200],
-          ["遺失一批魔法貨物", -3600],
-          ["城市祭典帶來訂單", 4300],
-          ["供應商臨時漲價", -2800]
-        ];
-    const [title, amount] = randomItem(outcomes);
+    const [title, amount] = rollDestinyEvent(actor);
     actor.cash += amount;
     addLog(`${title}，現金 ${formatSigned(amount)}。`);
     presentContinue(tile, title, amount > 0 ? "命運之輪轉向你，這次獲得額外資源。" : "命運事件帶來損失，保留現金仍是重要策略。", [["現金變動", formatSigned(amount)]]);
@@ -1395,9 +1419,7 @@
 
   function resolveAiTile(actor, tile) {
     if (["stock", "realEstate", "business"].includes(tile.type)) {
-      const source = actor.circle === "elite" ? ELITE_ASSETS : BASIC_ASSETS;
-      const asset = randomItem(source[tile.type]);
-      const price = Math.round(asset.price * (1 - discountFor(actor)));
+      const { template: asset, price } = pickAssetOffer(actor, tile.type);
       if (shouldAiBuy(actor, asset, price)) {
         if (actor.cash < price && actor.strategy === "aggressive") {
           const needed = price - actor.cash + 5000;
@@ -1415,24 +1437,22 @@
     }
 
     if (tile.type === "income") {
-      const [, amount] = randomItem(INCOME_EVENTS);
+      const [, amount] = rollIncomeEvent();
       actor.cash += amount;
       addLog(`${actor.name}取得收入 ${formatMoney(amount)}。`);
       return;
     }
 
     if (tile.type === "expense") {
-      const [, baseAmount] = randomItem(EXPENSE_EVENTS);
-      const amount = Math.round(baseAmount * (1 - Math.min(0.3, actor.skill * 0.04)));
+      const { amount } = rollExpenseEvent(actor);
       actor.cash -= amount;
       addLog(`${actor.name}支付突發支出 ${formatMoney(amount)}。`);
       return;
     }
 
     if (tile.type === "risk") {
-      const success = Math.random() < Math.min(0.75, 0.48 + actor.skill * 0.05);
-      const amount = actor.circle === "elite" ? randomInt(7000, 15000) : randomInt(2200, 6200);
-      actor.cash += success ? amount : -amount;
+      const { success, amount } = rollRiskEvent(actor);
+      actor.cash += amount;
       addLog(`${actor.name}的風險行動${success ? "獲利" : "失利"} ${formatMoney(amount)}。`);
       return;
     }
@@ -1469,8 +1489,7 @@
       return;
     }
 
-    const outcomes = actor.circle === "elite" ? [11000, -8500, 7200, -6200] : [5200, -3600, 4300, -2800];
-    const amount = randomItem(outcomes);
+    const [, amount] = rollDestinyEvent(actor);
     actor.cash += amount;
     addLog(`${actor.name}遇到命運事件 ${formatSigned(amount)}。`);
   }

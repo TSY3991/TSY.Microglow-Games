@@ -179,6 +179,18 @@
     });
   }
 
+  async function removeRoomMember(roomId, targetUserId) {
+    return callRpc("remove_room_member", {
+      p_room_id: roomId,
+      p_target_user_id: targetUserId,
+      p_request_id: newRequestId()
+    });
+  }
+
+  async function cancelFriendInvite(inviteId) {
+    return callRpc("cancel_friend_invite", { p_invite_id: inviteId });
+  }
+
   async function startMatch(roomId) {
     return callRpc("start_game_match", {
       p_room_id: roomId,
@@ -209,6 +221,7 @@
       .from("room_members")
       .select("user_id, status, is_ready, seat_number")
       .eq("room_id", roomId)
+      .in("status", ["joined", "ready", "disconnected"])
       .order("seat_number", { ascending: true });
     if (error) throw error;
     return data || [];
@@ -280,6 +293,7 @@
     const channel = client()
       .channel(`multiplayer-invites-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "friend_invites", filter: `receiver_id=eq.${userId}` }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "friend_invites", filter: `sender_id=eq.${userId}` }, onChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "room_invites", filter: `receiver_id=eq.${userId}` }, onChange)
       .subscribe();
     return () => client().removeChannel(channel);
@@ -304,6 +318,8 @@
     inviteFriendToRoom,
     respondRoomInvite,
     leaveRoom,
+    removeRoomMember,
+    cancelFriendInvite,
     startMatch,
     touchPresence,
     getMyRoom,

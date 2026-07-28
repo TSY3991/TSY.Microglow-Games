@@ -1,8 +1,6 @@
 (function () {
   "use strict";
 
-  const PROJECT_URL = "https://xduwufkfmzovlwcyodcp.supabase.co";
-  const PUBLISHABLE_KEY = "sb_publishable_jlQ4vurF0dI_tlkCMyDKeg_MskXpSC_";
   const TURNSTILE_SITE_KEY = "0x4AAAAAAD7mtP2SYLK59ifA";
   const CAPTCHA_TIMEOUT_MS = 15000;
   const RENDER_INITIAL_DELAY_MS = 1000;
@@ -66,12 +64,12 @@
     ]);
   }
 
-  if (!window.supabase || typeof window.supabase.createClient !== "function") {
-    console.error("Supabase JS 未載入，帳號功能將 fallback 為本機模式。");
+  if (!window.MicroglowAuth || !window.MicroglowAuth.client) {
+    console.error("共用 Supabase client 未載入，帳號功能將 fallback 為本機模式。");
     return;
   }
 
-  const client = window.supabase.createClient(PROJECT_URL, PUBLISHABLE_KEY);
+  const client = window.MicroglowAuth.client;
 
   async function withCaptcha(run) {
     const captchaToken = await getCaptchaToken();

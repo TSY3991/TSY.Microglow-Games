@@ -24,6 +24,7 @@
     searchInput: document.querySelector("[data-mp-search-input]"),
     searchResults: document.querySelector("[data-mp-search-results]"),
     friendInvites: document.querySelector("[data-mp-friend-invites]"),
+    sentFriendInvites: document.querySelector("[data-mp-sent-friend-invites]"),
     friendList: document.querySelector("[data-mp-friend-list]"),
     roomInvitesCard: document.querySelector("[data-mp-room-invites-card]"),
     roomInvites: document.querySelector("[data-mp-room-invites]"),
@@ -346,25 +347,45 @@
     try {
       const invites = await mp.listFriendInvites();
       const incoming = invites.filter((invite) => invite.receiver_id === currentUserId);
-      const profiles = await mp.getProfiles(incoming.map((invite) => invite.sender_id));
+      const outgoing = invites.filter((invite) => invite.sender_id === currentUserId);
+      const profiles = await mp.getProfiles([
+        ...incoming.map((invite) => invite.sender_id),
+        ...outgoing.map((invite) => invite.receiver_id)
+      ]);
       elements.friendInvites.replaceChildren();
       if (incoming.length === 0) {
         elements.friendInvites.append(emptyItem("目前沒有待處理的好友邀請。"));
-        return;
+      } else {
+        incoming.forEach((invite) => {
+          const profile = profiles[invite.sender_id];
+          const li = document.createElement("li");
+          li.innerHTML = `<span class="mp-list-name">${escapeHtml(profile?.username || profile?.display_name || "未知玩家")}</span>`;
+          const actions = document.createElement("div");
+          actions.className = "mp-list-actions";
+          actions.append(
+            buildActionButton("mp-accept", "接受", () => respondFriend(invite.id, true)),
+            buildActionButton("mp-decline", "拒絕", () => respondFriend(invite.id, false))
+          );
+          li.append(actions);
+          elements.friendInvites.append(li);
+        });
       }
-      incoming.forEach((invite) => {
-        const profile = profiles[invite.sender_id];
-        const li = document.createElement("li");
-        li.innerHTML = `<span class="mp-list-name">${escapeHtml(profile?.username || profile?.display_name || "未知玩家")}</span>`;
-        const actions = document.createElement("div");
-        actions.className = "mp-list-actions";
-        actions.append(
-          buildActionButton("mp-accept", "接受", () => respondFriend(invite.id, true)),
-          buildActionButton("mp-decline", "拒絕", () => respondFriend(invite.id, false))
-        );
-        li.append(actions);
-        elements.friendInvites.append(li);
-      });
+
+      elements.sentFriendInvites.replaceChildren();
+      if (outgoing.length === 0) {
+        elements.sentFriendInvites.append(emptyItem("目前沒有已送出、待處理的邀請。"));
+      } else {
+        outgoing.forEach((invite) => {
+          const profile = profiles[invite.receiver_id];
+          const li = document.createElement("li");
+          li.innerHTML = `<span class="mp-list-name">${escapeHtml(profile?.username || profile?.display_name || "未知玩家")}</span>`;
+          const actions = document.createElement("div");
+          actions.className = "mp-list-actions";
+          actions.append(buildActionButton("mp-decline", "取消", () => cancelSentInvite(invite.id)));
+          li.append(actions);
+          elements.sentFriendInvites.append(li);
+        });
+      }
     } catch (error) {
       elements.friendInvites.replaceChildren(emptyItem(error.message || "載入邀請失敗"));
     }
@@ -376,6 +397,15 @@
       await Promise.all([loadFriendInvites(), loadFriends()]);
     } catch (error) {
       elements.friendInvites.append(emptyItem(error.message || "處理邀請失敗"));
+    }
+  }
+
+  async function cancelSentInvite(inviteId) {
+    try {
+      await mp.cancelFriendInvite(inviteId);
+      await loadFriendInvites();
+    } catch (error) {
+      elements.sentFriendInvites.append(emptyItem(error.message || "取消邀請失敗"));
     }
   }
 
@@ -493,7 +523,7 @@
       elements.startMatchButton.hidden = !isHost;
       setStatus(elements.roomStatus, `房間狀態：${room?.status || "lobby"}${isHost ? "（你是房主）" : ""}`);
 
-      await renderRoomMembers(membership.room_id);
+      await renderRoomMembers(membership.room_id, isHost);
       startPresenceHeartbeat(membership.room_id);
       if (!roomUnsubscribe) {
         roomUnsubscribe = mp.subscribeRoom(membership.room_id, () => loadMyRoom());
@@ -503,20 +533,36 @@
     }
   }
 
-  async function renderRoomMembers(roomId) {
+  async function renderRoomMembers(roomId, isHost) {
     try {
       const members = await mp.listRoomMembers(roomId);
       const profiles = await mp.getProfiles(members.map((member) => member.user_id));
       elements.roomMembers.replaceChildren();
       members.forEach((member) => {
         const profile = profiles[member.user_id];
+        const isSelf = member.user_id === currentUserId;
+        const label = isSelf ? "你" : (profile?.username || profile?.display_name || "未知玩家");
         const li = document.createElement("li");
-        const label = member.user_id === currentUserId ? "你" : (profile?.username || profile?.display_name || "未知玩家");
         li.innerHTML = `<span class="mp-list-name">${escapeHtml(label)}</span><span>${member.is_ready ? "已準備" : member.status}</span>`;
+        if (isHost && !isSelf) {
+          const actions = document.createElement("div");
+          actions.className = "mp-list-actions";
+          actions.append(buildActionButton("mp-danger", "踢出", () => kickRoomMember(roomId, member.user_id)));
+          li.append(actions);
+        }
         elements.roomMembers.append(li);
       });
     } catch (error) {
       elements.roomMembers.replaceChildren(emptyItem(error.message || "載入成員失敗"));
+    }
+  }
+
+  async function kickRoomMember(roomId, targetUserId) {
+    try {
+      await mp.removeRoomMember(roomId, targetUserId);
+      await renderRoomMembers(roomId, true);
+    } catch (error) {
+      setStatus(elements.roomFeedback, error.message || "踢出成員失敗", "error");
     }
   }
 
