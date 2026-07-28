@@ -1652,3 +1652,69 @@ body.mobile-portrait-locked .portrait-preview-banner {
     top: 10px;
   }
 }
+/* Generated tile props and token animation sheets — 2026-07-28
+   Runtime stays DOM based: tile cells, tokens and event dock remain interactive;
+   only the visual layer inside each tile/token is upgraded to generated PNG art. */
+.rectangle-board .tile-building {
+  left: 50%;
+  top: -30px;
+  z-index: 4;
+  display: block;
+  width: min(76px, 102%);
+  height: clamp(30px, 5.2vmin, 52px);
+  background-image: var(--tile-prop);
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: contain;
+  filter: drop-shadow(0 8px 7px rgba(0,0,0,.68)) drop-shadow(0 0 8px color-mix(in srgb,var(--tile-color),transparent 58%));
+  transform: translateX(-50%);
+}
+.rectangle-board .tile-building i { display: none !important; }
+.rectangle-board .tile.is-owned .tile-building {
+  top: -35px;
+  height: clamp(34px, 6.2vmin, 60px);
+  filter: drop-shadow(0 9px 8px rgba(0,0,0,.72)) drop-shadow(0 0 13px color-mix(in srgb,var(--owner-color),transparent 42%));
+}
+.rectangle-board .tile-icon {
+  opacity: .18;
+  transform: translateY(2px) scale(.92);
+}
+.rectangle-board .tile-label {
+  position: relative;
+  z-index: 5;
+  text-shadow: 0 1px 2px #02070d, 0 0 5px rgba(0,0,0,.78);
+}
+.token.has-sprite-sheet .pawn-figure {
+  inset: auto;
+  left: 50%;
+  bottom: 4px;
+  width: calc(var(--token-size) * 1.36);
+  height: calc(var(--token-size) * 1.36);
+  transform: translateX(-50%);
+  background-image: var(--token-sheet);
+  background-repeat: no-repeat;
+  background-size: 400% 300%;
+  background-position: 0% 0%;
+  animation: token-idle-sheet 1.15s steps(4) infinite;
+}
+.token.has-sprite-sheet.is-moving .pawn-figure {
+  animation: token-walk-sheet .72s steps(4) infinite;
+}
+.token.has-sprite-sheet.is-arriving .pawn-figure {
+  animation: token-arrival-sheet 1.2s steps(4) 1;
+}
+@keyframes token-idle-sheet { from { background-position: 0% 0%; } to { background-position: 100% 0%; } }
+@keyframes token-walk-sheet { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@keyframes token-arrival-sheet { from { background-position: 0% 100%; } to { background-position: 100% 100%; } }
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .rectangle-board .tile-building {
+    top: -17px;
+    width: 90%;
+    height: 24px;
+  }
+  .rectangle-board .tile.is-owned .tile-building {
+    top: -21px;
+    height: 30px;
+  }
+}

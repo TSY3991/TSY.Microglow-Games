@@ -12,6 +12,7 @@
   const DICE_FRAME_MS = 85;
   const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
   const portalStats = window.MicroglowGameStats;
+  const ANIMATED_TOKEN_IDS = new Set(["starlight-merchant", "rune-artisan", "moon-investor", "ai-warden", "ai-pioneer", "ai-phantom"]);
 
   const TILE_META = {
     income: { label: "收入", icon: "💰" },
@@ -259,6 +260,7 @@
   let portraitBypass = false;
   let boardFocused = false;
   let tileInspectorTimerId = null;
+  let arrivalTimerId = null;
   let audioEnabled = readAudioPreference();
 
   init();
@@ -314,6 +316,7 @@
       secondsLeft: TURN_SECONDS,
       turnExpired: false,
       movingActorId: null,
+      arrivalActorId: null,
       difficulty: setupState?.difficulty || "guild",
       connected: false,
       matchId: null,
@@ -510,6 +513,7 @@
       if (point.corner) cell.classList.add("is-corner");
       cell.style.setProperty("--x", `${point.left}%`);
       cell.style.setProperty("--y", `${point.top}%`);
+      cell.style.setProperty("--tile-prop", `url("./assets/tile-props/${tile.type}.png")`);
       cell.title = tile.label;
       cell.dataset.tileIndex = String(index);
       cell.dataset.edge = point.edge;
@@ -653,12 +657,15 @@
       token.className = "token";
       if (actor.id === state.activeActorId) token.classList.add("is-active");
       if (actor.id === state.movingActorId) token.classList.add("is-moving");
+      if (actor.id === state.arrivalActorId) token.classList.add("is-arriving");
+      if (ANIMATED_TOKEN_IDS.has(actor.spriteId)) token.classList.add("has-sprite-sheet");
       token.dataset.tokenIndex = String(index);
       token.dataset.stackIndex = String(Math.min(3, stackIndex));
       token.dataset.variant = actor.variant || "";
       token.dataset.edge = point.edge;
       token.style.setProperty("--token-color", actor.color);
       token.style.setProperty("--token-sprite", `url("./assets/tokens/${actor.spriteId}.png")`);
+      if (ANIMATED_TOKEN_IDS.has(actor.spriteId)) token.style.setProperty("--token-sheet", `url("./assets/tokens/animated/${actor.spriteId}-sheet.png")`);
       token.style.setProperty("--x", `${point.left}%`);
       token.style.setProperty("--y", `${point.top}%`);
       token.innerHTML = `
@@ -1112,6 +1119,19 @@
     elements.dice.classList.remove("is-rolling");
   }
 
+  function markActorArrival(actor) {
+    if (!actor || !ANIMATED_TOKEN_IDS.has(actor.spriteId)) return;
+    if (arrivalTimerId !== null) window.clearTimeout(arrivalTimerId);
+    state.arrivalActorId = actor.id;
+    arrivalTimerId = window.setTimeout(() => {
+      if (state.arrivalActorId === actor.id) {
+        state.arrivalActorId = null;
+        renderTokens();
+      }
+      arrivalTimerId = null;
+    }, 1400);
+  }
+
   async function moveActor(actor, steps, animate) {
     const length = actor.circle === "basic" ? basicTiles.length : eliteTiles.length;
     for (let step = 0; step < steps; step += 1) {
@@ -1122,6 +1142,7 @@
         await sleep(actor.isHuman ? PLAYER_STEP_MS : AI_STEP_MS);
       }
     }
+    markActorArrival(actor);
     renderTokens();
   }
 
