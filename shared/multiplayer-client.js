@@ -194,7 +194,7 @@
     const userId = await requireAnyUserId();
     const { data, error } = await client()
       .from("room_members")
-      .select("room_id, status, is_ready, seat_number, game_rooms(id, room_code, status, host_user_id, max_players)")
+      .select("room_id, status, is_ready, seat_number, game_rooms(id, room_code, status, host_user_id, max_players, current_match_id)")
       .eq("user_id", userId)
       .in("status", ["joined", "ready", "disconnected"])
       .order("joined_at", { ascending: false })

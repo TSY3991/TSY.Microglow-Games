@@ -95,4 +95,104 @@
       return result;
     })
   };
+
+  // ---- Connected multiplayer match data layer ----
+
+  async function getMatch(matchId) {
+    const { data, error } = await client.from("matches").select("*").eq("id", matchId).single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function listMatchPlayers(matchId) {
+    const { data, error } = await client
+      .from("match_players")
+      .select("user_id, seat_number, status, result, score")
+      .eq("match_id", matchId)
+      .order("seat_number", { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function listBusinessEmpirePlayers(matchId) {
+    const { data, error } = await client
+      .from("business_empire_players")
+      .select("*")
+      .eq("match_id", matchId);
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function listOwnedAssets(matchId) {
+    const { data, error } = await client
+      .from("business_empire_owned_assets")
+      .select("*")
+      .eq("match_id", matchId);
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function listMatchEventsSince(matchId, sinceEventNo) {
+    const { data, error } = await client
+      .from("match_events")
+      .select("*")
+      .eq("match_id", matchId)
+      .gt("event_no", sinceEventNo || 0)
+      .order("event_no", { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function getProfiles(userIds) {
+    const ids = [...new Set(userIds)].filter(Boolean);
+    if (ids.length === 0) return {};
+    const { data, error } = await client
+      .from("profiles")
+      .select("id, username, display_name")
+      .in("id", ids);
+    if (error) throw error;
+    const byId = {};
+    (data || []).forEach((row) => { byId[row.id] = row; });
+    return byId;
+  }
+
+  async function callBusinessAction(matchId, actionType, requestId, payload) {
+    const { data, error } = await client.rpc("business_empire_action", {
+      p_match_id: matchId,
+      p_action_type: actionType,
+      p_request_id: requestId,
+      p_payload: payload || {}
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  async function forceAdvanceExpiredTurn(matchId) {
+    const { data, error } = await client.rpc("force_advance_expired_turn", { p_match_id: matchId });
+    if (error) throw error;
+    return data;
+  }
+
+  function subscribeMatch(matchId, onChange) {
+    const channel = client
+      .channel(`business-match-${matchId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "business_empire_players", filter: `match_id=eq.${matchId}` }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "business_empire_owned_assets", filter: `match_id=eq.${matchId}` }, onChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "match_events", filter: `match_id=eq.${matchId}` }, onChange)
+      .subscribe();
+    return () => client.removeChannel(channel);
+  }
+
+  window.MicroglowMatch = {
+    getMatch,
+    listMatchPlayers,
+    listBusinessEmpirePlayers,
+    listOwnedAssets,
+    listMatchEventsSince,
+    getProfiles,
+    callBusinessAction,
+    forceAdvanceExpiredTurn,
+    subscribeMatch
+  };
 })();

@@ -272,7 +272,14 @@
     bindControls();
     updateAudioButton();
     renderAll();
-    addLog("歡迎來到微光城，請先選擇角色。", false);
+    const matchId = new URLSearchParams(window.location.search).get("match");
+    if (matchId) {
+      document.querySelector("[data-account-modal]")?.setAttribute("hidden", "hidden");
+      addLog("正在連線到多人比賽…", false);
+      initConnectedMatch(matchId);
+    } else {
+      addLog("歡迎來到微光城，請先選擇角色。", false);
+    }
     window.__microglowBusinessEmpire = {
       snapshot: () => JSON.parse(JSON.stringify(state)),
       formatMoney,
@@ -307,7 +314,11 @@
       secondsLeft: TURN_SECONDS,
       turnExpired: false,
       movingActorId: null,
-      difficulty: setupState?.difficulty || "guild"
+      difficulty: setupState?.difficulty || "guild",
+      connected: false,
+      matchId: null,
+      myUserId: null,
+      turnDeadlineAt: null
     };
   }
 
@@ -681,7 +692,8 @@
       moving: "逐格前進",
       decision: "處理事件",
       settling: "現金流結算",
-      ai: "對手行動"
+      ai: "對手行動",
+      turn_end: "回合結算"
     };
     return labels[state.phase] || "準備中";
   }
@@ -695,10 +707,10 @@
     elements.activeAvatar.dataset.variant = actor?.variant || "";
     if (actor?.spriteId) elements.activeAvatar.style.setProperty("--sprite", `url("./assets/tokens/${actor.spriteId}.png")`);
     else elements.activeAvatar.style.removeProperty("--sprite");
-    elements.turnClock.classList.toggle("is-warning", Boolean(actor?.isHuman && state.secondsLeft <= 10));
-    elements.turnClock.classList.toggle("is-paused", !actor?.isHuman || !["roll", "decision"].includes(state.phase));
+    elements.turnClock.classList.toggle("is-warning", Boolean((actor?.isHuman || state.connected) && state.secondsLeft <= 10));
+    elements.turnClock.classList.toggle("is-paused", !state.connected && (!actor?.isHuman || !["roll", "decision"].includes(state.phase)));
     elements.turnClock.style.setProperty("--turn-progress", `${Math.max(0, Math.min(100, (state.secondsLeft / TURN_SECONDS) * 100))}%`);
-    elements.turnTimer.textContent = actor?.isHuman ? String(state.secondsLeft) : "AI";
+    elements.turnTimer.textContent = (actor?.isHuman || state.connected) ? String(state.secondsLeft) : "AI";
     elements.boardCommand.dataset.phase = state.phase;
     elements.boardCommand.classList.toggle("is-human-turn", Boolean(actor?.isHuman));
     elements.boardCommandLabel.textContent = !actor ? "點擊骰子開始" : state.phase === "roll" ? "輪到你・擲骰前進" : state.phase === "decision" ? "處理落點事件" : state.phase === "ai" ? `${actor.name}擲骰中` : phaseLabel();
@@ -713,7 +725,7 @@
       seat.style.setProperty("--seat-color", player.color);
       seat.innerHTML = `
         <span class="seat-avatar" style="--sprite:url('./assets/tokens/${player.spriteId}.png')"><b>${player.avatar}</b></span>
-        <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : "AI"}</small><strong>${player.name}</strong><em>${player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"}</em></span>
+        <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : (state.connected ? `P${player.seat + 1}` : "AI")}</small><strong>${player.name}</strong><em>${player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"}</em></span>
       `;
       elements.playerSeats.append(seat);
     });
@@ -1489,6 +1501,7 @@
   function openAssets() {
     if (!state.started) return;
     const player = human();
+    const myTurn = !state.connected || state.activeActorId === player?.id;
     elements.assetSummary.innerHTML = `
       <div><span>資產數</span><strong>${player.assets.length}</strong></div>
       <div><span>每月被動收入</span><strong>${formatMoney(passiveIncome(player))}</strong></div>
@@ -1510,12 +1523,17 @@
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = "出售";
-        button.disabled = state.busy || state.ended;
-        button.addEventListener("click", () => sellAsset(asset.instanceId));
+        button.disabled = state.busy || state.ended || !myTurn;
+        button.title = myTurn ? "" : "只能在你的回合出售資產";
+        button.addEventListener("click", () => {
+          if (state.connected) sellAssetConnected(asset.instanceId);
+          else sellAsset(asset.instanceId);
+        });
         item.append(button);
         elements.assetList.append(item);
       });
     }
+    elements.repay.hidden = state.connected;
     elements.repay.disabled = state.busy || state.ended || player.bankDebt <= 0 || player.cash < Math.min(5000, player.bankDebt);
     elements.assetsModal.hidden = false;
   }
@@ -1554,11 +1572,20 @@
   }
 
   function bindControls() {
-    document.querySelector('[data-action="roll"]').addEventListener("click", rollHuman);
+    document.querySelector('[data-action="roll"]').addEventListener("click", () => {
+      if (state.connected) rollConnected();
+      else rollHuman();
+    });
     document.querySelector('[data-action="instructions"]').addEventListener("click", () => { elements.instructionsModal.hidden = false; });
     document.querySelector('[data-action="assets"]').addEventListener("click", openAssets);
-    document.querySelector('[data-action="restart"]').addEventListener("click", resetToIntro);
-    document.querySelector('[data-action="play-again"]').addEventListener("click", resetToIntro);
+    document.querySelector('[data-action="restart"]').addEventListener("click", () => {
+      if (state.connected) { window.location.href = "../../multiplayer/"; return; }
+      resetToIntro();
+    });
+    document.querySelector('[data-action="play-again"]').addEventListener("click", () => {
+      if (state.connected) { window.location.href = "../../multiplayer/"; return; }
+      resetToIntro();
+    });
     elements.focusButton.addEventListener("click", () => setBoardFocus(!boardFocused));
     elements.audioButton.addEventListener("click", toggleAudio);
     elements.tileInspector.addEventListener("click", hideTileInspector);
@@ -1596,7 +1623,7 @@
 
     elements.repay.addEventListener("click", () => {
       const player = human();
-      if (!player || state.busy || state.ended) return;
+      if (!player || state.busy || state.ended || state.connected) return;
       repayBankDebt(player, 5000);
       renderAll();
       openAssets();
@@ -1653,5 +1680,398 @@
   }
   function sleep(milliseconds) {
     return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+  }
+
+  // ---- Connected multiplayer mode ----
+  // Reuses the board/HUD renderers above (renderBoard/renderStats/renderTurnStage/
+  // renderRanking/showEvent/...) but replaces the local dice/AI logic with calls to the
+  // server-authoritative public.business_empire_action RPC. state.actors here are all
+  // real seated players (no AI); only the actor matching state.myUserId is isHuman.
+
+  const SEAT_COLORS = ["#55e6ff", "#7ef7bd", "#ff7ac8", "#b68cff"];
+  let connectedUnsubscribe = null;
+  let connectedClockId = null;
+  let connectedRefreshPending = false;
+
+  function findAssetTemplate(assetKey) {
+    const catalogs = [BASIC_ASSETS, ELITE_ASSETS];
+    for (const catalog of catalogs) {
+      for (const type of Object.keys(catalog)) {
+        const match = catalog[type].find((asset) => asset.id === assetKey);
+        if (match) return match;
+      }
+    }
+    return null;
+  }
+
+  async function initConnectedMatch(matchId) {
+    const mm = window.MicroglowMatch;
+    const authAdapter = window.MicroglowSupabaseAuth;
+    elements.introModal.hidden = true;
+    elements.resultModal.hidden = true;
+    if (!mm || !authAdapter) {
+      showEvent({ type: "expense", title: "連線功能載入失敗", description: "請重新整理頁面，或返回大廳重新進入對戰。" });
+      return;
+    }
+    try {
+      const { data: sessionData } = await authAdapter.getSession();
+      const myUserId = sessionData?.session?.user?.id;
+      if (!myUserId) throw new Error("尚未登入，無法進入連線對戰。");
+      state = createEmptyState();
+      state.connected = true;
+      state.matchId = matchId;
+      state.myUserId = myUserId;
+      state.started = true;
+      setBoardFocus(false);
+      elements.dice.textContent = "◈";
+      await refreshConnectedMatch({ initial: true });
+      if (connectedUnsubscribe) connectedUnsubscribe();
+      connectedUnsubscribe = mm.subscribeMatch(matchId, () => {
+        refreshConnectedMatch({}).catch((error) => addLog(error.message || "同步比賽狀態失敗。"));
+      });
+    } catch (error) {
+      showEvent({ type: "expense", title: "無法載入連線對戰", description: error.message || "請返回大廳重新嘗試。" });
+    }
+  }
+
+  async function refreshConnectedMatch(options) {
+    if (!state.connected) return;
+    if (state.busy && !options?.force && !options?.initial) {
+      connectedRefreshPending = true;
+      return;
+    }
+    const mm = window.MicroglowMatch;
+    const matchId = state.matchId;
+    let match, matchPlayers, empirePlayers, ownedAssets;
+    try {
+      [match, matchPlayers, empirePlayers, ownedAssets] = await Promise.all([
+        mm.getMatch(matchId),
+        mm.listMatchPlayers(matchId),
+        mm.listBusinessEmpirePlayers(matchId),
+        mm.listOwnedAssets(matchId)
+      ]);
+    } catch (error) {
+      addLog(error.message || "同步比賽狀態失敗。");
+      return;
+    }
+    const profiles = await mm.getProfiles(matchPlayers.map((row) => row.user_id)).catch(() => ({}));
+    const empireByUser = new Map(empirePlayers.map((row) => [row.user_id, row]));
+
+    state.actors = matchPlayers.map((mp) => {
+      const empireRow = empireByUser.get(mp.user_id) || {};
+      const character = CHARACTERS.find((entry) => entry.id === empireRow.character_key) || CHARACTERS[0];
+      const profile = profiles[mp.user_id];
+      const assets = ownedAssets
+        .filter((asset) => asset.user_id === mp.user_id)
+        .map((asset) => {
+          const template = findAssetTemplate(asset.asset_key) || {};
+          return {
+            ...template,
+            paidPrice: asset.paid_price,
+            ownerId: asset.user_id,
+            boardCircle: asset.board_zone,
+            boardPosition: asset.board_position,
+            instanceId: asset.id
+          };
+        });
+      return {
+        id: mp.user_id,
+        name: profile?.username || profile?.display_name || character.name,
+        title: character.title,
+        artIndex: character.artIndex,
+        spriteId: character.spriteId,
+        avatar: character.avatar,
+        variant: "",
+        seat: mp.seat_number,
+        color: SEAT_COLORS[mp.seat_number % SEAT_COLORS.length],
+        isHuman: mp.user_id === state.myUserId,
+        strategy: "balanced",
+        cash: empireRow.cash_balance ?? 0,
+        salary: empireRow.salary ?? 0,
+        baseExpense: empireRow.base_expense ?? 0,
+        skill: empireRow.skill_level ?? 0,
+        bankDebt: empireRow.bank_debt ?? 0,
+        assets,
+        position: empireRow.board_position ?? 0,
+        circle: empireRow.board_zone || "basic",
+        eliminated: Boolean(empireRow.eliminated),
+        pendingAction: empireRow.pending_action || null
+      };
+    });
+
+    state.activeActorId = match.current_player_id;
+    state.turnDeadlineAt = match.turn_deadline_at;
+    state.round = match.turn_number || 1;
+
+    if (match.status === "completed") {
+      if (!state.ended) finishConnectedMatch(match);
+      return;
+    }
+
+    state.phase = match.phase;
+    renderAll();
+    syncConnectedPhaseUI();
+    startConnectedClock();
+
+    if (connectedRefreshPending) {
+      connectedRefreshPending = false;
+      refreshConnectedMatch({ force: true });
+    }
+  }
+
+  function syncConnectedPhaseUI() {
+    if (!state.connected || state.ended) return;
+    const player = human();
+    setRollEnabled(true);
+    const isMyTurn = state.activeActorId === player?.id;
+    if (!isMyTurn) {
+      const current = activeActor();
+      const expired = Boolean(state.turnDeadlineAt) && new Date(state.turnDeadlineAt).getTime() <= Date.now();
+      showEvent({
+        type: "income",
+        icon: "⌛",
+        label: "等待中",
+        title: current ? `等待 ${current.name} 行動` : "等待對手",
+        description: expired ? "對方回合已逾時，你可以幫忙推進比賽。" : "換你之前，畫面會即時同步對手的行動結果。"
+      }, expired ? [{ label: "強制結束逾時回合", run: forceAdvanceConnectedTurn }] : []);
+      return;
+    }
+    if (state.phase === "roll") {
+      showEvent({ type: "income", icon: "✦", label: `第 ${state.round} 回合`, title: "輪到你行動", description: "擲骰前進，落點事件會立即顯示。" });
+      return;
+    }
+    if (state.phase === "decision" && player?.pendingAction) {
+      resumeConnectedDecision(player, player.pendingAction);
+      return;
+    }
+    if (state.phase === "turn_end") {
+      presentContinueConnected("income", "回合已結算", "可以結束回合，換下一位玩家行動。", []);
+    }
+  }
+
+  function resumeConnectedDecision(player, pending) {
+    if (pending.type === "asset_offer") {
+      const template = findAssetTemplate(pending.asset_key);
+      if (!template) {
+        presentContinueConnected("income", "資產資訊載入中", "請稍候或重新整理頁面。", []);
+        return;
+      }
+      presentConnectedAssetOffer(player, template, pending.price);
+    } else if (pending.type === "bank") {
+      presentConnectedBank(player);
+    } else if (pending.type === "learn") {
+      presentConnectedLearn(player, pending.cost);
+    } else if (pending.type === "gate") {
+      presentConnectedGate(player, Boolean(pending.qualified));
+    } else {
+      presentContinueConnected("income", "事件處理中", "請稍候。", []);
+    }
+  }
+
+  function presentContinueConnected(type, title, description, stats) {
+    showEvent({ type, title, description }, [{ label: "結束回合", run: () => runConnectedAction("end_turn") }], stats);
+  }
+
+  function presentConnectedAssetOffer(player, template, price) {
+    const netIncome = template.monthlyIncome - template.monthlyCost;
+    showEvent({
+      type: template.type,
+      title: template.name,
+      description: `風險 ${template.risk}。買入後每月收入 ${formatMoney(template.monthlyIncome)}，每月維護 ${formatMoney(template.monthlyCost)}。`
+    }, [
+      { label: `買入 ${formatMoney(price)}`, disabled: player.cash < price, run: () => runConnectedAction("buy_asset") },
+      { label: "放棄機會", run: () => runConnectedAction("skip") }
+    ], [
+      ["買入現金", formatMoney(price)],
+      ["每月淨流入", formatSigned(netIncome)],
+      ["資產價值", formatMoney(template.value)],
+      ["新增負債", formatMoney(template.loanPrincipal || 0)]
+    ]);
+  }
+
+  function presentConnectedBank(player) {
+    const canRepay = player.bankDebt > 0 && player.cash >= 5000;
+    showEvent({
+      type: "loan",
+      title: "星鑄銀行",
+      description: "可借入 $15,000，帳面負債增加 $18,000，並產生每月信用成本；也可優先償還既有信用貸款。"
+    }, [
+      { label: "借入 $15,000", disabled: creditAvailable(player) < 18000, run: () => runConnectedAction("borrow") },
+      { label: "償還 $5,000", disabled: !canRepay, run: () => runConnectedAction("repay") },
+      { label: "離開銀行", run: () => runConnectedAction("skip") }
+    ], [["銀行負債", formatMoney(player.bankDebt)], ["可用信用", formatMoney(creditAvailable(player))]]);
+  }
+
+  function presentConnectedLearn(player, cost) {
+    showEvent({
+      type: "learn",
+      title: "商業奧術課程",
+      description: "提升能力會增加風險事件成功率、降低突發支出，並讓資產買入最多享 10% 折扣。"
+    }, [
+      { label: `進修 ${formatMoney(cost)}`, disabled: player.cash < cost, run: () => runConnectedAction("learn") },
+      { label: "這次跳過", run: () => runConnectedAction("skip") }
+    ], [["目前能力", String(player.skill)], ["買入折扣", `${Math.round(discountFor(player) * 100)}%`]]);
+  }
+
+  function presentConnectedGate(player, qualified) {
+    showEvent({
+      type: "gate",
+      title: qualified ? "精英圈通行證已亮起" : "躍升條件尚未完成",
+      description: qualified
+        ? "你已具備進入精英圈的條件。內圈機會報酬更高，風險與資金需求也會同步提高。"
+        : "需達成任一條件：被動收入達支出的 55%、淨資產達 $250,000，或能力達 4。"
+    }, qualified ? [
+      { label: "進入精英圈", run: () => runConnectedAction("enter_elite") },
+      { label: "留在原地", run: () => runConnectedAction("skip") }
+    ] : [
+      { label: "繼續累積", run: () => runConnectedAction("skip") }
+    ], [["被動／支出", `${Math.round((passiveIncome(player) / Math.max(1, monthlyExpense(player))) * 100)}%`], ["淨資產", formatMoney(netWorth(player))], ["能力", String(player.skill)]]);
+  }
+
+  function showServerTileEvent(player, result) {
+    const pending = result.pending_action;
+    if (!pending) {
+      const tileType = result.tile_type;
+      const tileLabel = result.tile_label || TILE_META[tileType]?.label || "城市事件";
+      if (result.cash_change) addLog(`${tileLabel}，現金 ${formatSigned(result.cash_change)}。`);
+      presentContinueConnected(tileType, tileLabel, `${tileLabel}事件已結算。`, result.cash_change ? [["現金變動", formatSigned(result.cash_change)]] : []);
+      return;
+    }
+    resumeConnectedDecision(player, pending);
+  }
+
+  async function rollConnected() {
+    if (!state.connected) return;
+    const mm = window.MicroglowMatch;
+    const player = human();
+    if (state.busy || state.ended || state.phase !== "roll" || state.activeActorId !== player?.id) return;
+    stopConnectedClock();
+    state.busy = true;
+    state.phase = "dice";
+    setRollEnabled(false);
+    renderAll();
+    try {
+      const result = await mm.callBusinessAction(state.matchId, "roll", crypto.randomUUID());
+      await animateDice(result.dice);
+      addLog(`${player.name}擲出 ${result.dice}。`);
+      state.phase = "moving";
+      state.movingActorId = player.id;
+      renderAll();
+      await moveActor(player, result.dice, true);
+      state.movingActorId = null;
+      player.position = result.position;
+      if (!result.pending_action && result.cash_change) player.cash += result.cash_change;
+      state.phase = result.pending_action ? "decision" : "turn_end";
+      showServerTileEvent(player, result);
+    } catch (error) {
+      addLog(error.message || "擲骰失敗，請再試一次。");
+      state.phase = "roll";
+    } finally {
+      state.busy = false;
+      renderAll();
+      if (!state.ended) startConnectedClock();
+      if (connectedRefreshPending) {
+        connectedRefreshPending = false;
+        refreshConnectedMatch({ force: true });
+      }
+    }
+  }
+
+  async function runConnectedAction(actionType, payload) {
+    if (!state.connected || state.busy || state.ended) return;
+    const mm = window.MicroglowMatch;
+    state.busy = true;
+    elements.eventActions.replaceChildren();
+    elements.boardEventActions.replaceChildren();
+    try {
+      await mm.callBusinessAction(state.matchId, actionType, crypto.randomUUID(), payload || {});
+    } catch (error) {
+      addLog(error.message || "操作失敗，請再試一次。");
+    } finally {
+      state.busy = false;
+      await refreshConnectedMatch({ force: true });
+    }
+  }
+
+  async function forceAdvanceConnectedTurn() {
+    if (!state.connected || state.busy || state.ended) return;
+    const mm = window.MicroglowMatch;
+    state.busy = true;
+    try {
+      await mm.forceAdvanceExpiredTurn(state.matchId);
+      addLog("已推進逾時的回合。");
+    } catch (error) {
+      addLog(error.message || "推進回合失敗，請再試一次。");
+    } finally {
+      state.busy = false;
+      await refreshConnectedMatch({ force: true });
+    }
+  }
+
+  async function sellAssetConnected(instanceId) {
+    if (!state.connected || state.busy || state.ended) return;
+    const mm = window.MicroglowMatch;
+    state.busy = true;
+    try {
+      await mm.callBusinessAction(state.matchId, "sell_asset", crypto.randomUUID(), { asset_id: instanceId });
+      addLog("已出售資產。");
+    } catch (error) {
+      addLog(error.message || "出售失敗，請再試一次。");
+    } finally {
+      state.busy = false;
+      await refreshConnectedMatch({ force: true });
+      openAssets();
+    }
+  }
+
+  function startConnectedClock() {
+    stopConnectedClock();
+    if (!state.connected || state.ended || !state.turnDeadlineAt) return;
+    const tick = () => {
+      const remaining = Math.max(0, Math.round((new Date(state.turnDeadlineAt).getTime() - Date.now()) / 1000));
+      state.secondsLeft = remaining;
+      renderTurnStage();
+      if (remaining === 0) {
+        stopConnectedClock();
+        if (state.activeActorId !== human()?.id) syncConnectedPhaseUI();
+      }
+    };
+    tick();
+    connectedClockId = window.setInterval(tick, 1000);
+  }
+
+  function stopConnectedClock() {
+    if (connectedClockId !== null) {
+      window.clearInterval(connectedClockId);
+      connectedClockId = null;
+    }
+  }
+
+  function finishConnectedMatch(match) {
+    stopConnectedClock();
+    state.ended = true;
+    state.busy = false;
+    setRollEnabled(false);
+    const player = human();
+    const won = match.winner_user_id === state.myUserId;
+    const winnerActor = state.actors.find((actor) => actor.id === match.winner_user_id);
+    playEffect(won ? "victory" : "lose");
+    elements.resultKicker.textContent = won ? "財務自由達成" : "本局比賽結束";
+    elements.resultEmblem.textContent = won ? "♛" : "◇";
+    elements.resultTitle.textContent = winnerActor ? `${winnerActor.name}主導了結局` : "比賽結束";
+    elements.resultMessage.textContent = winnerActor
+      ? (won ? "你的被動收入已支付全部每月支出，財務自由達成。" : `${winnerActor.name}率先達成財務自由，贏得本局比賽。`)
+      : "比賽已結束。";
+    const score = player ? scoreOf(player) : 0;
+    const existingBest = Number(portalStats.readGame(GAME_ID).bestScore) || 0;
+    const best = Math.max(existingBest, score);
+    portalStats.recordRun(GAME_ID, GAME_TITLE, score, best);
+    elements.resultStats.innerHTML = `
+      <div><span>本局分數</span><strong>${new Intl.NumberFormat("zh-TW").format(score)}</strong></div>
+      <div><span>淨資產</span><strong>${player ? formatMoney(netWorth(player)) : "$0"}</strong></div>
+      <div><span>最高分</span><strong>${new Intl.NumberFormat("zh-TW").format(best)}</strong></div>
+    `;
+    elements.resultModal.hidden = false;
+    renderAll();
   }
 })();

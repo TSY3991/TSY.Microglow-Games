@@ -40,9 +40,7 @@
     startMatchButton: document.querySelector('[data-mp-action="start-match"]'),
     queueStatus: document.querySelector("[data-mp-queue-status]"),
     enqueueButton: document.querySelector('[data-mp-action="enqueue"]'),
-    cancelQueueButton: document.querySelector('[data-mp-action="cancel-queue"]'),
-    matchResult: document.querySelector("[data-mp-match-result]"),
-    matchId: document.querySelector("[data-mp-match-id]")
+    cancelQueueButton: document.querySelector('[data-mp-action="cancel-queue"]')
   };
 
   let currentUserId = null;
@@ -268,10 +266,9 @@
       event.target.disabled = true;
       try {
         const match = await mp.startMatch(currentRoom.room_id);
-        showMatchResult(match);
+        goToMatch(match.id);
       } catch (error) {
         setStatus(elements.roomFeedback, error.message || "開始比賽失敗", "error");
-      } finally {
         event.target.disabled = false;
       }
     });
@@ -463,6 +460,10 @@
     }
   }
 
+  function goToMatch(matchId) {
+    window.location.href = `../games/business-empire/index.html?match=${matchId}`;
+  }
+
   async function loadMyRoom() {
     try {
       const membership = await mp.getMyRoom();
@@ -473,6 +474,12 @@
         elements.roomCard.hidden = true;
         elements.noRoomCard.hidden = false;
         await loadRoomInvitesIfNoRoom();
+        return;
+      }
+
+      const matchedRoom = membership.game_rooms;
+      if (matchedRoom?.status === "in_progress" && matchedRoom?.current_match_id) {
+        goToMatch(matchedRoom.current_match_id);
         return;
       }
 
@@ -541,16 +548,15 @@
       elements.enqueueButton.hidden = true;
       elements.cancelQueueButton.hidden = false;
       if (!queueUnsubscribe) {
-        queueUnsubscribe = mp.subscribeQueue(currentUserId, () => loadQueueStatus());
+        queueUnsubscribe = mp.subscribeQueue(currentUserId, async () => {
+          loadQueueStatus();
+          await loadMyRoom();
+          if (currentRoom) selectTab("room");
+        });
       }
     } catch (error) {
       setStatus(elements.queueStatus, error.message || "載入配對狀態失敗", "error");
     }
-  }
-
-  function showMatchResult(match) {
-    elements.matchId.textContent = `Match ID：${match.id}`;
-    elements.matchResult.hidden = false;
   }
 
   function escapeHtml(value) {

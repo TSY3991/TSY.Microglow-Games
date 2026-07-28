@@ -64,7 +64,10 @@
   }
 
   function applyAccount(account, options) {
-    const advance = options?.advance !== false;
+    // A ?match= link came from the multiplayer lobby with a session already in hand:
+    // skip the intro/setup wizard entirely and let business.js drive the connected match.
+    const connected = Boolean(new URLSearchParams(window.location.search).get("match"));
+    const advance = connected ? true : options?.advance !== false;
     pendingResume = !advance;
     activeAccount = account;
     document.body.dataset.accountType = account.type;
@@ -79,7 +82,7 @@
     setResumeControl(!advance);
     if (advance) {
       if (modal) modal.hidden = true;
-      if (introModal) introModal.hidden = false;
+      if (introModal) introModal.hidden = connected ? true : false;
     } else {
       if (modal) modal.hidden = false;
       if (introModal) introModal.hidden = true;
@@ -91,6 +94,7 @@
     window.dispatchEvent(new CustomEvent("microglow:account-ready", {
       detail: {
         ...account,
+        connected,
         capabilities: account.type === "member"
           ? ["solo", "friends", "matchmaking", "rooms", "leaderboard"]
           : ["solo", "local-progress"]
