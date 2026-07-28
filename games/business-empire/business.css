@@ -1532,3 +1532,123 @@ body.mobile-portrait-locked .orientation-card [data-action="portrait-bypass"] {
 body.mobile-portrait-locked .portrait-preview-banner {
   display: none !important;
 }
+/* Safari landscape compact account screen — 2026-07-28
+   iOS/iPadOS Safari can keep browser chrome visible in landscape. When the
+   available height is short, fit the access screen inside visualViewport and
+   scroll only the form column instead of clipping the modal. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .account-modal {
+    align-items: stretch;
+    padding: max(4px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  }
+  .account-card {
+    grid-template-columns: minmax(190px, .58fr) minmax(360px, 1.42fr);
+    width: min(1240px, calc(100vw - 12px));
+    height: calc(var(--empire-height, 100dvh) - 8px);
+    max-height: calc(var(--empire-height, 100dvh) - 8px);
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+  .account-hero {
+    min-height: 0;
+    justify-content: center;
+    padding: clamp(12px, 2vw, 22px);
+  }
+  .account-sigil {
+    width: 46px;
+    height: 46px;
+    margin: 8px 0;
+    border-radius: 14px;
+    font-size: 1.35rem;
+  }
+  .account-hero h1 {
+    font-size: clamp(1.35rem, 3.1vw, 2rem);
+    line-height: 1.08;
+  }
+  .account-hero > p:not(.modal-kicker),
+  .account-benefits {
+    display: none;
+  }
+  .account-options {
+    min-height: 0;
+    align-content: start;
+    gap: 8px;
+    overflow: auto;
+    padding: 12px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .account-member-panel,
+  .guest-trial-panel {
+    padding: 10px;
+    border-radius: 14px;
+  }
+  .account-tabs {
+    margin-bottom: 8px;
+  }
+  .account-tabs button {
+    min-height: 34px;
+    font-size: .72rem;
+  }
+  .account-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .account-form label {
+    gap: 4px;
+    font-size: .62rem;
+  }
+  .account-form input {
+    min-height: 38px;
+    font-size: .72rem;
+  }
+  .account-submit,
+  .account-status {
+    grid-column: 1 / -1;
+  }
+  .account-submit {
+    min-height: 38px;
+    font-size: .76rem;
+  }
+  .account-status {
+    min-height: 14px;
+    font-size: .56rem;
+  }
+  .guest-trial-panel {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(150px, .42fr);
+    gap: 8px;
+  }
+  .guest-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    font-size: 1.15rem;
+  }
+  .guest-trial-panel h2 {
+    margin: 2px 0 3px;
+    font-size: .9rem;
+  }
+  .guest-trial-panel p {
+    font-size: .58rem;
+    line-height: 1.35;
+  }
+  .guest-trial-button {
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 38px;
+    font-size: .72rem;
+  }
+  .guest-note {
+    grid-column: 1 / -1;
+    font-size: .5rem !important;
+  }
+  .account-divider {
+    margin: 0;
+    font-size: .52rem;
+  }
+  .account-close {
+    right: 10px;
+    top: 10px;
+  }
+}
