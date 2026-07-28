@@ -1497,3 +1497,38 @@ body.mobile-portrait-preview .event-actions button {
   .board-event-copy strong { font-size: .72rem; }
   .board-event-copy p { font-size: .52rem; }
 }
+/* Mobile portrait lock — 2026-07-28
+   Real phone portrait mode must not expose the full board. The board becomes
+   unreadable in Safari portrait because the route, HUD and event panel are
+   squeezed into a narrow visual viewport. Keep the game landscape-first. */
+body.mobile-portrait-locked {
+  overflow: hidden;
+  touch-action: none;
+}
+body.mobile-portrait-locked .empire-shell {
+  height: 100dvh;
+  overflow: hidden;
+  pointer-events: none;
+  filter: blur(3px) brightness(.46);
+  transform: scale(.985);
+  transform-origin: center;
+}
+body.mobile-portrait-locked .orientation-guard {
+  display: grid !important;
+}
+body.mobile-portrait-locked .orientation-card {
+  width: min(420px, calc(100vw - 36px));
+  padding: 28px 22px;
+}
+body.mobile-portrait-locked .orientation-card h2 {
+  font-size: clamp(1.55rem, 7vw, 2.1rem);
+}
+body.mobile-portrait-locked .orientation-card p {
+  font-size: clamp(.9rem, 3.7vw, 1.05rem);
+}
+body.mobile-portrait-locked .orientation-card [data-action="portrait-bypass"] {
+  display: none !important;
+}
+body.mobile-portrait-locked .portrait-preview-banner {
+  display: none !important;
+}

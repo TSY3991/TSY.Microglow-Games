@@ -1609,8 +1609,8 @@
         renderSetup();
       });
     });
-    document.querySelector('[data-action="portrait-bypass"]').addEventListener("click", () => {
-      portraitBypass = true;
+    document.querySelector('[data-action="portrait-bypass"]')?.addEventListener("click", () => {
+      portraitBypass = false;
       syncOrientationGuard();
     });
 
@@ -1633,7 +1633,7 @@
       if (event.key === "Escape") {
         [elements.instructionsModal, elements.assetsModal].forEach((modal) => { modal.hidden = true; });
       }
-      if ((event.key === "Enter" || event.key === " ") && !elements.roll.disabled && !document.querySelector(".modal:not([hidden])") && !document.body.classList.contains("mobile-portrait-preview")) {
+      if ((event.key === "Enter" || event.key === " ") && !elements.roll.disabled && !document.querySelector(".modal:not([hidden])") && !document.body.classList.contains("mobile-portrait-preview") && !document.body.classList.contains("mobile-portrait-locked")) {
         event.preventDefault();
         rollHuman();
       }
@@ -1672,11 +1672,12 @@
     const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
     const touchDevice = navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
     const mobilePortrait = touchDevice && width <= 900 && height > width;
-    if (!mobilePortrait) portraitBypass = false;
-    elements.orientationGuard.hidden = !mobilePortrait || portraitBypass;
+    portraitBypass = false;
+    elements.orientationGuard.hidden = !mobilePortrait;
     elements.orientationState.textContent = mobilePortrait ? "目前偵測：直向模式" : "目前偵測：橫向模式";
     document.documentElement.dataset.mobileOrientation = mobilePortrait ? "portrait" : "landscape";
-    document.body.classList.toggle("mobile-portrait-preview", mobilePortrait && portraitBypass);
+    document.body.classList.remove("mobile-portrait-preview");
+    document.body.classList.toggle("mobile-portrait-locked", mobilePortrait);
   }
   function sleep(milliseconds) {
     return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
