@@ -1712,12 +1712,13 @@
     const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
     const touchDevice = navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
     const mobilePortrait = touchDevice && width <= 900 && height > width;
+    const extremeNarrowPortrait = mobilePortrait && width < 340;
     portraitBypass = false;
-    elements.orientationGuard.hidden = !mobilePortrait;
+    elements.orientationGuard.hidden = !extremeNarrowPortrait;
     elements.orientationState.textContent = mobilePortrait ? "目前偵測：直向模式" : "目前偵測：橫向模式";
     document.documentElement.dataset.mobileOrientation = mobilePortrait ? "portrait" : "landscape";
     document.body.classList.remove("mobile-portrait-preview");
-    document.body.classList.toggle("mobile-portrait-locked", mobilePortrait);
+    document.body.classList.toggle("mobile-portrait-locked", extremeNarrowPortrait);
   }
   function sleep(milliseconds) {
     return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
