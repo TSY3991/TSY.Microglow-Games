@@ -1667,11 +1667,19 @@ body.mobile-portrait-locked .portrait-preview-banner {
   width: calc(var(--token-size) * 1.36);
   height: calc(var(--token-size) * 1.36);
   transform: translateX(-50%);
-  background-image: var(--token-sheet);
+  background-image: var(--token-sprite);
   background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  animation: none;
+}
+/* When actively moving or arriving, swap to the animation sheet.
+   Idle stays on the clean static portrait — Codex's 4-frame idle row
+   currently reads as "character spinning" rather than a subtle bob. */
+.token.has-sprite-sheet.is-moving .pawn-figure,
+.token.has-sprite-sheet.is-arriving .pawn-figure {
+  background-image: var(--token-sheet);
   background-size: 400% 300%;
-  background-position: 0% 0%;
-  animation: token-idle-sheet 1.15s steps(4) infinite;
 }
 .token.has-sprite-sheet.is-moving .pawn-figure {
   animation: token-walk-sheet .72s steps(4) infinite;
@@ -1679,7 +1687,6 @@ body.mobile-portrait-locked .portrait-preview-banner {
 .token.has-sprite-sheet.is-arriving .pawn-figure {
   animation: token-arrival-sheet 1.2s steps(4) 1;
 }
-@keyframes token-idle-sheet { from { background-position: 0% 0%; } to { background-position: 100% 0%; } }
 @keyframes token-walk-sheet { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
 @keyframes token-arrival-sheet { from { background-position: 0% 100%; } to { background-position: 100% 100%; } }
 /* Mobile portrait playable layout — 2026-07-29

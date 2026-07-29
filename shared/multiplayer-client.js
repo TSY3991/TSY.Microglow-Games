@@ -179,6 +179,13 @@
     });
   }
 
+  async function abandonRoomMembership(roomId) {
+    return callRpc("abandon_room_membership", {
+      p_room_id: roomId,
+      p_request_id: newRequestId()
+    });
+  }
+
   async function removeRoomMember(roomId, targetUserId) {
     return callRpc("remove_room_member", {
       p_room_id: roomId,
@@ -318,6 +325,7 @@
     inviteFriendToRoom,
     respondRoomInvite,
     leaveRoom,
+    abandonRoomMembership,
     removeRoomMember,
     cancelFriendInvite,
     startMatch,

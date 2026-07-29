@@ -514,7 +514,46 @@
         window.location.href = url.href;
       }
     
+      function ensureZombieCard() {
+        if (elements.zombieCard) return;
+        const panel = container.querySelector('[data-mp-panel="room"]');
+        if (!panel) return;
+        const card = document.createElement("div");
+        card.className = "mp-card";
+        card.hidden = true;
+        card.setAttribute("data-mp-zombie-card", "");
+        card.innerHTML =
+          '<h2>已進行中的對戰：<span class="mp-room-code" data-mp-zombie-room-code></span></h2>' +
+          '<p class="mp-hint">你在這間房有一場已開始、還沒結束的對戰。可以重新加入繼續玩，或放棄之後另外開新的房。</p>' +
+          '<div class="mp-actions">' +
+          '<button type="button" class="primary-link" data-mp-action="rejoin-match">重新加入對戰</button>' +
+          '<button type="button" class="mp-danger" data-mp-action="abandon-match">放棄此對戰</button>' +
+          '</div>' +
+          '<p class="mp-status" data-mp-zombie-feedback></p>';
+        panel.appendChild(card);
+        elements.zombieCard = card;
+        elements.zombieRoomCode = card.querySelector("[data-mp-zombie-room-code]");
+        elements.zombieFeedback = card.querySelector("[data-mp-zombie-feedback]");
+        card.querySelector('[data-mp-action="rejoin-match"]').addEventListener("click", () => {
+          const matchId = currentRoom?.game_rooms?.current_match_id;
+          if (matchId) goToMatch(matchId);
+        });
+        card.querySelector('[data-mp-action="abandon-match"]').addEventListener("click", async () => {
+          const roomId = currentRoom?.room_id;
+          if (!roomId) return;
+          try {
+            setStatus(elements.zombieFeedback, "放棄中…");
+            await mp.abandonRoomMembership(roomId);
+            currentRoom = null;
+            await loadMyRoom();
+          } catch (error) {
+            setStatus(elements.zombieFeedback, error.message || "放棄失敗", "error");
+          }
+        });
+      }
+
       async function loadMyRoom() {
+        ensureZombieCard();
         try {
           const membership = await mp.getMyRoom();
           if (!membership) {
@@ -523,20 +562,33 @@
             if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
             elements.roomCard.hidden = true;
             elements.noRoomCard.hidden = false;
+            if (elements.zombieCard) elements.zombieCard.hidden = true;
             await loadRoomInvitesIfNoRoom();
             return;
           }
-    
+
           const matchedRoom = membership.game_rooms;
+          // Do NOT auto-navigate on stale in-progress rooms. A disconnected
+          // membership hijacks every subsequent lobby visit if we redirect on
+          // read; show the player a rejoin/abandon choice instead.
           if (matchedRoom?.status === "in_progress" && matchedRoom?.current_match_id) {
-            goToMatch(matchedRoom.current_match_id);
+            currentRoom = membership;
+            stopPresenceHeartbeat();
+            if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+            elements.roomCard.hidden = true;
+            elements.noRoomCard.hidden = true;
+            elements.roomInvitesCard.hidden = true;
+            elements.zombieCard.hidden = false;
+            elements.zombieRoomCode.textContent = matchedRoom.room_code || "";
+            setStatus(elements.zombieFeedback, "");
             return;
           }
-    
+
           currentRoom = membership;
           elements.noRoomCard.hidden = true;
           elements.roomInvitesCard.hidden = true;
           elements.roomCard.hidden = false;
+          if (elements.zombieCard) elements.zombieCard.hidden = true;
           const room = membership.game_rooms;
           elements.roomCode.textContent = room?.room_code || "";
           const isHost = room && room.host_user_id === currentUserId;
