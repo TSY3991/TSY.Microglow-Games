@@ -9,7 +9,7 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260727a">
-    <link rel="stylesheet" href="./business.css?v=20260729e">
+    <link rel="stylesheet" href="./business.css?v=20260729f">
   </head>
   <body>
     <main class="empire-shell">
@@ -87,7 +87,7 @@
             <div class="player-seats" data-player-seats aria-label="玩家回合順序"></div>
           </div>
           <div class="board-frame" data-board-frame>
-            <div class="board-drag-hint" data-board-drag-hint aria-hidden="true">← 拖曳查看完整棋盤 →</div>
+            <div class="board-drag-hint" data-board-drag-hint aria-hidden="true">↔ 拖曳探索地圖・自動追蹤角色</div>
             <div class="board rectangle-board" data-board>
               <div class="board-vignette" aria-hidden="true"></div>
               <section class="board-event-dock" data-board-event-dock aria-live="polite">
@@ -177,6 +177,22 @@
         </div>
       </div>
 
+      <div class="modal nickname-modal" role="dialog" aria-modal="true" aria-labelledby="nickname-title" data-nickname-modal hidden>
+        <div class="account-backdrop" aria-hidden="true"></div>
+        <div class="modal-card nickname-card">
+          <div class="nickname-sigil" aria-hidden="true">✦</div>
+          <p class="modal-kicker">PLAYER IDENTITY</p>
+          <h2 id="nickname-title">建立你的玩家暱稱</h2>
+          <p class="nickname-lead">這個名稱會顯示在棋盤角色、好友房與隨機配對中，之後仍可在帳號資料裡修改。</p>
+          <form class="nickname-form" data-nickname-form novalidate>
+            <label for="player-nickname">玩家暱稱</label>
+            <input id="player-nickname" type="text" name="nickname" autocomplete="off" minlength="2" maxlength="24" placeholder="輸入 2 至 24 個字元" required data-nickname-input>
+            <small>可使用中文、英文、數字與空格，請避免輸入個人敏感資訊。</small>
+            <p class="nickname-status" data-nickname-status aria-live="polite"></p>
+            <button class="primary-button" type="submit" data-nickname-submit>儲存並進入遊戲</button>
+          </form>
+        </div>
+      </div>
       <div class="modal intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title" data-intro-modal hidden>
         <div class="intro-backdrop" aria-hidden="true"></div>
         <div class="modal-card intro-card setup-card">
@@ -313,9 +329,9 @@
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="../../shared/microglow-auth.js?v=20260728b"></script>
     <script src="./supabase-client.js?v=20260728b"></script>
-    <script src="./business-auth.js?v=20260728a"></script>
+    <script src="./business-auth.js?v=20260729f"></script>
     <script src="../../shared/multiplayer-client.js?v=20260729c"></script>
-    <script src="./business-multiplayer.js?v=20260729c"></script>
-    <script src="./business.js?v=20260729d"></script>
+    <script src="./business-multiplayer.js?v=20260729f"></script>
+    <script src="./business.js?v=20260729f"></script>
   </body>
 </html>

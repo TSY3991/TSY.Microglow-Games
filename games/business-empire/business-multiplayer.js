@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const TEMPLATE = "      <section class=\"mp-gate\" data-mp-gate hidden>\n        <div class=\"mp-gate-card\">\n          <p class=\"mp-gate-kicker\">SIGN IN REQUIRED</p>\n          <h2>請先登入或以訪客身分開始</h2>\n          <p data-mp-gate-message>點「以訪客身分開始」立即體驗，或直接登入正式會員。</p>\n          <div class=\"mp-gate-actions\">\n            <button type=\"button\" class=\"primary-link\" data-mp-guest-start>以訪客身分開始</button>\n            <a class=\"secondary-link\" data-mp-gate-link href=\"#\">前往登入</a>\n          </div>\n          <p class=\"mp-status\" data-mp-guest-start-feedback></p>\n          <div data-mp-turnstile-widget aria-hidden=\"true\"></div>\n        </div>\n      </section>\n\n      <section class=\"mp-guest-banner\" data-mp-guest-banner hidden>\n        <p><strong>訪客模式</strong>：好友與房間資料存在這個瀏覽器裡，換裝置或清除資料會遺失。想永久保存，可以升級為正式會員（原有資料會自動保留）。</p>\n        <a class=\"primary-link\" data-mp-upgrade-link href=\"#\">升級為正式會員</a>\n      </section>\n\n      <section class=\"mp-app\" data-mp-app hidden>\n        <nav class=\"mp-tabs\" aria-label=\"多人功能分頁\">\n          <button type=\"button\" class=\"is-active\" data-mp-tab=\"friends\" aria-current=\"page\">好友</button>\n          <button type=\"button\" data-mp-tab=\"room\">好友房</button>\n          <button type=\"button\" data-mp-tab=\"queue\">隨機配對</button>\n        </nav>\n\n        <section class=\"mp-panel\" data-mp-panel=\"friends\">\n          <div class=\"mp-card\">\n            <h2>我的玩家代碼</h2>\n            <p class=\"mp-hint\">分享這組代碼給朋友，讓對方用「用代碼加好友」加你——訪客帳號也能用。</p>\n            <div class=\"mp-code-display\">\n              <strong data-mp-my-code>------</strong>\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"copy-code\">複製</button>\n            </div>\n            <p class=\"mp-status\" data-mp-code-feedback></p>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>用代碼加好友</h2>\n            <p class=\"mp-hint\">輸入朋友分享給你的 6 碼玩家代碼。</p>\n            <form class=\"mp-search-form\" data-mp-code-invite-form>\n              <input type=\"text\" placeholder=\"玩家代碼\" autocomplete=\"off\" maxlength=\"6\" data-mp-code-invite-input>\n              <button type=\"submit\" class=\"primary-link\">送出邀請</button>\n            </form>\n          </div>\n\n          <div class=\"mp-card\" data-mp-permanent-only>\n            <h2>搜尋玩家</h2>\n            <p class=\"mp-hint\">輸入完整暱稱，或至少 3 個字元的開頭進行搜尋（僅限正式會員）。</p>\n            <form class=\"mp-search-form\" data-mp-search-form>\n              <input type=\"text\" placeholder=\"暱稱（username）\" autocomplete=\"off\" data-mp-search-input>\n              <button type=\"submit\" class=\"primary-link\">搜尋</button>\n            </form>\n            <ul class=\"mp-list\" data-mp-search-results></ul>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>好友邀請</h2>\n            <ul class=\"mp-list\" data-mp-friend-invites>\n              <li class=\"mp-empty\">目前沒有待處理的好友邀請。</li>\n            </ul>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>已送出的邀請</h2>\n            <ul class=\"mp-list\" data-mp-sent-friend-invites>\n              <li class=\"mp-empty\">目前沒有已送出、待處理的邀請。</li>\n            </ul>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>好友名單</h2>\n            <ul class=\"mp-list\" data-mp-friend-list>\n              <li class=\"mp-empty\">還沒有好友，先搜尋暱稱送出邀請吧。</li>\n            </ul>\n          </div>\n        </section>\n\n        <section class=\"mp-panel\" data-mp-panel=\"room\" hidden>\n          <div class=\"mp-card\" data-mp-room-invites-card>\n            <h2>房間邀請</h2>\n            <ul class=\"mp-list\" data-mp-room-invites>\n              <li class=\"mp-empty\">目前沒有待處理的房間邀請。</li>\n            </ul>\n          </div>\n\n          <div class=\"mp-card\" data-mp-no-room-card>\n            <h2>建立或加入好友房</h2>\n            <div class=\"mp-actions\">\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"create-room\">建立房間</button>\n            </div>\n            <form class=\"mp-search-form\" data-mp-join-form>\n              <input type=\"text\" placeholder=\"房間代碼\" autocomplete=\"off\" maxlength=\"6\" data-mp-room-code-input>\n              <button type=\"submit\" class=\"primary-link\">加入房間</button>\n            </form>\n          </div>\n\n          <div class=\"mp-card\" data-mp-room-card hidden>\n            <h2>目前房間 <span class=\"mp-room-code\" data-mp-room-code></span></h2>\n            <p class=\"mp-hint\" data-mp-room-status></p>\n            <ul class=\"mp-list\" data-mp-room-members></ul>\n            <form class=\"mp-search-form\" data-mp-invite-form>\n              <select data-mp-invite-select>\n                <option value=\"\">選擇要邀請的好友…</option>\n              </select>\n              <button type=\"submit\" class=\"primary-link\">送出邀請</button>\n            </form>\n            <div class=\"mp-actions\">\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"toggle-ready\">準備／取消準備</button>\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"start-match\" hidden data-mp-host-only>開始比賽</button>\n              <button type=\"button\" class=\"mp-danger\" data-mp-action=\"leave-room\">離開房間</button>\n            </div>\n            <p class=\"mp-status\" data-mp-room-feedback></p>\n          </div>\n        </section>\n\n        <section class=\"mp-panel\" data-mp-panel=\"queue\" hidden>\n          <div class=\"mp-card\">\n            <h2>隨機配對</h2>\n            <p class=\"mp-hint\">系統每分鐘檢查一次配對，不保證立即配對成功。</p>\n            <div class=\"mp-actions\">\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"enqueue\">加入配對佇列</button>\n              <button type=\"button\" class=\"mp-danger\" data-mp-action=\"cancel-queue\" hidden>取消配對</button>\n            </div>\n            <p class=\"mp-status\" data-mp-queue-status></p>\n          </div>\n        </section>\n      </section>\n";
+  const TEMPLATE = "      <section class=\"mp-gate\" data-mp-gate hidden>\n        <div class=\"mp-gate-card\">\n          <p class=\"mp-gate-kicker\">SIGN IN REQUIRED</p>\n          <h2>請先登入或以訪客身分開始</h2>\n          <p data-mp-gate-message>點「以訪客身分開始」立即體驗，或直接登入正式會員。</p>\n          <div class=\"mp-gate-actions\">\n            <button type=\"button\" class=\"primary-link\" data-mp-guest-start>以訪客身分開始</button>\n            <a class=\"secondary-link\" data-mp-gate-link href=\"#\">前往登入</a>\n          </div>\n          <p class=\"mp-status\" data-mp-guest-start-feedback></p>\n          <div data-mp-turnstile-widget aria-hidden=\"true\"></div>\n        </div>\n      </section>\n\n      <section class=\"mp-guest-banner\" data-mp-guest-banner hidden>\n        <p><strong>訪客模式</strong>：好友與房間資料存在這個瀏覽器裡，換裝置或清除資料會遺失。想永久保存，可以升級為正式會員（原有資料會自動保留）。</p>\n        <a class=\"primary-link\" data-mp-upgrade-link href=\"#\">升級為正式會員</a>\n      </section>\n\n      <section class=\"mp-app\" data-mp-app hidden>\n        <nav class=\"mp-tabs\" aria-label=\"多人功能分頁\">\n          <button type=\"button\" class=\"is-active\" data-mp-tab=\"friends\" aria-current=\"page\">好友</button>\n          <button type=\"button\" data-mp-tab=\"room\">好友房</button>\n          <button type=\"button\" data-mp-tab=\"queue\">隨機配對</button>\n        </nav>\n\n        <section class=\"mp-panel\" data-mp-panel=\"friends\">\n          <div class=\"mp-card\">\n            <h2>我的玩家代碼</h2>\n            <p class=\"mp-hint\">分享這組代碼給朋友，讓對方用「用代碼加好友」加你——訪客帳號也能用。</p>\n            <div class=\"mp-code-display\">\n              <strong data-mp-my-code>------</strong>\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"copy-code\">複製</button>\n            </div>\n            <p class=\"mp-status\" data-mp-code-feedback></p>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>用代碼加好友</h2>\n            <p class=\"mp-hint\">輸入朋友分享給你的 6 碼玩家代碼。</p>\n            <form class=\"mp-search-form\" data-mp-code-invite-form>\n              <input type=\"text\" placeholder=\"玩家代碼\" autocomplete=\"off\" maxlength=\"6\" data-mp-code-invite-input>\n              <button type=\"submit\" class=\"primary-link\">送出邀請</button>\n            </form>\n          </div>\n\n          <div class=\"mp-card\" data-mp-permanent-only>\n            <h2>搜尋玩家</h2>\n            <p class=\"mp-hint\">輸入完整暱稱，或至少 3 個字元的開頭進行搜尋（僅限正式會員）。</p>\n            <form class=\"mp-search-form\" data-mp-search-form>\n              <input type=\"text\" placeholder=\"暱稱（username）\" autocomplete=\"off\" data-mp-search-input>\n              <button type=\"submit\" class=\"primary-link\">搜尋</button>\n            </form>\n            <ul class=\"mp-list\" data-mp-search-results></ul>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>好友邀請</h2>\n            <ul class=\"mp-list\" data-mp-friend-invites>\n              <li class=\"mp-empty\">目前沒有待處理的好友邀請。</li>\n            </ul>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>已送出的邀請</h2>\n            <ul class=\"mp-list\" data-mp-sent-friend-invites>\n              <li class=\"mp-empty\">目前沒有已送出、待處理的邀請。</li>\n            </ul>\n          </div>\n\n          <div class=\"mp-card\">\n            <h2>好友名單</h2>\n            <ul class=\"mp-list\" data-mp-friend-list>\n              <li class=\"mp-empty\">還沒有好友，先搜尋暱稱送出邀請吧。</li>\n            </ul>\n          </div>\n        </section>\n\n        <section class=\"mp-panel\" data-mp-panel=\"room\" hidden>\n          <div class=\"mp-card\" data-mp-room-invites-card>\n            <h2>房間邀請</h2>\n            <ul class=\"mp-list\" data-mp-room-invites>\n              <li class=\"mp-empty\">目前沒有待處理的房間邀請。</li>\n            </ul>\n          </div>\n\n          <div class=\"mp-card\" data-mp-no-room-card>\n            <h2>建立或加入好友房</h2>\n            <div class=\"mp-actions\">\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"create-room\">建立房間</button>\n            </div>\n            <form class=\"mp-search-form\" data-mp-join-form>\n              <input type=\"text\" placeholder=\"房間代碼\" autocomplete=\"off\" maxlength=\"6\" data-mp-room-code-input>\n              <button type=\"submit\" class=\"primary-link\">加入房間</button>\n            </form>\n          </div>\n\n          <div class=\"mp-card\" data-mp-room-card hidden>\n            <h2>目前房間 <span class=\"mp-room-code\" data-mp-room-code></span></h2>\n            <p class=\"mp-hint\" data-mp-room-status></p>\n            <ul class=\"mp-list\" data-mp-room-members></ul>\n            <form class=\"mp-search-form\" data-mp-invite-form>\n              <select data-mp-invite-select>\n                <option value=\"\">選擇要邀請的好友…</option>\n              </select>\n              <button type=\"submit\" class=\"primary-link\">送出邀請</button>\n            </form>\n            <div class=\"mp-actions\">\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"toggle-ready\">準備／取消準備</button>\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"start-match\" hidden data-mp-host-only>開始比賽</button>\n              <button type=\"button\" class=\"mp-danger\" data-mp-action=\"leave-room\">離開房間</button>\n            </div>\n            <p class=\"mp-status\" data-mp-room-feedback></p>\n          </div>\n        </section>\n\n        <section class=\"mp-panel\" data-mp-panel=\"queue\" hidden>\n          <div class=\"mp-card\">\n            <h2>隨機配對</h2>\n            <p class=\"mp-hint\">系統每分鐘檢查一次配對，不保證立即配對成功。</p>\n            <div class=\"mp-actions\">\n              <button type=\"button\" class=\"primary-link\" data-mp-action=\"enqueue\">加入配對佇列</button>\n              <button type=\"button\" class=\"mp-danger\" data-mp-action=\"cancel-queue\" hidden>取消配對</button>\n            </div>\n            <div class=\"mp-match-wait\" data-mp-match-wait hidden role=\"status\" aria-live=\"polite\">\n              <span class=\"mp-match-spinner\" aria-hidden=\"true\"><i></i><i></i><i></i></span>\n              <strong>等待匹配中</strong>\n              <p>正在尋找 2～4 名冒險者，配對成功後會自動進入房間。</p>\n              <small>已等待 <b data-mp-wait-time>00:00</b></small>\n            </div>\n            <p class=\"mp-status\" data-mp-queue-status></p>\n          </div>\n        </section>\n      </section>\n";
   let activeController = null;
 
   function initMultiplayerUI(container, opts = {}) {
@@ -53,6 +53,8 @@
         roomFeedback: container.querySelector("[data-mp-room-feedback]"),
         startMatchButton: container.querySelector('[data-mp-action="start-match"]'),
         queueStatus: container.querySelector("[data-mp-queue-status]"),
+        queueWaiting: container.querySelector("[data-mp-match-wait]"),
+        queueWaitTime: container.querySelector("[data-mp-wait-time]"),
         enqueueButton: container.querySelector('[data-mp-action="enqueue"]'),
         cancelQueueButton: container.querySelector('[data-mp-action="cancel-queue"]')
       };
@@ -63,6 +65,8 @@
       let queueUnsubscribe = null;
       let invitesUnsubscribe = null;
       let presenceTimerId = null;
+      let queueWaitTimerId = null;
+      let queueStartedAt = 0;
     
       const TURNSTILE_SITE_KEY = "0x4AAAAAAD7mtP2SYLK59ifA";
       const CAPTCHA_TIMEOUT_MS = 15000;
@@ -301,22 +305,34 @@
         });
     
         elements.enqueueButton.addEventListener("click", async () => {
+          elements.enqueueButton.disabled = true;
+          setQueueWaiting({ created_at: new Date().toISOString() });
+          setStatus(elements.queueStatus, "正在加入配對佇列…");
           try {
             await mp.enqueueMatch();
             await loadQueueStatus();
           } catch (error) {
+            setQueueWaiting(null);
             setStatus(elements.queueStatus, error.message || "加入配對失敗", "error");
+          } finally {
+            elements.enqueueButton.disabled = false;
           }
         });
     
         elements.cancelQueueButton.addEventListener("click", async () => {
-          const entry = await mp.getMyQueueEntry();
-          if (!entry) return;
+          elements.cancelQueueButton.disabled = true;
           try {
+            const entry = await mp.getMyQueueEntry();
+            if (!entry) {
+              setQueueWaiting(null);
+              return;
+            }
             await mp.cancelMatchQueue(entry.id);
             await loadQueueStatus();
           } catch (error) {
             setStatus(elements.queueStatus, error.message || "取消配對失敗", "error");
+          } finally {
+            elements.cancelQueueButton.disabled = false;
           }
         });
       }
@@ -652,16 +668,48 @@
         }
       }
     
+      function stopQueueWaitTimer() {
+        if (queueWaitTimerId !== null) {
+          window.clearInterval(queueWaitTimerId);
+          queueWaitTimerId = null;
+        }
+        queueStartedAt = 0;
+      }
+
+      function updateQueueWaitTime() {
+        if (!elements.queueWaitTime || !queueStartedAt) return;
+        const elapsed = Math.max(0, Math.floor((Date.now() - queueStartedAt) / 1000));
+        const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
+        const seconds = String(elapsed % 60).padStart(2, "0");
+        elements.queueWaitTime.textContent = `${minutes}:${seconds}`;
+      }
+
+      function setQueueWaiting(entry) {
+        if (!elements.queueWaiting) return;
+        const waiting = Boolean(entry);
+        elements.queueWaiting.hidden = !waiting;
+        if (!waiting) {
+          stopQueueWaitTimer();
+          if (elements.queueWaitTime) elements.queueWaitTime.textContent = "00:00";
+          return;
+        }
+        const createdAt = Date.parse(entry.queued_at || entry.created_at || "");
+        queueStartedAt = Number.isFinite(createdAt) ? createdAt : Date.now();
+        updateQueueWaitTime();
+        if (queueWaitTimerId === null) queueWaitTimerId = window.setInterval(updateQueueWaitTime, 1000);
+      }
       async function loadQueueStatus() {
         try {
           const entry = await mp.getMyQueueEntry();
           if (!entry) {
+            setQueueWaiting(null);
             setStatus(elements.queueStatus, "尚未加入配對佇列。");
             elements.enqueueButton.hidden = false;
             elements.cancelQueueButton.hidden = true;
             if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
             return;
           }
+          setQueueWaiting(entry);
           setStatus(elements.queueStatus, "配對中，系統每分鐘檢查一次，請耐心等候。");
           elements.enqueueButton.hidden = true;
           elements.cancelQueueButton.hidden = false;
@@ -708,6 +756,7 @@
 
     function destroy() {
       stopPresenceHeartbeat();
+      stopQueueWaitTimer();
       if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
       if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
       if (invitesUnsubscribe) { invitesUnsubscribe(); invitesUnsubscribe = null; }

@@ -270,6 +270,7 @@
   let audioEnabled = readAudioPreference();
   let playerNickname = "冒險者";
   let nicknameRequestSequence = 0;
+  let lastBoardTrackKey = "";
 
   init();
 
@@ -507,6 +508,7 @@
     state.activeActorId = selected.id;
     state.phase = "roll";
     state.secondsLeft = TURN_SECONDS;
+    lastBoardTrackKey = "";
     setBoardFocus(false);
     ensureAudio();
     playEffect("start");
@@ -707,6 +709,7 @@
       token.setAttribute("aria-label", token.title);
       elements.tokens.append(token);
     });
+    scheduleActiveTokenTracking();
   }
 
   function tokenPoint(actor) {
@@ -1109,7 +1112,7 @@
     if (boardFocused) window.requestAnimationFrame(centerActiveToken);
   }
 
-  function centerActiveToken() {
+  function centerActiveToken(behavior = "smooth") {
     const frame = document.querySelector("[data-board-frame]");
     const activeToken = elements.tokens.querySelector(".token.is-active");
     if (!frame || !activeToken) return;
@@ -1117,7 +1120,25 @@
     const tokenRect = activeToken.getBoundingClientRect();
     const deltaX = (tokenRect.left + tokenRect.width / 2) - (frameRect.left + frameRect.width / 2);
     const deltaY = (tokenRect.top + tokenRect.height / 2) - (frameRect.top + frameRect.height / 2);
-    frame.scrollBy({ left: deltaX, top: deltaY, behavior: "smooth" });
+    frame.scrollBy({ left: deltaX, top: deltaY, behavior });
+  }
+
+  function isMobilePortraitBoard() {
+    const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
+    const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
+    return width <= 900 && height > width;
+  }
+
+  function scheduleActiveTokenTracking() {
+    if (!state.started || !isMobilePortraitBoard()) return;
+    const actor = activeActor();
+    if (!actor) return;
+    const trackKey = `${actor.id}:${actor.circle}:${actor.position}:${state.movingActorId || "still"}`;
+    if (trackKey === lastBoardTrackKey) return;
+    lastBoardTrackKey = trackKey;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => centerActiveToken(state.movingActorId ? "smooth" : "auto"));
+    });
   }
 
   function stopTurnTimer() {
@@ -1741,6 +1762,7 @@
     setBoardFocus(false);
     setupState = createSetupState();
     state = createEmptyState();
+    lastBoardTrackKey = "";
     elements.dice.textContent = "◈";
     elements.resultModal.hidden = true;
     elements.assetsModal.hidden = true;
@@ -1806,6 +1828,7 @@
     });
     bindHeaderMenus();
     window.addEventListener("microglow:account-ready", handleAccountReady);
+    if (window.MicroglowBusinessAccount) handleAccountReady({ detail: window.MicroglowBusinessAccount });
     elements.tileInspector.addEventListener("click", hideTileInspector);
     elements.startAdventure.addEventListener("click", () => {
       if (setupState.characterId) startGame(setupState.characterId);
