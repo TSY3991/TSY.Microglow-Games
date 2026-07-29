@@ -212,6 +212,7 @@
     boardEventDescription: document.querySelector("[data-board-event-description]"),
     boardEventStats: document.querySelector("[data-board-event-stats]"),
     boardEventActions: document.querySelector("[data-board-event-actions]"),
+    boardEventToggle: document.querySelector("[data-board-event-toggle]"),
     ranking: document.querySelector("[data-ranking]"),
     log: document.querySelector("[data-log]"),
     cashflowPreview: document.querySelector("[data-cashflow-preview]"),
@@ -228,6 +229,8 @@
     resultTitle: document.querySelector("[data-result-title]"),
     resultMessage: document.querySelector("[data-result-message]"),
     resultStats: document.querySelector("[data-result-stats]"),
+    resultRanking: document.querySelector("[data-result-ranking]"),
+    resultGuestNote: document.querySelector("[data-result-guest-note]"),
     playerSeats: document.querySelector("[data-player-seats]"),
     activeAvatar: document.querySelector("[data-active-avatar]"),
     activeEmblem: document.querySelector("[data-active-emblem]"),
@@ -276,6 +279,7 @@
     renderSetup();
     bindControls();
     updateAudioButton();
+    syncGuestUpgradeUI();
     renderAll();
     const matchId = new URLSearchParams(window.location.search).get("match");
     if (matchId) {
@@ -413,16 +417,33 @@
   function renderReadyRoster() {
     const selected = CHARACTERS.find((character) => character.id === setupState.characterId) || CHARACTERS[0];
     const difficulty = DIFFICULTY_CONFIG[setupState.difficulty];
+    const strategyLabels = { conservative: "保守型", balanced: "平衡型", aggressive: "進攻型" };
+    const aiConfigs = [
+      { avatar: "🛡️", name: "銀盾理財師", baseCash: 33000, baseSkill: 1 },
+      { avatar: "🔥", name: "赤焰開拓者", baseCash: 30000, baseSkill: 0 },
+      { avatar: "🜂", name: "幻影投機客", baseCash: 32000, baseSkill: 1 }
+    ];
     const roster = [
-      { avatar: selected.avatar, name: selected.name, detail: "P1・你・" + selected.title },
-      { avatar: "🛡️", name: "銀盾理財師", detail: "P2・AI・保守型" },
-      { avatar: "🔥", name: "赤焰開拓者", detail: "P3・AI・進攻型" },
-      { avatar: "🜂", name: "幻影投機客", detail: "P4・AI・平衡型" }
+      {
+        avatar: selected.avatar,
+        name: selected.name,
+        detail: "P1・你・" + selected.title,
+        meta: `起始 ${formatMoney(selected.cash)}・能力 Lv.${selected.skill}`
+      },
+      ...aiConfigs.map((config, index) => {
+        const strategy = difficulty.strategies[index];
+        return {
+          avatar: config.avatar,
+          name: config.name,
+          detail: `P${index + 2}・AI・${strategyLabels[strategy] || "平衡型"}策略`,
+          meta: `起始 ${formatMoney(config.baseCash + difficulty.cashBonus)}・能力 Lv.${config.baseSkill + difficulty.skillBonus}`
+        };
+      })
     ];
     elements.readyRoster.replaceChildren();
     roster.forEach((member, index) => {
       const item = document.createElement("li");
-      item.innerHTML = '<span class="ready-player-index">' + (index + 1) + '</span><b>' + member.avatar + '</b><div><strong>' + member.name + '</strong><small>' + member.detail + '</small></div><em>' + (index === 0 ? "READY" : "AI") + "</em>";
+      item.innerHTML = '<span class="ready-player-index">' + (index + 1) + '</span><b>' + member.avatar + '</b><div><strong>' + member.name + '</strong><small>' + member.detail + '</small><small class="ready-member-meta">' + member.meta + '</small></div><em>' + (index === 0 ? "READY" : "AI") + "</em>";
       elements.readyRoster.append(item);
     });
     elements.readySettings.innerHTML =
@@ -663,6 +684,7 @@
       if (actor.id === state.arrivalActorId) token.classList.add("is-arriving");
       if (ANIMATED_TOKEN_IDS.has(actor.spriteId)) token.classList.add("has-sprite-sheet");
       token.dataset.tokenIndex = String(index);
+      token.dataset.actorId = actor.id;
       token.dataset.stackIndex = String(Math.min(3, stackIndex));
       token.dataset.variant = actor.variant || "";
       token.dataset.edge = point.edge;
@@ -747,6 +769,9 @@
       .sort((a, b) => netWorth(b) - netWorth(a))
       .forEach((actor, index) => {
         const item = document.createElement("li");
+        item.classList.toggle("is-player", Boolean(actor.isHuman));
+        item.classList.toggle("is-turn", actor.id === state.activeActorId);
+        if (actor.isHuman) item.setAttribute("aria-current", "true");
         item.innerHTML = `<span>${index + 1}</span><span>${actor.avatar} ${actor.name}${actor.eliminated ? "（退場）" : ""}</span><strong>${formatMoney(netWorth(actor))}</strong>`;
         elements.ranking.append(item);
       });
@@ -873,6 +898,7 @@
   function showEvent(event, actions = [], stats = []) {
     if (actions.length && boardFocused && activeActor()?.isHuman) setBoardFocus(false);
     elements.eventCard.dataset.eventType = event.type || "income";
+    elements.eventCard.classList.toggle("is-waiting", Boolean(event.waiting));
     elements.eventIcon.textContent = event.icon || TILE_META[event.type]?.icon || "✦";
     elements.eventType.textContent = event.label || TILE_META[event.type]?.label || "城市事件";
     elements.eventTitle.textContent = event.title;
@@ -909,6 +935,7 @@
     if (!elements.boardEventDock) return;
     const eventType = event.type || "income";
     elements.boardEventDock.dataset.eventType = eventType;
+    elements.boardEventDock.classList.toggle("is-waiting", Boolean(event.waiting));
     elements.boardEventVisual.dataset.eventType = eventType;
     elements.boardEventIcon.textContent = event.icon || TILE_META[eventType]?.icon || "✦";
     elements.boardEventType.textContent = event.label || TILE_META[eventType]?.label || "城市事件";
@@ -922,7 +949,21 @@
       elements.boardEventStats.append(item);
     });
     renderEventActions(elements.boardEventActions, actions);
-    elements.boardEventDock.classList.toggle("has-actions", actions.some((action) => !action.disabled));
+    const hasEnabledActions = actions.some((action) => !action.disabled);
+    elements.boardEventDock.classList.toggle("has-actions", hasEnabledActions);
+    if (isMobilePortrait()) setBoardEventExpanded(hasEnabledActions);
+  }
+
+  function isMobilePortrait() {
+    return window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches;
+  }
+
+  function setBoardEventExpanded(expanded) {
+    if (!elements.boardEventDock || !elements.boardEventToggle) return;
+    const next = Boolean(expanded && isMobilePortrait());
+    elements.boardEventDock.classList.toggle("is-expanded", next);
+    elements.boardEventToggle.setAttribute("aria-expanded", String(next));
+    elements.boardEventToggle.setAttribute("aria-label", next ? "收合棋盤事件提示" : "展開棋盤事件提示");
   }
 
   function isMobileLandscape() {
@@ -1516,6 +1557,42 @@
     return Math.max(0, Math.round(netWorth(actor) + passiveIncome(actor) * 18 + actor.skill * 4000));
   }
 
+  function renderResultRanking() {
+    if (!elements.resultRanking) return;
+    elements.resultRanking.replaceChildren();
+    [...state.actors]
+      .sort((a, b) => scoreOf(b) - scoreOf(a))
+      .forEach((actor, index) => {
+        const item = document.createElement("li");
+        item.classList.toggle("is-player", Boolean(actor.isHuman));
+        if (actor.isHuman) item.setAttribute("aria-current", "true");
+        item.innerHTML = `
+          <span class="result-rank-no">${index + 1}</span>
+          <span class="result-rank-avatar" style="--sprite:url('./assets/tokens/${actor.spriteId}.png')"><b>${actor.avatar}</b></span>
+          <span class="result-rank-player"><strong>${actor.name}</strong><small>${actor.isHuman ? "你的成績" : actor.title}</small></span>
+          <span class="result-rank-metric"><small>淨資產</small><strong>${formatMoney(netWorth(actor))}</strong></span>
+          <span class="result-rank-metric"><small>被動收入</small><strong>${formatMoney(passiveIncome(actor))}</strong></span>
+          <span class="result-rank-metric"><small>能力</small><strong>Lv.${actor.skill}</strong></span>
+          <span class="result-rank-score"><small>積分</small><strong>${new Intl.NumberFormat("zh-TW").format(scoreOf(actor))}</strong></span>
+        `;
+        elements.resultRanking.append(item);
+      });
+  }
+
+  function syncGuestUpgradeUI() {
+    const isGuest = document.body.dataset.accountType === "guest";
+    const auth = window.MicroglowAuth;
+    let upgradeUrl = "#";
+    if (auth?.getPortalLoginUrl) {
+      try { upgradeUrl = auth.getPortalLoginUrl(window.location.href); } catch {}
+    }
+    document.querySelectorAll("[data-guest-upgrade-link]").forEach((link) => {
+      link.hidden = !isGuest;
+      if (isGuest) link.href = upgradeUrl;
+    });
+    if (elements.resultGuestNote) elements.resultGuestNote.hidden = !isGuest;
+  }
+
   function endGame(won, message, focusActor) {
     stopTurnTimer();
     state.ended = true;
@@ -1537,6 +1614,8 @@
       <div><span>淨資產</span><strong>${formatMoney(netWorth(player))}</strong></div>
       <div><span>最高分</span><strong>${new Intl.NumberFormat("zh-TW").format(best)}</strong></div>
     `;
+    renderResultRanking();
+    syncGuestUpgradeUI();
     elements.resultModal.hidden = false;
     renderAll();
   }
@@ -1646,8 +1725,12 @@
       if (state.connected) rollConnected();
       else rollHuman();
     });
-    document.querySelector('[data-action="instructions"]').addEventListener("click", () => { elements.instructionsModal.hidden = false; });
-    document.querySelector('[data-action="assets"]').addEventListener("click", openAssets);
+    document.querySelectorAll('[data-action="instructions"]').forEach((button) => {
+      button.addEventListener("click", () => { elements.instructionsModal.hidden = false; closeHeaderMenus(); });
+    });
+    document.querySelectorAll('[data-action="assets"]').forEach((button) => {
+      button.addEventListener("click", () => { openAssets(); closeHeaderMenus(); });
+    });
     document.querySelector('[data-action="restart"]').addEventListener("click", () => {
       if (state.connected) { window.location.href = window.location.pathname; return; }
       resetToIntro();
@@ -1656,8 +1739,13 @@
       if (state.connected) { window.location.href = window.location.pathname; return; }
       resetToIntro();
     });
-    elements.focusButton.addEventListener("click", () => setBoardFocus(!boardFocused));
-    elements.audioButton.addEventListener("click", toggleAudio);
+    elements.focusButton.addEventListener("click", () => { setBoardFocus(!boardFocused); closeHeaderMenus(); });
+    elements.audioButton.addEventListener("click", () => { toggleAudio(); closeHeaderMenus(); });
+    elements.boardEventToggle?.addEventListener("click", () => {
+      setBoardEventExpanded(!elements.boardEventDock.classList.contains("is-expanded"));
+    });
+    bindHeaderMenus();
+    window.addEventListener("microglow:account-ready", syncGuestUpgradeUI);
     elements.tileInspector.addEventListener("click", hideTileInspector);
     elements.startAdventure.addEventListener("click", () => {
       if (setupState.characterId) startGame(setupState.characterId);
@@ -1710,6 +1798,8 @@
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         [elements.instructionsModal, elements.assetsModal, elements.multiplayerModal].forEach((modal) => { if (modal) modal.hidden = true; });
+        closeHeaderMenus();
+        setBoardEventExpanded(false);
         if (!state.started && !state.connected) elements.introModal.hidden = false;
       }
       if ((event.key === "Enter" || event.key === " ") && !elements.roll.disabled && !document.querySelector(".modal:not([hidden])") && !document.body.classList.contains("mobile-portrait-preview") && !document.body.classList.contains("mobile-portrait-locked")) {
@@ -1738,6 +1828,36 @@
     window.visualViewport?.addEventListener("resize", syncViewportSize);
   }
 
+  function closeHeaderMenus() {
+    document.querySelectorAll("[data-tools-menu], [data-return-menu]").forEach((menu) => { menu.hidden = true; });
+    document.querySelectorAll("[data-tools-menu-toggle], [data-return-menu-toggle]").forEach((button) => {
+      button.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function bindHeaderMenus() {
+    const pairs = [
+      [document.querySelector("[data-tools-menu-toggle]"), document.querySelector("[data-tools-menu]")],
+      [document.querySelector("[data-return-menu-toggle]"), document.querySelector("[data-return-menu]")]
+    ];
+    pairs.forEach(([button, menu]) => {
+      if (!button || !menu) return;
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const willOpen = menu.hidden;
+        closeHeaderMenus();
+        menu.hidden = !willOpen;
+        button.setAttribute("aria-expanded", String(willOpen));
+      });
+      menu.addEventListener("click", (event) => {
+        if (event.target.closest("a,button")) closeHeaderMenus();
+      });
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".top-tools,.return-nav")) closeHeaderMenus();
+    });
+  }
+
   function syncViewportSize() {
     const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
     const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
@@ -1758,6 +1878,7 @@
     document.documentElement.dataset.mobileOrientation = mobilePortrait ? "portrait" : "landscape";
     document.body.classList.remove("mobile-portrait-preview");
     document.body.classList.toggle("mobile-portrait-locked", extremeNarrowPortrait);
+    if (!mobilePortrait) setBoardEventExpanded(false);
   }
   function sleep(milliseconds) {
     return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -1773,6 +1894,8 @@
   let connectedUnsubscribe = null;
   let connectedClockId = null;
   let connectedRefreshPending = false;
+  let connectedLastEventNo = 0;
+  let connectedLatestEventSummary = "";
 
   function findAssetTemplate(assetKey) {
     const catalogs = [BASIC_ASSETS, ELITE_ASSETS];
@@ -1803,6 +1926,8 @@
       state.matchId = matchId;
       state.myUserId = myUserId;
       state.started = true;
+      connectedLastEventNo = 0;
+      connectedLatestEventSummary = "";
       setBoardFocus(false);
       elements.dice.textContent = "◈";
       await refreshConnectedMatch({ initial: true });
@@ -1823,13 +1948,15 @@
     }
     const mm = window.MicroglowMatch;
     const matchId = state.matchId;
-    let match, matchPlayers, empirePlayers, ownedAssets;
+    const previousActors = new Map(state.actors.map((actor) => [actor.id, { ...actor }]));
+    let match, matchPlayers, empirePlayers, ownedAssets, matchEvents;
     try {
-      [match, matchPlayers, empirePlayers, ownedAssets] = await Promise.all([
+      [match, matchPlayers, empirePlayers, ownedAssets, matchEvents] = await Promise.all([
         mm.getMatch(matchId),
         mm.listMatchPlayers(matchId),
         mm.listBusinessEmpirePlayers(matchId),
-        mm.listOwnedAssets(matchId)
+        mm.listOwnedAssets(matchId),
+        mm.listMatchEventsSince(matchId, connectedLastEventNo)
       ]);
     } catch (error) {
       addLog(error.message || "同步比賽狀態失敗。");
@@ -1880,6 +2007,7 @@
       };
     });
 
+    processConnectedEvents(matchEvents, Boolean(options?.initial));
     state.activeActorId = match.current_player_id;
     state.turnDeadlineAt = match.turn_deadline_at;
     state.round = match.turn_number || 1;
@@ -1891,6 +2019,7 @@
 
     state.phase = match.phase;
     renderAll();
+    animateRemoteActorChanges(previousActors);
     syncConnectedPhaseUI();
     startConnectedClock();
 
@@ -1898,6 +2027,63 @@
       connectedRefreshPending = false;
       refreshConnectedMatch({ force: true });
     }
+  }
+
+  function summarizeConnectedEvent(event) {
+    const payload = event?.payload || {};
+    const actor = state.actors.find((entry) => entry.id === event?.actor_user_id);
+    const name = actor?.name || "對手";
+    const cash = Number(payload.cash_change) || 0;
+    const cashNote = cash ? `，現金${formatSigned(cash)}` : "";
+    if (event?.event_type === "match_started") return "連線對戰已開始";
+    if (event?.event_type === "roll") return `${name} 擲出 ${payload.dice || "?"}，抵達${payload.tile_label || "新格子"}${cashNote}`;
+    if (event?.event_type === "buy_asset") return `${name} 買入${findAssetTemplate(payload.asset_key)?.name || "一項資產"}`;
+    if (event?.event_type === "sell_asset") return `${name} 售出資產，取得${formatMoney(Number(payload.proceeds) || 0)}`;
+    if (event?.event_type === "learn") return `${name} 完成能力進修`;
+    if (event?.event_type === "borrow") return `${name} 向銀行取得${formatMoney(Number(payload.cash_received) || 0)}`;
+    if (event?.event_type === "repay") return `${name} 償還${formatMoney(Number(payload.amount) || 0)}負債`;
+    if (event?.event_type === "enter_elite") return `${name} 進入精英圈`;
+    if (event?.event_type === "skip") return `${name} 放棄本次機會`;
+    if (event?.event_type === "end_turn") return `${name} 完成回合結算`;
+    return `${name} 完成${event?.event_type || "一項行動"}`;
+  }
+
+  function processConnectedEvents(events, initial) {
+    const ordered = Array.isArray(events) ? events : [];
+    ordered.forEach((event) => {
+      connectedLastEventNo = Math.max(connectedLastEventNo, Number(event.event_no) || 0);
+      connectedLatestEventSummary = summarizeConnectedEvent(event);
+      if (!initial) addLog(connectedLatestEventSummary, false);
+    });
+  }
+
+  function animateRemoteActorChanges(previousActors) {
+    if (!previousActors?.size) return;
+    state.actors.forEach((actor) => {
+      if (actor.isHuman || actor.eliminated) return;
+      const before = previousActors.get(actor.id);
+      if (!before || (before.position === actor.position && before.circle === actor.circle)) return;
+      const currentToken = elements.tokens.querySelector(`[data-actor-id="${actor.id}"]`);
+      if (!currentToken) return;
+      const from = tokenPoint(before);
+      const to = tokenPoint(actor);
+      const ghost = currentToken.cloneNode(true);
+      ghost.classList.remove("is-active", "is-arriving", "is-moving", "is-remote-arriving");
+      ghost.classList.add("remote-token-ghost");
+      ghost.removeAttribute("role");
+      ghost.removeAttribute("aria-label");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.style.setProperty("--remote-from-x", `${from.left}%`);
+      ghost.style.setProperty("--remote-from-y", `${from.top}%`);
+      ghost.style.setProperty("--remote-to-x", `${to.left}%`);
+      ghost.style.setProperty("--remote-to-y", `${to.top}%`);
+      currentToken.classList.add("is-remote-arriving");
+      elements.tokens.append(ghost);
+      window.setTimeout(() => {
+        ghost.remove();
+        currentToken.classList.remove("is-remote-arriving");
+      }, 850);
+    });
   }
 
   function syncConnectedPhaseUI() {
@@ -1912,8 +2098,11 @@
         type: "income",
         icon: "⌛",
         label: "等待中",
+        waiting: true,
         title: current ? `等待 ${current.name} 行動` : "等待對手",
-        description: expired ? "對方回合已逾時，你可以幫忙推進比賽。" : "換你之前，畫面會即時同步對手的行動結果。"
+        description: expired
+          ? "對方回合已逾時，你可以幫忙推進比賽。"
+          : (connectedLatestEventSummary ? `最新動態：${connectedLatestEventSummary}。畫面會繼續即時同步。` : "換你之前，畫面會即時同步對手的行動結果。")
       }, expired ? [{ label: "強制結束逾時回合", run: forceAdvanceConnectedTurn }] : []);
       return;
     }
@@ -2152,6 +2341,8 @@
       <div><span>淨資產</span><strong>${player ? formatMoney(netWorth(player)) : "$0"}</strong></div>
       <div><span>最高分</span><strong>${new Intl.NumberFormat("zh-TW").format(best)}</strong></div>
     `;
+    renderResultRanking();
+    syncGuestUpgradeUI();
     elements.resultModal.hidden = false;
     renderAll();
   }

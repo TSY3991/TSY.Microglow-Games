@@ -9,26 +9,39 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260727a">
-    <link rel="stylesheet" href="./business.css?v=20260729c">
+    <link rel="stylesheet" href="./business.css?v=20260729e">
   </head>
   <body>
     <main class="empire-shell">
       <header class="game-topbar">
         <nav class="return-nav" aria-label="返回連結">
-          <a class="back-link compact-back" href="../../">← 遊戲大廳</a>
-          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>入口網站</a>
+          <button class="return-menu-toggle" type="button" data-return-menu-toggle aria-expanded="false">← 返回</button>
+          <div class="return-menu" data-return-menu hidden>
+            <a class="back-link compact-back" href="../../">← 遊戲大廳</a>
+            <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>入口網站</a>
+          </div>
         </nav>
         <div class="game-brand" aria-label="微光商業帝國">
           <span class="brand-sigil" aria-hidden="true">♜</span>
           <div><small>MICROGLOW</small><strong>微光商業帝國</strong></div>
         </div>
         <div class="top-actions" aria-label="遊戲控制">
-          <button class="account-status-button" type="button" data-action="account" aria-label="帳號狀態">訪客試玩</button>
-          <button type="button" data-action="focus">放大棋盤</button>
-          <button type="button" data-action="audio" aria-pressed="true">♫ 音樂：開</button>
-          <button type="button" data-action="instructions">玩法卷軸</button>
-          <button type="button" data-action="assets">資產背包</button>
-          <button type="button" data-action="restart">重新冒險</button>
+          <div class="account-action-group">
+            <button class="account-status-button" type="button" data-action="account" aria-label="帳號狀態">訪客試玩</button>
+            <a class="guest-upgrade-pill" data-guest-upgrade-link href="#" hidden>升級</a>
+          </div>
+          <button class="top-primary-assets" type="button" data-action="assets">資產背包</button>
+          <div class="top-tools">
+            <button class="tools-menu-toggle" type="button" data-tools-menu-toggle aria-expanded="false" aria-label="開啟遊戲工具選單"><span aria-hidden="true">☰</span><b>選單</b></button>
+            <div class="top-tools-menu" data-tools-menu hidden>
+              <button class="mobile-only-action" type="button" data-action="assets">資產背包</button>
+              <a class="mobile-only-action menu-upgrade-link" data-guest-upgrade-link href="#" hidden>升級正式會員</a>
+              <button type="button" data-action="audio" aria-pressed="true">♫ 開</button>
+              <button type="button" data-action="instructions">玩法卷軸</button>
+              <button type="button" data-action="focus">放大棋盤</button>
+              <button type="button" data-action="restart">重新冒險</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -78,6 +91,7 @@
             <div class="board rectangle-board" data-board>
               <div class="board-vignette" aria-hidden="true"></div>
               <section class="board-event-dock" data-board-event-dock aria-live="polite">
+                <button class="board-event-toggle" type="button" data-board-event-toggle aria-expanded="false" aria-label="展開棋盤事件提示"><span class="dock-toggle-open" aria-hidden="true">＋</span><span class="dock-toggle-close" aria-hidden="true">×</span></button>
                 <div class="board-event-visual" data-board-event-visual><span data-board-event-icon>✦</span></div>
                 <div class="board-event-copy">
                   <small data-board-event-type>本次遭遇</small>
@@ -251,6 +265,8 @@
           <div class="instruction-list">
             <div><strong>擲骰與遭遇</strong><span>每回合沿城市道路前進，處理收入、支出、資產、風險、學習、銀行或命運事件。</span></div>
             <div><strong>收集資產卡</strong><span>股票、房產與副業會產生被動收入，部分資產也附帶維護成本或契約負債。</span></div>
+            <div><strong>能力與折扣</strong><span>每 1 點能力提供 2% 資產買入折扣，最高 10%；能力也會降低突發支出，最高可減少 30%。</span></div>
+            <div><strong>風險成功率</strong><span>風險事件基礎成功率為 48%，每 1 點能力增加 5%，最高 75%。</span></div>
             <div><strong>月度結算</strong><span>每回合結束結算薪資、被動收入與每月支出；現金不足時會先嘗試啟用信用。</span></div>
             <div><strong>挑戰精英內城</strong><span>被動收入達支出的 55%、淨資產達 $250,000 或能力達 4，即可通過躍升門。</span></div>
             <div><strong>勝敗條件</strong><span>被動收入不低於每月支出即獲勝；現金為負且信用不足時破產。</span></div>
@@ -275,7 +291,9 @@
           <p class="modal-kicker" data-result-kicker>本局結算</p><div class="result-emblem" data-result-emblem>✦</div>
           <h2 id="result-title" data-result-title>帝國建成</h2><p data-result-message></p>
           <div class="result-stats" data-result-stats></div>
-          <button class="primary-button" type="button" data-action="play-again">再啟冒險</button><a class="secondary-button" href="../../">回遊戲大廳</a>
+          <section class="result-ranking-block" aria-labelledby="result-ranking-title"><h3 id="result-ranking-title">本局完整排名</h3><ol class="result-ranking" data-result-ranking></ol></section>
+          <aside class="result-guest-note" data-result-guest-note hidden><strong>訪客紀錄只保留在目前瀏覽器</strong><span>升級正式會員可保留雲端進度、好友與排行榜資料。</span><a data-guest-upgrade-link href="#">升級並保留資料</a></aside>
+          <div class="result-actions"><button class="primary-button" type="button" data-action="play-again">再啟冒險</button><a class="secondary-button" href="../../">回遊戲大廳</a></div>
         </div>
       </div>
     </main>
@@ -298,6 +316,6 @@
     <script src="./business-auth.js?v=20260728a"></script>
     <script src="../../shared/multiplayer-client.js?v=20260729c"></script>
     <script src="./business-multiplayer.js?v=20260729c"></script>
-    <script src="./business.js?v=20260729b"></script>
+    <script src="./business.js?v=20260729c"></script>
   </body>
 </html>
