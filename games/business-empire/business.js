@@ -268,6 +268,8 @@
   let tileInspectorTimerId = null;
   let arrivalTimerId = null;
   let audioEnabled = readAudioPreference();
+  let playerNickname = "冒險者";
+  let nicknameRequestSequence = 0;
 
   init();
 
@@ -336,6 +338,7 @@
     return {
       id: config.id,
       name: config.name,
+      nickname: overrides.nickname || config.nickname || config.name,
       avatar: config.avatar,
       title: config.title || "商會競爭者",
       artIndex: Number(config.artIndex) || 0,
@@ -426,8 +429,8 @@
     const roster = [
       {
         avatar: selected.avatar,
-        name: selected.name,
-        detail: "P1・你・" + selected.title,
+        name: playerNickname,
+        detail: "P1・你・" + selected.name + "・" + selected.title,
         meta: `起始 ${formatMoney(selected.cash)}・能力 Lv.${selected.skill}`
       },
       ...aiConfigs.map((config, index) => {
@@ -443,7 +446,7 @@
     elements.readyRoster.replaceChildren();
     roster.forEach((member, index) => {
       const item = document.createElement("li");
-      item.innerHTML = '<span class="ready-player-index">' + (index + 1) + '</span><b>' + member.avatar + '</b><div><strong>' + member.name + '</strong><small>' + member.detail + '</small><small class="ready-member-meta">' + member.meta + '</small></div><em>' + (index === 0 ? "READY" : "AI") + "</em>";
+      item.innerHTML = '<span class="ready-player-index">' + (index + 1) + '</span><b>' + escapeHtml(member.avatar) + '</b><div><strong>' + escapeHtml(member.name) + '</strong><small>' + escapeHtml(member.detail) + '</small><small class="ready-member-meta">' + escapeHtml(member.meta) + '</small></div><em>' + (index === 0 ? "READY" : "AI") + "</em>";
       elements.readyRoster.append(item);
     });
     elements.readySettings.innerHTML =
@@ -496,7 +499,7 @@
     state.started = true;
     state.difficulty = setupState.difficulty;
     state.actors = [
-      makeActor(selected, { isHuman: true, seat: 0, color: "#55e6ff", position: 0 }),
+      makeActor(selected, { isHuman: true, nickname: playerNickname, seat: 0, color: "#55e6ff", position: 0 }),
       makeActor(conservative, { seat: 1, strategy: difficulty.strategies[0], color: "#7ef7bd", position: 0 }),
       makeActor(aggressive, { seat: 2, strategy: difficulty.strategies[1], color: "#ff7ac8", position: 0 }),
       makeActor(opportunist, { seat: 3, strategy: difficulty.strategies[2], variant: "spectral", color: "#b68cff", position: 0 })
@@ -510,7 +513,7 @@
     elements.introModal.hidden = true;
     elements.resultModal.hidden = true;
     elements.dice.textContent = "◈";
-    addLog(`${selected.name}進入微光城，商業冒險開始。`, false);
+    addLog(`${actorDisplayName(human())}以${selected.name}身分進入微光城，商業冒險開始。`, false);
     showEvent({
       type: "income",
       icon: "✦",
@@ -622,12 +625,12 @@
     document.querySelector('[data-stat="turn"]').textContent = String(state.round);
     elements.circleLabel.textContent = empty || player.circle === "basic" ? "基礎城區" : "精英內城";
     const current = activeActor();
-    elements.turnLabel.textContent = state.ended ? "本局已結束" : current ? `輪到 ${current.name}・${phaseLabel()}` : "等待選擇角色";
+    elements.turnLabel.textContent = state.ended ? "本局已結束" : current ? `輪到 ${actorDisplayName(current)}・${phaseLabel()}` : "等待選擇角色";
     elements.goalProgress.textContent = `${formatMoney(values.passive)} / ${formatMoney(values.expense)}`;
     elements.goalMeter.style.width = `${Math.min(100, (values.passive / Math.max(1, values.expense)) * 100)}%`;
     elements.cashflowPreview.textContent = `淨現金流 ${formatSigned(empty ? 0 : monthlyCashflow(player))}`;
-    elements.playerName.textContent = empty ? "尚未選角" : player.name;
-    elements.playerTitle.textContent = empty ? "等待進入微光城" : player.title;
+    elements.playerName.textContent = empty ? "尚未選角" : actorDisplayName(player);
+    elements.playerTitle.textContent = empty ? "等待進入微光城" : `${player.name}・${player.title}`;
     elements.playerPortrait.className = "player-portrait";
     if (!empty && player.spriteId) elements.playerPortrait.style.setProperty("--sprite", `url("./assets/tokens/${player.spriteId}.png")`);
     else elements.playerPortrait.style.removeProperty("--sprite");
@@ -694,12 +697,12 @@
       token.style.setProperty("--x", `${point.left}%`);
       token.style.setProperty("--y", `${point.top}%`);
       token.innerHTML = `
-        <span class="pawn-name">${actor.name}</span>
+        <span class="pawn-name">${escapeHtml(actorDisplayName(actor))}</span>
         <span class="pawn-figure"><b>${actor.avatar}</b></span>
         <i class="pawn-base"></i>
         <em class="pawn-turn">行動中</em>
       `;
-      token.title = `${actor.name}・${actor.circle === "elite" ? "精英內城" : "基礎城區"}第 ${actor.position + 1} 格`;
+      token.title = `${actorDisplayName(actor)}・${actor.name}・${actor.circle === "elite" ? "精英內城" : "基礎城區"}第 ${actor.position + 1} 格`;
       token.setAttribute("role", "img");
       token.setAttribute("aria-label", token.title);
       elements.tokens.append(token);
@@ -732,8 +735,8 @@
 
   function renderTurnStage() {
     const actor = activeActor();
-    elements.activeName.textContent = actor ? actor.name : "等待玩家";
-    elements.activePhase.textContent = actor ? phaseLabel() : "選角後開始回合";
+    elements.activeName.textContent = actor ? actorDisplayName(actor) : "等待玩家";
+    elements.activePhase.textContent = actor ? actorStatusLine(actor, phaseLabel()) : "選角後開始回合";
     elements.activeEmblem.textContent = actor?.avatar || "♙";
     elements.activeAvatar.className = "turn-avatar";
     elements.activeAvatar.dataset.variant = actor?.variant || "";
@@ -745,7 +748,7 @@
     elements.turnTimer.textContent = (actor?.isHuman || state.connected) ? String(state.secondsLeft) : "AI";
     elements.boardCommand.dataset.phase = state.phase;
     elements.boardCommand.classList.toggle("is-human-turn", Boolean(actor?.isHuman));
-    elements.boardCommandLabel.textContent = !actor ? "點擊骰子開始" : state.phase === "roll" ? "輪到你・擲骰前進" : state.phase === "decision" ? "處理落點事件" : state.phase === "ai" ? `${actor.name}擲骰中` : phaseLabel();
+    elements.boardCommandLabel.textContent = !actor ? "點擊骰子開始" : state.phase === "roll" ? "輪到你・擲骰前進" : state.phase === "decision" ? "處理落點事件" : state.phase === "ai" ? `${actorDisplayName(actor)}擲骰中` : phaseLabel();
 
     elements.playerSeats.replaceChildren();
     state.actors.forEach((player) => {
@@ -757,7 +760,7 @@
       seat.style.setProperty("--seat-color", player.color);
       seat.innerHTML = `
         <span class="seat-avatar" style="--sprite:url('./assets/tokens/${player.spriteId}.png')"><b>${player.avatar}</b></span>
-        <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : (state.connected ? `P${player.seat + 1}` : "AI")}</small><strong>${player.name}</strong><em>${player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"}</em></span>
+        <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : (state.connected ? `P${player.seat + 1}` : "AI")}</small><strong>${escapeHtml(actorDisplayName(player))}</strong><em>${escapeHtml(actorStatusLine(player, player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"))}</em></span>
       `;
       elements.playerSeats.append(seat);
     });
@@ -772,7 +775,7 @@
         item.classList.toggle("is-player", Boolean(actor.isHuman));
         item.classList.toggle("is-turn", actor.id === state.activeActorId);
         if (actor.isHuman) item.setAttribute("aria-current", "true");
-        item.innerHTML = `<span>${index + 1}</span><span>${actor.avatar} ${actor.name}${actor.eliminated ? "（退場）" : ""}</span><strong>${formatMoney(netWorth(actor))}</strong>`;
+        item.innerHTML = `<span>${index + 1}</span><span>${actor.avatar} ${escapeHtml(actorDisplayName(actor))}${actor.eliminated ? "（退場）" : ""}</span><strong>${formatMoney(netWorth(actor))}</strong>`;
         elements.ranking.append(item);
       });
   }
@@ -1569,7 +1572,7 @@
         item.innerHTML = `
           <span class="result-rank-no">${index + 1}</span>
           <span class="result-rank-avatar" style="--sprite:url('./assets/tokens/${actor.spriteId}.png')"><b>${actor.avatar}</b></span>
-          <span class="result-rank-player"><strong>${actor.name}</strong><small>${actor.isHuman ? "你的成績" : actor.title}</small></span>
+          <span class="result-rank-player"><strong>${escapeHtml(actorDisplayName(actor))}</strong><small>${escapeHtml(actor.isHuman ? `${actor.name}・你的成績` : actor.title)}</small></span>
           <span class="result-rank-metric"><small>淨資產</small><strong>${formatMoney(netWorth(actor))}</strong></span>
           <span class="result-rank-metric"><small>被動收入</small><strong>${formatMoney(passiveIncome(actor))}</strong></span>
           <span class="result-rank-metric"><small>能力</small><strong>Lv.${actor.skill}</strong></span>
@@ -1591,6 +1594,63 @@
       if (isGuest) link.href = upgradeUrl;
     });
     if (elements.resultGuestNote) elements.resultGuestNote.hidden = !isGuest;
+  }
+
+  function actorDisplayName(actor) {
+    return actor?.nickname || actor?.name || "冒險者";
+  }
+
+  function actorStatusLine(actor, status) {
+    const role = actor?.nickname && actor.nickname !== actor.name ? actor.name : "";
+    return role ? `${role}・${status}` : status;
+  }
+
+  function normalizePlayerNickname(value, accountType) {
+    let nickname = String(value || "").trim().replace(/\s+/g, " ");
+    if (nickname.includes("@")) nickname = nickname.split("@")[0];
+    if (!nickname || nickname === "正式會員" || nickname === "會員帳號") {
+      nickname = accountType === "guest" ? "匿名訪客" : "冒險者";
+    }
+    return nickname.slice(0, 24);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[character]);
+  }
+
+  async function syncPlayerNickname(event) {
+    const detail = event?.detail || {};
+    const requestSequence = ++nicknameRequestSequence;
+    let nickname = normalizePlayerNickname(detail.label, detail.type);
+
+    if (detail.cloud && detail.id && window.MicroglowMultiplayer?.getProfiles) {
+      try {
+        const profiles = await window.MicroglowMultiplayer.getProfiles([detail.id]);
+        if (requestSequence !== nicknameRequestSequence) return;
+        const profile = profiles?.[detail.id];
+        nickname = normalizePlayerNickname(profile?.username || profile?.display_name || nickname, detail.type);
+      } catch (_) {
+        // Profile lookup is optional for solo play; keep the safe account-label fallback.
+      }
+    }
+
+    if (requestSequence !== nicknameRequestSequence) return;
+    playerNickname = nickname;
+    const player = human();
+    if (player && !state.connected) player.nickname = playerNickname;
+    renderSetup();
+    if (state.started && !state.connected) renderAll();
+  }
+
+  function handleAccountReady(event) {
+    syncGuestUpgradeUI();
+    syncPlayerNickname(event);
   }
 
   function endGame(won, message, focusActor) {
@@ -1745,7 +1805,7 @@
       setBoardEventExpanded(!elements.boardEventDock.classList.contains("is-expanded"));
     });
     bindHeaderMenus();
-    window.addEventListener("microglow:account-ready", syncGuestUpgradeUI);
+    window.addEventListener("microglow:account-ready", handleAccountReady);
     elements.tileInspector.addEventListener("click", hideTileInspector);
     elements.startAdventure.addEventListener("click", () => {
       if (setupState.characterId) startGame(setupState.characterId);
