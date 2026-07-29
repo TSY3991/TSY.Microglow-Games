@@ -2004,3 +2004,62 @@ body.mobile-portrait-locked .portrait-preview-banner {
     line-height: 1.25;
   }
 }
+
+
+/* Embedded multiplayer lobby - 2026-07-29 */
+.multiplayer-card {
+  width: min(1180px, 94vw);
+  max-height: min(92dvh, 900px);
+  overflow: auto;
+  border-color: rgba(246,207,116,.28);
+  background: radial-gradient(circle at 18% 8%, rgba(84,221,245,.13), transparent 30%), linear-gradient(145deg, rgba(6,19,31,.98), rgba(5,10,20,.96));
+  box-shadow: 0 28px 80px rgba(0,0,0,.62), inset 0 0 34px rgba(246,207,116,.04);
+}
+.multiplayer-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: center; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid rgba(246,207,116,.14); }
+.multiplayer-emblem { display: grid; width: 78px; height: 78px; place-content: center; justify-items: center; border: 1px solid rgba(246,207,116,.48); border-radius: 50%; color: var(--gold-bright); background: radial-gradient(circle, rgba(246,207,116,.17), rgba(84,221,245,.05)); }
+.multiplayer-emblem span { font-family: Georgia, serif; font-size: 1.35rem; font-weight: 950; line-height: 1; }
+.multiplayer-emblem small { color: var(--cyan); font-size: .45rem; font-weight: 950; letter-spacing: .14em; }
+.mp-gate-card, .mp-card, .mp-guest-banner { border: 1px solid rgba(246,207,116,.16); border-radius: 14px; background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.018)); box-shadow: inset 0 0 20px rgba(84,221,245,.04), 0 14px 32px rgba(0,0,0,.24); }
+.mp-gate-card { display: grid; gap: 12px; max-width: 620px; margin: 0 auto; padding: 22px; text-align: center; }
+.mp-gate-kicker, .mp-hero .eyebrow { margin: 0; color: var(--cyan); font-size: .58rem; font-weight: 950; letter-spacing: .16em; text-transform: uppercase; }
+.mp-gate-card h2, .mp-card h2 { margin: 0 0 7px; color: var(--gold-bright); font-family: Georgia,"Microsoft JhengHei",serif; font-size: 1.05rem; }
+.mp-gate-card p, .mp-hint, .mp-guest-banner p, .mp-status { color: var(--ink-soft); font-size: .72rem; line-height: 1.45; }
+.mp-guest-banner { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 13px; padding: 13px 15px; }
+.mp-guest-banner p { flex: 1 1 260px; margin: 0; }
+.mp-app { display: grid; gap: 14px; }
+.mp-tabs { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
+.mp-tabs button { min-height: 43px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; color: var(--ink-soft); background: rgba(255,255,255,.035); font-weight: 950; cursor: pointer; }
+.mp-tabs button.is-active { border-color: rgba(246,207,116,.55); color: #1c1300; background: linear-gradient(180deg,#fff0b4,#e9b94f); box-shadow: 0 3px 0 #8a5c15, 0 0 18px rgba(246,207,116,.2); }
+.mp-panel { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.mp-card { min-width: 0; padding: 15px; }
+.mp-card h2 { font-size: .95rem; }
+.mp-hint { margin: 0 0 10px; }
+.mp-code-display { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-bottom: 8px; }
+.mp-code-display strong, .mp-room-code { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px dashed rgba(246,207,116,.45); border-radius: 10px; color: var(--gold-bright); background: rgba(246,207,116,.08); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 1rem; letter-spacing: .12em; }
+.mp-search-form { display: flex; gap: 8px; margin: 0 0 10px; }
+.mp-search-form input, .mp-search-form select, .mp-search-form button, .mp-actions button, .mp-gate-actions a, .mp-gate-actions button, .mp-code-display button, .mp-guest-banner a { min-height: 42px; border-radius: 10px; font-weight: 950; }
+.mp-search-form input, .mp-search-form select { flex: 1 1 auto; min-width: 0; padding: 0 12px; border: 1px solid rgba(84,221,245,.22); color: var(--ink); background: rgba(2,9,17,.86); }
+.mp-search-form input::placeholder { color: rgba(214,226,237,.42); }
+.mp-search-form button, .mp-actions button, .mp-code-display button, .mp-gate-actions button, .mp-gate-actions a, .mp-guest-banner a, .mp-accept, .primary-link { display: inline-flex; align-items: center; justify-content: center; padding: 0 15px; border: 0; color: #1c1300; background: linear-gradient(180deg,#fff0b4,#e9b94f); box-shadow: 0 3px 0 #8a5c15; cursor: pointer; text-decoration: none; }
+.secondary-link, .mp-decline { color: var(--ink-soft); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); box-shadow: none; }
+.mp-danger { color: #fff; border: 1px solid rgba(255,122,154,.45); background: linear-gradient(180deg,#8c2740,#56182a); box-shadow: 0 3px 0 #2d0913; }
+.mp-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mp-list li { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; justify-content: space-between; min-height: 42px; padding: 9px 10px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: rgba(255,255,255,.035); }
+.mp-list .mp-empty { justify-content: center; color: var(--muted); border-style: dashed; background: rgba(255,255,255,.015); }
+.mp-list-name { color: var(--gold-bright); font-weight: 900; }
+.mp-list-actions, .mp-actions, .mp-gate-actions { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.mp-list-actions button { min-height: 34px; padding: 0 11px; border-radius: 8px; font-size: .72rem; }
+.mp-status { min-height: 18px; margin: 8px 0 0; }
+.mp-status[data-tone="error"] { color: #ff91aa; }
+.mp-status[data-tone="success"] { color: var(--mint); }
+[data-mp-panel="queue"] { grid-template-columns: minmax(0, 1fr); }
+[data-mp-panel="queue"] .mp-card { min-height: 180px; display: grid; align-content: center; }
+@media (max-width: 900px) {
+  .multiplayer-card { width: min(94vw, 760px); max-height: 92dvh; padding: 15px; }
+  .multiplayer-heading { grid-template-columns: 1fr; }
+  .multiplayer-emblem { display: none; }
+  .mp-panel { grid-template-columns: 1fr; }
+  .mp-tabs { grid-template-columns: 1fr; }
+  .mp-search-form { flex-direction: column; }
+  .mp-search-form button, .mp-actions button { width: 100%; }
+}

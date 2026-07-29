@@ -247,7 +247,10 @@
     characterHint: document.querySelector("[data-character-hint]"),
     readyRoster: document.querySelector("[data-ready-roster]"),
     readySettings: document.querySelector("[data-ready-settings]"),
-    startAdventure: document.querySelector('[data-action="start-adventure"]')
+    startAdventure: document.querySelector('[data-action="start-adventure"]'),
+    multiplayerModal: document.querySelector("[data-multiplayer-modal]"),
+    multiplayerRoot: document.querySelector("[data-business-multiplayer-root]"),
+    multiplayerTitle: document.querySelector("[data-multiplayer-title]")
   };
 
   let setupState = createSetupState();
@@ -1611,6 +1614,33 @@
     renderAll();
   }
 
+  function openMultiplayerLobby(initialTab = "friends") {
+    const module = window.MicroglowBusinessMultiplayer;
+    if (!module || !elements.multiplayerRoot) {
+      showEvent({ type: "risk", title: "多人連線載入失敗", description: "請重新整理頁面後再試一次。" });
+      return;
+    }
+    elements.introModal.hidden = true;
+    elements.multiplayerModal.hidden = false;
+    if (elements.multiplayerTitle) {
+      elements.multiplayerTitle.textContent = initialTab === "queue" ? "隨機匹配" : initialTab === "room" ? "好友房" : "多人連線大廳";
+    }
+    module.initMultiplayerUI(elements.multiplayerRoot, {
+      initialTab,
+      onMatch(matchId) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("match", matchId);
+        url.hash = "";
+        window.location.href = url.href;
+      }
+    });
+  }
+
+  function closeMultiplayerLobby() {
+    elements.multiplayerModal.hidden = true;
+    if (!state.started && !state.connected) elements.introModal.hidden = false;
+  }
+
   function bindControls() {
     document.querySelector('[data-action="roll"]').addEventListener("click", () => {
       if (state.connected) rollConnected();
@@ -1619,11 +1649,11 @@
     document.querySelector('[data-action="instructions"]').addEventListener("click", () => { elements.instructionsModal.hidden = false; });
     document.querySelector('[data-action="assets"]').addEventListener("click", openAssets);
     document.querySelector('[data-action="restart"]').addEventListener("click", () => {
-      if (state.connected) { window.location.href = "../../multiplayer/"; return; }
+      if (state.connected) { window.location.href = window.location.pathname; return; }
       resetToIntro();
     });
     document.querySelector('[data-action="play-again"]').addEventListener("click", () => {
-      if (state.connected) { window.location.href = "../../multiplayer/"; return; }
+      if (state.connected) { window.location.href = window.location.pathname; return; }
       resetToIntro();
     });
     elements.focusButton.addEventListener("click", () => setBoardFocus(!boardFocused));
@@ -1632,6 +1662,14 @@
     elements.startAdventure.addEventListener("click", () => {
       if (setupState.characterId) startGame(setupState.characterId);
     });
+    document.querySelectorAll("[data-multiplayer-open]").forEach((button) => {
+      button.addEventListener("click", () => {
+        ensureAudio();
+        playEffect("click");
+        openMultiplayerLobby(button.dataset.multiplayerOpen || "friends");
+      });
+    });
+    document.querySelector("[data-multiplayer-close]")?.addEventListener("click", closeMultiplayerLobby);
     document.querySelectorAll("[data-setup-next]").forEach((button) => {
       button.addEventListener("click", () => goToSetupStep(button.dataset.setupNext));
     });
@@ -1671,7 +1709,8 @@
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        [elements.instructionsModal, elements.assetsModal].forEach((modal) => { modal.hidden = true; });
+        [elements.instructionsModal, elements.assetsModal, elements.multiplayerModal].forEach((modal) => { if (modal) modal.hidden = true; });
+        if (!state.started && !state.connected) elements.introModal.hidden = false;
       }
       if ((event.key === "Enter" || event.key === " ") && !elements.roll.disabled && !document.querySelector(".modal:not([hidden])") && !document.body.classList.contains("mobile-portrait-preview") && !document.body.classList.contains("mobile-portrait-locked")) {
         event.preventDefault();

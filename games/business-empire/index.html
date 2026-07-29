@@ -9,7 +9,7 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260727a">
-    <link rel="stylesheet" href="./business.css?v=20260729a">
+    <link rel="stylesheet" href="./business.css?v=20260729b">
   </head>
   <body>
     <main class="empire-shell">
@@ -154,7 +154,7 @@
             <div class="account-divider"><span>或</span></div>
             <div class="guest-trial-panel">
               <div class="guest-icon" aria-hidden="true">🎲</div>
-              <div><small>NO REGISTRATION</small><h2>訪客帳號試玩</h2><p>立即進入單人 AI 對局。本機會保留試玩紀錄；好友、配對、房間與正式排行榜須登入會員。</p></div>
+              <div><small>NO REGISTRATION</small><h2>訪客帳號試玩</h2><p>立即進入單人 AI 對局。本機會保留試玩紀錄；好友、配對與房間可用訪客體驗，正式排行榜須登入會員。</p></div>
               <button class="secondary-button guest-trial-button" type="button" data-action="guest-trial">直接開始試玩</button>
               <small class="guest-note" data-guest-note>尚未連接匿名雲端時，將以本機訪客模式執行。</small>
             </div>
@@ -187,8 +187,8 @@
               <button class="mode-card is-selected" type="button" data-mode="solo">
                 <i>⚔</i><span><small>立即可玩</small><strong>單人競賽</strong><em>你與 3 名 AI 輪流擲骰，完整進行現金流對局。</em></span><b>已選擇</b>
               </button>
-              <a class="mode-card" href="../../multiplayer/"><i>⌁</i><span><small>訪客可用・2–4 人</small><strong>隨機匹配</strong><em>配對其他玩家，依相同規則進行四人回合。</em></span><b>前往大廳</b></a>
-              <a class="mode-card" href="../../multiplayer/"><i>♟</i><span><small>訪客可用・2–4 人</small><strong>好友房</strong><em>建立房碼並邀請好友加入限定人數地圖。</em></span><b>前往大廳</b></a>
+              <button class="mode-card" type="button" data-multiplayer-open="queue"><i>⌁</i><span><small>訪客可用・2–4 人</small><strong>隨機匹配</strong><em>配對其他玩家，依相同規則進行四人回合。</em></span><b>&#38283;&#21855;</b></button>
+              <button class="mode-card" type="button" data-multiplayer-open="room"><i>♟</i><span><small>訪客可用・2–4 人</small><strong>好友房</strong><em>建立房碼並邀請好友加入限定人數地圖。</em></span><b>&#38283;&#21855;</b></button>
             </div>
             <div class="map-and-level">
               <article class="map-choice is-selected">
@@ -205,7 +205,7 @@
                 <p data-difficulty-copy>三種策略混合，適合第一次完整體驗。</p>
               </div>
             </div>
-            <div class="setup-footer"><span>想立即單機體驗就繼續下一步；隨機匹配／好友房會離開此頁前往連線大廳。</span><button class="primary-button" type="button" data-setup-next="2">下一步・選擇角色</button></div>
+            <div class="setup-footer"><span>想立即單機體驗就繼續下一步；隨機匹配／好友房會在本頁開啟連線大廳。</span><button class="primary-button" type="button" data-setup-next="2">下一步・選擇角色</button></div>
           </section>
 
           <section class="setup-stage" data-setup-stage="2" hidden>
@@ -226,7 +226,22 @@
             <div class="setup-footer"><button class="secondary-button" type="button" data-setup-back="2">重選角色</button><span>進入後會自動啟用背景音樂，可隨時關閉。</span><button class="primary-button start-adventure" type="button" data-action="start-adventure">進入浮空商都</button></div>
           </section>
 
-          <p class="modal-note">所有角色、美術、文案與規則皆為原創設計；線上模式標示僅代表後續規劃。</p>
+          <p class="modal-note">所有角色、美術、文案與規則皆為原創設計；線上模式會在本頁進入好友房或隨機匹配。</p>
+        </div>
+      </div>
+
+      <div class="modal multiplayer-modal" role="dialog" aria-modal="true" aria-labelledby="multiplayer-title" data-multiplayer-modal hidden>
+        <div class="modal-card multiplayer-card">
+          <button class="modal-close" type="button" data-multiplayer-close aria-label="&#38364;&#38281;&#22810;&#20154;&#36899;&#32218;&#22823;&#24307;">&times;</button>
+          <div class="multiplayer-heading">
+            <div>
+              <p class="modal-kicker">MICROGLOW ONLINE LOBBY</p>
+              <h2 id="multiplayer-title" data-multiplayer-title>&#22810;&#20154;&#36899;&#32218;&#22823;&#24307;</h2>
+              <p class="modal-lead">&#22312;&#36938;&#25138;&#20839;&#23436;&#25104;&#21152;&#22909;&#21451;&#12289;&#24314;&#31435;&#22909;&#21451;&#25151;&#25110;&#21152;&#20837;&#38568;&#27231;&#21305;&#37197;&#65307;&#38283;&#36093;&#24460;&#26371;&#36914;&#20837;&#26412;&#38913;&#30340;&#36899;&#32218;&#23565;&#25136;&#12290;</p>
+            </div>
+            <div class="multiplayer-emblem" aria-hidden="true"><span>2&ndash;4</span><small>PLAYERS</small></div>
+          </div>
+          <div data-business-multiplayer-root></div>
         </div>
       </div>
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="instructions-title" data-instructions-modal hidden>
@@ -281,6 +296,8 @@
     <script src="../../shared/microglow-auth.js?v=20260728b"></script>
     <script src="./supabase-client.js?v=20260728b"></script>
     <script src="./business-auth.js?v=20260728a"></script>
-    <script src="./business.js?v=20260729a"></script>
+    <script src="../../shared/multiplayer-client.js?v=20260729b"></script>
+    <script src="./business-multiplayer.js?v=20260729b"></script>
+    <script src="./business.js?v=20260729b"></script>
   </body>
 </html>
