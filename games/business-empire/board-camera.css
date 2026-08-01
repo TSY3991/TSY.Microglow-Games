@@ -334,3 +334,260 @@
     z-index: 96;
   }
 }
+/* Mobile landscape playability hotfix - keep the board in the first viewport. */
+@media (max-width: 900px) and (orientation: landscape) {
+  body {
+    overflow: hidden;
+  }
+
+  .empire-shell {
+    height: 100dvh;
+    min-height: 0;
+    gap: 4px;
+    padding: max(4px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+    overflow: hidden;
+  }
+
+  .game-topbar {
+    min-height: 38px;
+    padding: 4px 6px;
+    border-radius: 12px;
+  }
+
+  .game-brand small {
+    display: none;
+  }
+
+  .game-brand strong {
+    font-size: 14px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .brand-sigil {
+    width: 30px;
+    height: 30px;
+  }
+
+  .top-actions {
+    gap: 5px;
+  }
+
+  .top-actions > .top-primary-assets,
+  .top-actions .guest-upgrade-pill {
+    display: none !important;
+  }
+
+  .account-status-button,
+  .tools-menu-toggle,
+  .return-menu-toggle {
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  .tools-menu-toggle b {
+    display: none;
+  }
+
+  .adventurer-hud {
+    display: none !important;
+  }
+
+  .mobile-stat-bar {
+    display: grid !important;
+    grid-template-columns: repeat(4,minmax(0,1fr));
+    gap: 4px;
+    min-height: 34px;
+    margin: 0;
+  }
+
+  .mobile-stat {
+    min-height: 34px;
+    padding: 3px 7px;
+    border-radius: 9px;
+  }
+
+  .mobile-stat small {
+    font-size: 9px;
+  }
+
+  .mobile-stat strong {
+    font-size: 15px;
+    line-height: 1.05;
+  }
+
+  .game-layout {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) !important;
+    gap: 0;
+    min-height: 0;
+    height: calc(100dvh - 84px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  .quest-panel {
+    display: none !important;
+  }
+
+  .board-panel {
+    display: grid;
+    grid-template-rows: 0 56px minmax(0,1fr) 0;
+    gap: 4px;
+    min-height: 0;
+    height: 100%;
+    padding: 4px;
+    overflow: hidden;
+  }
+
+  .board-status,
+  .legend {
+    display: none !important;
+  }
+
+  .turn-banner {
+    display: grid;
+    grid-template-columns: minmax(126px,1fr) minmax(180px,230px) 48px;
+    gap: 5px;
+    min-height: 56px;
+    padding: 4px 5px;
+    overflow: hidden;
+  }
+
+  .turn-focus {
+    min-width: 0;
+    padding: 0 5px;
+  }
+
+  .turn-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .turn-copy small,
+  .turn-copy span,
+  .board-command small,
+  .turn-clock small,
+  .turn-clock span,
+  .player-seats {
+    display: none !important;
+  }
+
+  .turn-copy strong {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .board-command {
+    min-height: 48px;
+    grid-template-columns: 42px minmax(108px,1fr);
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .board-dice,
+  .board-dice .dice {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    font-size: 19px;
+  }
+
+  .roll-button {
+    min-height: 42px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .roll-button b {
+    font-size: 16px;
+    line-height: 1.05;
+  }
+
+  .turn-clock {
+    min-width: 44px;
+    min-height: 48px;
+    padding: 0;
+  }
+
+  .turn-clock strong {
+    font-size: 18px;
+  }
+
+  .board-frame {
+    min-height: 0;
+    height: 100% !important;
+    border-radius: 12px;
+  }
+
+  .board-camera-controls {
+    top: 6px;
+    right: 6px;
+    bottom: auto;
+    grid-template-columns: 34px 42px 34px;
+    padding: 3px;
+    gap: 3px;
+    border-radius: 10px;
+    transform: scale(.86);
+    transform-origin: top right;
+  }
+
+  .board-camera-controls button {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0 5px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .board-camera-controls .camera-follow {
+    min-width: 42px;
+  }
+
+  .board-drag-hint {
+    display: none !important;
+  }
+
+  .board-frame > .board-event-dock {
+    left: 8px;
+    right: auto;
+    bottom: 8px;
+    width: min(300px,calc(100% - 96px));
+    min-height: 70px;
+    max-height: 116px;
+    grid-template-columns: 42px minmax(0,1fr);
+    gap: 7px;
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .board-frame > .board-event-dock[data-stage-mode="decision"],
+  .board-frame > .board-event-dock.has-actions {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+    max-height: min(52%,220px);
+  }
+
+  .board-frame > .board-event-dock .board-event-visual {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    font-size: 19px;
+  }
+
+  .board-frame > .board-event-dock .board-event-copy strong {
+    font-size: 13px;
+  }
+
+  .board-frame > .board-event-dock .board-event-copy p {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .board-frame > .board-event-dock .board-event-actions button {
+    min-height: 38px;
+    font-size: 12px;
+  }
+}
