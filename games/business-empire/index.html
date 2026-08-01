@@ -9,7 +9,8 @@
     <title>微光商業帝國｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260727a">
-    <link rel="stylesheet" href="./business.css?v=20260729f">
+    <link rel="stylesheet" href="./business.css?v=20260801a">
+    <link rel="stylesheet" href="./board-camera.css?v=20260801a">
   </head>
   <body>
     <main class="empire-shell">
@@ -87,10 +88,16 @@
             <div class="player-seats" data-player-seats aria-label="玩家回合順序"></div>
           </div>
           <div class="board-frame" data-board-frame>
+            <div class="board-camera-controls" aria-label="Camera controls">
+              <button type="button" data-camera-action="zoom-out" aria-label="Zoom out">−</button>
+              <button class="camera-follow" type="button" data-camera-action="recenter" aria-label="Follow current player"><span aria-hidden="true">⌾</span><b>跟隨</b></button>
+              <button type="button" data-camera-action="zoom-in" aria-label="Zoom in">＋</button>
+            </div>
+            <div class="board-camera" data-board-camera>
             <div class="board-drag-hint" data-board-drag-hint aria-hidden="true">↔ 拖曳探索地圖・自動追蹤角色</div>
-            <div class="board rectangle-board" data-board>
+              <div class="board rectangle-board" data-board>
               <div class="board-vignette" aria-hidden="true"></div>
-              <section class="board-event-dock" data-board-event-dock aria-live="polite">
+              <section class="board-event-dock" data-board-event-dock data-stage-mode="overview" aria-live="polite" aria-atomic="true">
                 <button class="board-event-toggle" type="button" data-board-event-toggle aria-expanded="false" aria-label="展開棋盤事件提示"><span class="dock-toggle-open" aria-hidden="true">＋</span><span class="dock-toggle-close" aria-hidden="true">×</span></button>
                 <div class="board-event-visual" data-board-event-visual><span data-board-event-icon>✦</span></div>
                 <div class="board-event-copy">
@@ -113,21 +120,22 @@
               <div class="tokens-layer" data-tokens aria-label="地圖上的玩家角色"></div>
 
             </div>
+            </div>
           </div>
           <div class="legend" aria-label="棋盤圖例">
             <span><i class="income"></i>收入</span><span><i class="opportunity"></i>資產</span><span><i class="risk"></i>風險</span><span><i class="learn"></i>學習</span><span><i class="loan"></i>銀行</span><span><i class="gate"></i>躍升</span>
           </div>
         </section>
 
-        <aside class="quest-panel" aria-live="polite">
-          <div class="event-card" data-event-card data-event-type="income">
+        <aside class="quest-panel" aria-label="Event summary, ranking and adventure log">
+          <div class="event-card event-summary-card" data-event-card data-event-type="income">
             <div class="event-visual" data-event-visual><span data-event-icon>✦</span><i></i><b></b></div>
             <div class="event-content">
               <div class="event-kicker"><span>本次遭遇</span><strong data-event-type>準備啟程</strong></div>
               <h2 data-event-title>選擇你的商業冒險者</h2>
               <p data-event-description>選好角色，踏上建立商業帝國的冒險。</p>
               <div class="offer-stats" data-offer-stats hidden></div>
-              <div class="event-actions" data-event-actions></div>
+              <div class="event-actions" data-event-actions hidden></div>
             </div>
           </div>
 
@@ -332,6 +340,7 @@
     <script src="./business-auth.js?v=20260729f"></script>
     <script src="../../shared/multiplayer-client.js?v=20260729c"></script>
     <script src="./business-multiplayer.js?v=20260729f"></script>
-    <script src="./business.js?v=20260729f"></script>
+    <script src="./board-camera.js?v=20260801a"></script>
+    <script src="./business.js?v=20260801a"></script>
   </body>
 </html>

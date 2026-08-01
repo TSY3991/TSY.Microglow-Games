@@ -177,6 +177,10 @@
   const eliteTiles = ELITE_TYPES.map((type, index) => ({ ...TILE_META[type], label: ELITE_TILE_LABELS[index], type, index }));
 
   const elements = {
+    boardFrame: document.querySelector("[data-board-frame]"),
+    boardCameraStage: document.querySelector("[data-board-camera]"),
+    board: document.querySelector("[data-board]"),
+    cameraButtons: [...document.querySelectorAll("[data-camera-action]")],
     basicRing: document.querySelector('[data-ring="basic"]'),
     eliteRing: document.querySelector('[data-ring="elite"]'),
     tokens: document.querySelector("[data-tokens]"),
@@ -271,6 +275,7 @@
   let playerNickname = "冒險者";
   let nicknameRequestSequence = 0;
   let lastBoardTrackKey = "";
+  let boardCamera = null;
 
   init();
 
@@ -278,6 +283,7 @@
     portalStats.ensureGame(GAME_ID, GAME_TITLE);
     syncViewportSize();
     renderBoard();
+    initBoardCamera();
     renderCharacters();
     renderSetup();
     bindControls();
@@ -638,39 +644,72 @@
     else elements.playerPortrait.style.removeProperty("--sprite");
   }
 
+  function buildingLevelFor(asset) {
+    if (asset.boardCircle === "elite") return 3;
+    if (asset.type === "realEstate" || Number(asset.value || 0) >= 100000) return 2;
+    return 1;
+  }
+
   function renderLandmarks() {
     elements.landmarks.replaceChildren();
-    document.querySelectorAll(".tile.is-owned").forEach((tile) => {
-      tile.classList.remove("is-owned");
+    document.querySelectorAll(".tile").forEach((tile) => {
+      tile.classList.remove("is-owned", "has-holdings", "has-multiple-owners");
       tile.style.removeProperty("--owner-color");
+      tile.style.removeProperty("--owner-color-secondary");
+      delete tile.dataset.buildingLevel;
+      delete tile.dataset.ownerCount;
     });
     const landmarkCounts = new Map();
+    const holdingsByTile = new Map();
     state.actors.forEach((actor) => {
       actor.assets.forEach((asset) => {
         if (!Number.isInteger(asset.boardPosition)) return;
-        const isElite = asset.boardCircle === "elite";
+        const circle = asset.boardCircle === "elite" ? "elite" : "basic";
+        const isElite = circle === "elite";
         const count = isElite ? eliteTiles.length : basicTiles.length;
-        const point = squarePoint(isElite ? "elite" : "basic", asset.boardPosition % count, isElite ? 0.2 : 0.14);
-        const key = `${asset.boardCircle}:${asset.boardPosition}`;
+        const tileIndex = asset.boardPosition % count;
+        const point = squarePoint(circle, tileIndex, isElite ? 0.2 : 0.14);
+        const key = `${circle}:${tileIndex}`;
         const stack = landmarkCounts.get(key) || 0;
+        const level = buildingLevelFor(asset);
         landmarkCounts.set(key, stack + 1);
+
+        const holding = holdingsByTile.get(key) || { circle, tileIndex, owners: new Map(), level: 0 };
+        holding.owners.set(actor.id, actor.color);
+        holding.level = Math.max(holding.level, level);
+        holdingsByTile.set(key, holding);
+
         const marker = document.createElement("div");
         marker.className = `landmark ${asset.type}`;
         marker.dataset.stack = String(Math.min(stack, 2));
+        marker.dataset.buildingLevel = String(level);
+        marker.dataset.ownerId = actor.id;
+        marker.dataset.assetType = asset.type;
         marker.style.setProperty("--owner-color", actor.color);
         marker.style.setProperty("--x", `${point.left}%`);
         marker.style.setProperty("--y", `${point.top}%`);
-        const icons = { stock: "🏙️", realEstate: "🏘️", business: "🏬" };
-        marker.innerHTML = `<span>${icons[asset.type] || "◆"}</span><i></i>`;
-        marker.title = `${actor.name}持有：${asset.name}`;
-        elements.landmarks.append(marker);
-        const ring = isElite ? elements.eliteRing : elements.basicRing;
-        const tile = ring.children[asset.boardPosition % count];
-        if (tile) {
-          tile.classList.add("is-owned");
-          tile.style.setProperty("--owner-color", actor.color);
+        if (["stock", "realEstate", "business"].includes(asset.type)) {
+          marker.style.setProperty("--landmark-prop", `url("./assets/tile-props/levels/${asset.type}-level-${level}.png")`);
+        } else {
+          marker.style.setProperty("--landmark-prop", `url("./assets/tile-props/${asset.type}.png")`);
         }
+        marker.innerHTML = `<span class="landmark-art" aria-hidden="true"></span><i></i><b>Lv.${level}</b>`;
+        marker.title = `${actorDisplayName(actor)}持有：${asset.name}・建築 Lv.${level}`;
+        elements.landmarks.append(marker);
       });
+    });
+
+    holdingsByTile.forEach((holding) => {
+      const ring = holding.circle === "elite" ? elements.eliteRing : elements.basicRing;
+      const tile = ring.children[holding.tileIndex];
+      if (!tile) return;
+      const colors = [...holding.owners.values()];
+      tile.classList.add("is-owned", "has-holdings");
+      tile.classList.toggle("has-multiple-owners", colors.length > 1);
+      tile.dataset.buildingLevel = String(holding.level);
+      tile.dataset.ownerCount = String(colors.length);
+      tile.style.setProperty("--owner-color", colors[0]);
+      if (colors[1]) tile.style.setProperty("--owner-color-secondary", colors[1]);
     });
   }
 
@@ -901,8 +940,27 @@
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
+  const STAGE_LABELS = {
+    overview: "棋盤總覽",
+    rolling: "命運骰",
+    moving: "逐格移動",
+    event: "落點事件",
+    decision: "等待決策",
+    result: "結果結算",
+    "next-turn": "回合交接"
+  };
+
+  function stageModeFor(event, actions) {
+    if (event.stageMode && STAGE_LABELS[event.stageMode]) return event.stageMode;
+    if (actions.length) return "decision";
+    if (state.phase === "dice") return "rolling";
+    if (state.phase === "moving") return "moving";
+    if (["ai", "settling", "turn_end"].includes(state.phase)) return "next-turn";
+    if (state.phase === "roll" || state.phase === "waiting") return "overview";
+    return "event";
+  }
+
   function showEvent(event, actions = [], stats = []) {
-    if (actions.length && boardFocused && activeActor()?.isHuman) setBoardFocus(false);
     elements.eventCard.dataset.eventType = event.type || "income";
     elements.eventCard.classList.toggle("is-waiting", Boolean(event.waiting));
     elements.eventIcon.textContent = event.icon || TILE_META[event.type]?.icon || "✦";
@@ -916,10 +974,10 @@
       item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
       elements.offerStats.append(item);
     });
-    renderEventActions(elements.eventActions, actions);
-    syncBoardEvent(event, actions, stats);
+    renderEventActions(elements.eventActions, []);
+    syncBoardEvent(event, actions, stats, stageModeFor(event, actions));
     if (state.started && actions.length && activeActor()?.isHuman) playEffect(event.type || "event");
-    syncMobileEventDrawer(actions.length > 0 && Boolean(activeActor()?.isHuman));
+    syncMobileEventDrawer(false);
   }
 
   function renderEventActions(container, actions) {
@@ -937,10 +995,12 @@
     });
   }
 
-  function syncBoardEvent(event, actions, stats) {
+  function syncBoardEvent(event, actions, stats, stageMode = stageModeFor(event, actions)) {
     if (!elements.boardEventDock) return;
     const eventType = event.type || "income";
     elements.boardEventDock.dataset.eventType = eventType;
+    elements.boardEventDock.dataset.stageMode = stageMode;
+    elements.boardEventDock.dataset.stageLabel = STAGE_LABELS[stageMode] || STAGE_LABELS.event;
     elements.boardEventDock.classList.toggle("is-waiting", Boolean(event.waiting));
     elements.boardEventVisual.dataset.eventType = eventType;
     elements.boardEventIcon.textContent = event.icon || TILE_META[eventType]?.icon || "✦";
@@ -958,6 +1018,10 @@
     const hasEnabledActions = actions.some((action) => !action.disabled);
     elements.boardEventDock.classList.toggle("has-actions", hasEnabledActions);
     if (isMobilePortrait()) setBoardEventExpanded(hasEnabledActions);
+  }
+
+  function updateBoardStage(stageMode, event, stats = []) {
+    syncBoardEvent({ ...event, stageMode }, [], stats, stageMode);
   }
 
   function isMobilePortrait() {
@@ -1104,41 +1168,65 @@
     elements.audioButton.setAttribute("aria-pressed", String(audioEnabled));
   }
 
+  function initBoardCamera() {
+    if (!window.MicroglowBoardCamera || !elements.boardFrame || !elements.boardCameraStage || !elements.board) return;
+    const dragHint = document.querySelector("[data-board-drag-hint]");
+    if (dragHint) elements.boardFrame.append(dragHint);
+    elements.boardFrame.append(elements.boardEventDock);
+    boardCamera = window.MicroglowBoardCamera.create({
+      frame: elements.boardFrame,
+      stage: elements.boardCameraStage,
+      board: elements.board,
+      onFollowChange(following) {
+        const followButton = elements.cameraButtons.find((button) => button.dataset.cameraAction === "recenter");
+        if (!followButton) return;
+        followButton.classList.toggle("is-suspended", !following);
+        const label = followButton.querySelector("b");
+        if (label) label.textContent = following ? "跟隨" : "返回";
+      }
+    });
+  }
+
+  function preferredCameraScale() {
+    const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
+    const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
+    if (width <= 900 && height > width) return boardFocused ? 1.34 : 1.12;
+    if (width <= 900) return boardFocused ? 1.28 : 1;
+    return boardFocused ? 1.16 : undefined;
+  }
+
+  function followActiveActor(force = false) {
+    const actor = activeActor();
+    if (!boardCamera || !state.started || !actor) return;
+    const point = tokenPoint(actor);
+    boardCamera.focusPercent(point.left, point.top, { force, scale: preferredCameraScale() });
+  }
+
   function setBoardFocus(enabled) {
     boardFocused = Boolean(enabled && state.started);
     document.body.classList.toggle("board-focus-mode", boardFocused);
-    elements.focusButton.textContent = boardFocused ? "返回事件" : "放大棋盤";
+    elements.focusButton.textContent = boardFocused ? "返回全圖" : "放大棋盤";
     elements.focusButton.setAttribute("aria-pressed", String(boardFocused));
-    if (boardFocused) window.requestAnimationFrame(centerActiveToken);
+    boardCamera?.resumeFollow();
+    window.requestAnimationFrame(() => {
+      boardCamera?.refresh();
+      followActiveActor(true);
+    });
   }
 
-  function centerActiveToken(behavior = "smooth") {
-    const frame = document.querySelector("[data-board-frame]");
-    const activeToken = elements.tokens.querySelector(".token.is-active");
-    if (!frame || !activeToken) return;
-    const frameRect = frame.getBoundingClientRect();
-    const tokenRect = activeToken.getBoundingClientRect();
-    const deltaX = (tokenRect.left + tokenRect.width / 2) - (frameRect.left + frameRect.width / 2);
-    const deltaY = (tokenRect.top + tokenRect.height / 2) - (frameRect.top + frameRect.height / 2);
-    frame.scrollBy({ left: deltaX, top: deltaY, behavior });
-  }
-
-  function isMobilePortraitBoard() {
-    const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
-    const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
-    return width <= 900 && height > width;
+  function centerActiveToken() {
+    boardCamera?.resumeFollow();
+    followActiveActor(true);
   }
 
   function scheduleActiveTokenTracking() {
-    if (!state.started || !isMobilePortraitBoard()) return;
+    if (!state.started || !boardCamera) return;
     const actor = activeActor();
     if (!actor) return;
     const trackKey = `${actor.id}:${actor.circle}:${actor.position}:${state.movingActorId || "still"}`;
     if (trackKey === lastBoardTrackKey) return;
     lastBoardTrackKey = trackKey;
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => centerActiveToken(state.movingActorId ? "smooth" : "auto"));
-    });
+    window.requestAnimationFrame(() => followActiveActor(false));
   }
 
   function stopTurnTimer() {
@@ -1222,6 +1310,7 @@
   async function animateDice(result) {
     ensureAudio();
     playEffect("dice");
+    updateBoardStage("rolling", { type: "destiny", icon: "◈", label: "命運骰", title: "命運骰旋轉中", description: "骰子結果將決定本回合前進步數。" });
     elements.dice.classList.add("is-rolling");
     for (let index = 0; index < DICE_SPIN_FRAMES; index += 1) {
       elements.dice.textContent = DICE_FACES[randomInt(1, 6) - 1];
@@ -1230,6 +1319,7 @@
     elements.dice.textContent = DICE_FACES[result - 1];
     elements.dice.setAttribute("aria-label", `骰子結果 ${result}`);
     elements.dice.classList.remove("is-rolling");
+    updateBoardStage("result", { type: "destiny", icon: String(result), label: "骰子結果", title: `擲出 ${result} 點`, description: "角色將沿棋格逐格前進。" }, [["移動步數", String(result)]]);
   }
 
   function markActorArrival(actor) {
@@ -1250,6 +1340,7 @@
     for (let step = 0; step < steps; step += 1) {
       actor.position = (actor.position + 1) % length;
       if (animate) {
+        updateBoardStage("moving", { type: "income", icon: "➜", label: "逐格前進", title: `${actorDisplayName(actor)}移動中`, description: `已前進 ${step + 1}／${steps} 格，鏡頭正跟隨目前角色。` }, [["剩餘步數", String(steps - step - 1)], ["目前位置", String(actor.position + 1)]]);
         renderTokens();
         playEffect("step");
         await sleep(actor.isHuman ? PLAYER_STEP_MS : AI_STEP_MS);
@@ -1257,6 +1348,7 @@
     }
     markActorArrival(actor);
     renderTokens();
+    updateBoardStage("result", { type: currentTile(actor).type, icon: "◆", label: "抵達棋格", title: `抵達「${currentTile(actor).label}」`, description: "角色已完成移動，正在解析落點事件。" }, [["落點", String(actor.position + 1)]]);
   }
 
   function currentTile(actor) {
@@ -1396,7 +1488,7 @@
   }
 
   function presentContinue(tile, title, description, stats) {
-    showEvent({ type: tile.type, title, description }, [{ label: "結束回合", run: finishHumanTurn }], stats);
+    showEvent({ type: tile.type, stageMode: "result", title, description }, [{ label: "結束回合", run: finishHumanTurn }], stats);
   }
 
   function beginHumanTurn() {
@@ -1408,7 +1500,7 @@
     state.movingActorId = null;
     state.busy = false;
     renderAll();
-    showEvent({ type: "income", icon: "✦", label: `第 ${state.round} 回合`, title: "輪到你行動", description: "觀察現金流與排名，在 45 秒內擲骰並處理下一個商業事件。" });
+    showEvent({ type: "income", icon: "✦", stageMode: "overview", label: `第 ${state.round} 回合`, title: "輪到你行動", description: "觀察現金流與排名，在 45 秒內擲骰並處理下一個商業事件。" });
     setRollEnabled(true);
     startTurnTimer();
   }
@@ -1431,7 +1523,7 @@
 
     state.phase = "ai";
     renderAll();
-    showEvent({ type: "income", icon: "⌛", label: "對手回合", title: "商會正在推演三名對手策略", description: "每位對手都會擲骰、逐格移動並依自己的風格處理落點。" });
+    showEvent({ type: "income", icon: "⌛", stageMode: "next-turn", label: "對手回合", title: "商會正在推演三名對手策略", description: "每位對手都會擲骰、逐格移動並依自己的風格處理落點。" });
     await runAiTurns();
     if (state.ended) return;
     state.round += 1;
@@ -1464,7 +1556,7 @@
       state.secondsLeft = 0;
       state.movingActorId = actor.id;
       renderAll();
-      showEvent({ type: "income", icon: actor.avatar, label: "對手擲骰", title: `${actor.name}正在行動`, description: `${actor.title}準備沿著城市道路前進。` });
+      showEvent({ type: "income", icon: actor.avatar, stageMode: "rolling", label: "對手擲骰", title: `${actor.name}正在行動`, description: `${actor.title}準備沿著城市道路前進。` });
       const roll = randomInt(1, 6);
       await animateDice(roll);
       addLog(`${actor.name}擲出 ${roll}。`);
@@ -1823,6 +1915,14 @@
     });
     elements.focusButton.addEventListener("click", () => { setBoardFocus(!boardFocused); closeHeaderMenus(); });
     elements.audioButton.addEventListener("click", () => { toggleAudio(); closeHeaderMenus(); });
+    elements.cameraButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.cameraAction;
+        if (action === "zoom-in") boardCamera?.setZoomBy(0.16);
+        if (action === "zoom-out") boardCamera?.setZoomBy(-0.16);
+        if (action === "recenter") centerActiveToken();
+      });
+    });
     elements.boardEventToggle?.addEventListener("click", () => {
       setBoardEventExpanded(!elements.boardEventDock.classList.contains("is-expanded"));
     });
@@ -1947,6 +2047,8 @@
     document.documentElement.style.setProperty("--empire-height", height + "px");
     document.documentElement.style.setProperty("--empire-width", width + "px");
     syncOrientationGuard();
+    boardCamera?.refresh();
+    window.requestAnimationFrame(() => followActiveActor(false));
   }
 
   function syncOrientationGuard() {
@@ -2222,7 +2324,7 @@
   }
 
   function presentContinueConnected(type, title, description, stats) {
-    showEvent({ type, title, description }, [{ label: "結束回合", run: () => runConnectedAction("end_turn") }], stats);
+    showEvent({ type, stageMode: "result", title, description }, [{ label: "結束回合", run: () => runConnectedAction("end_turn") }], stats);
   }
 
   function presentConnectedAssetOffer(player, template, price) {

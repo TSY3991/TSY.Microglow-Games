@@ -1,0 +1,273 @@
+/* Microglow Business Empire camera and shared board-stage layer — 2026-08-01.
+   This file intentionally loads after business.css so the historical responsive
+   blocks remain untouched while the camera becomes the final viewport owner. */
+
+.board-frame {
+  position: relative;
+  display: block !important;
+  overflow: hidden !important;
+  cursor: grab;
+  touch-action: none !important;
+  overscroll-behavior: contain;
+  user-select: none;
+}
+
+.board-frame.is-camera-dragging { cursor: grabbing; }
+
+.board-camera {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  transform: translate3d(0,0,0);
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.board-camera > .rectangle-board {
+  width: 100%;
+  height: auto;
+  max-width: none;
+  margin: 0;
+  aspect-ratio: 16 / 9;
+  transform: none;
+}
+
+.board-camera-controls {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 92;
+  display: grid;
+  grid-template-columns: 42px auto 42px;
+  gap: 5px;
+  align-items: center;
+  padding: 5px;
+  border: 1px solid rgba(246,207,116,.34);
+  border-radius: 14px;
+  background: rgba(3,12,22,.9);
+  box-shadow: 0 8px 24px rgba(0,0,0,.55),0 0 18px rgba(84,221,245,.1);
+  backdrop-filter: blur(8px);
+}
+
+.board-camera-controls button {
+  display: inline-flex;
+  min-width: 42px;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid rgba(84,221,245,.32);
+  border-radius: 10px;
+  color: #fff5d6;
+  background: linear-gradient(180deg,rgba(17,43,61,.96),rgba(5,17,29,.96));
+  font-size: 1.05rem;
+  font-weight: 950;
+  box-shadow: inset 0 1px rgba(255,255,255,.08);
+}
+
+.board-camera-controls button:hover,
+.board-camera-controls button:focus-visible {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 14px rgba(246,207,116,.24);
+}
+
+.board-camera-controls .camera-follow { min-width: 76px; color: var(--cyan); }
+.board-camera-controls .camera-follow b { font-size: .7rem; }
+.board-camera-controls .camera-follow.is-suspended { color: var(--gold-bright); border-color: rgba(246,207,116,.7); }
+
+.board-drag-hint {
+  position: absolute !important;
+  left: 10px !important;
+  top: 10px !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 91 !important;
+  display: inline-flex !important;
+  width: max-content !important;
+  min-height: 30px;
+  align-items: center;
+  margin: 0 !important;
+  padding: 0 11px !important;
+  border: 1px solid rgba(84,221,245,.26);
+  border-radius: 999px;
+  color: #dffaff;
+  background: rgba(2,10,18,.86) !important;
+  font-size: .68rem !important;
+  font-weight: 850;
+  opacity: .92 !important;
+  transform: none !important;
+  pointer-events: none;
+  transition: opacity .25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.board-frame.is-camera-manual .board-drag-hint { color: #fff0bd; border-color: rgba(246,207,116,.38); }
+
+/* The dock is moved to board-frame at runtime, so it stays readable while the
+   DOM board beneath it pans and scales. It is the sole actionable event UI. */
+.board-frame > .board-event-dock {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 88;
+  width: min(470px,48%);
+  min-height: 126px;
+  max-height: calc(100% - 104px);
+  overflow: auto;
+  transform: translate(-50%,-50%);
+  transform-origin: center;
+  user-select: text;
+  cursor: default;
+}
+
+.board-event-dock::before {
+  position: absolute;
+  left: 14px;
+  top: 8px;
+  z-index: 4;
+  color: var(--event-color,var(--cyan));
+  content: attr(data-stage-label);
+  font-size: .58rem;
+  font-weight: 1000;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.board-frame > .board-event-dock .board-event-copy { padding-top: 12px; }
+.board-frame > .board-event-dock[data-stage-mode="overview"] { width: min(390px,42%); }
+.board-frame > .board-event-dock[data-stage-mode="decision"] { width: min(520px,56%); border-color: var(--gold-bright); box-shadow: 0 20px 44px rgba(0,0,0,.7),0 0 34px color-mix(in srgb,var(--event-color),transparent 58%); }
+.board-frame > .board-event-dock[data-stage-mode="rolling"] .board-event-visual { animation: board-stage-roll .72s cubic-bezier(.2,.8,.2,1) infinite; }
+.board-frame > .board-event-dock[data-stage-mode="moving"] .board-event-visual { animation: board-stage-move .7s ease-in-out infinite alternate; }
+.board-frame > .board-event-dock[data-stage-mode="result"] { animation: board-stage-result .42s ease-out both; }
+.board-frame > .board-event-dock[data-stage-mode="next-turn"] { opacity: .92; }
+
+.event-summary-card { display: none !important; }
+.quest-panel { grid-template-rows: minmax(0,1fr) minmax(82px,.42fr); }
+.quest-panel .action-deck { min-height: 0; }
+
+/* Building presentation metadata: no financial rule changes. */
+.landmark {
+  width: clamp(34px,5.4vmin,62px) !important;
+  height: clamp(40px,6.8vmin,78px) !important;
+  transform: translate(-50%,-74%) scale(var(--building-scale,1));
+  transform-origin: center bottom;
+}
+
+.landmark[data-building-level="1"] { --building-scale: .82; }
+.landmark[data-building-level="2"] { --building-scale: 1; z-index: 2; }
+.landmark[data-building-level="3"] { --building-scale: 1.18; z-index: 3; }
+
+.landmark .landmark-art {
+  position: absolute;
+  inset: -20% -28% 10%;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  background: var(--landmark-prop) center bottom / contain no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 7px 5px rgba(0,0,0,.72)) drop-shadow(0 0 8px color-mix(in srgb,var(--owner-color),transparent 48%));
+}
+
+.landmark > i {
+  width: 84%;
+  height: 14%;
+  border-color: color-mix(in srgb,var(--owner-color),white 48%);
+  background: radial-gradient(ellipse,color-mix(in srgb,var(--owner-color),white 18%),var(--owner-color) 62%,rgba(1,6,12,.92));
+  box-shadow: 0 2px 0 #08111b,0 0 12px var(--owner-color);
+}
+
+.landmark > b {
+  position: absolute;
+  right: -4px;
+  bottom: 0;
+  z-index: 5;
+  padding: 2px 4px;
+  border: 1px solid #fff0bd;
+  border-radius: 5px;
+  color: #07111d;
+  background: var(--gold-bright);
+  font-size: clamp(.42rem,.72vmin,.58rem);
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.tile.has-holdings[data-building-level="1"] { --holding-glow: 8px; }
+.tile.has-holdings[data-building-level="2"] { --holding-glow: 13px; }
+.tile.has-holdings[data-building-level="3"] { --holding-glow: 18px; }
+.tile.has-holdings { box-shadow: 0 3px 7px rgba(0,0,0,.72),0 0 var(--holding-glow) var(--owner-color),inset 0 0 0 2px color-mix(in srgb,var(--owner-color),transparent 42%); }
+.tile.has-multiple-owners { border-color: var(--owner-color); background-image: linear-gradient(135deg,color-mix(in srgb,var(--owner-color),transparent 72%),transparent 48%,color-mix(in srgb,var(--owner-color-secondary),transparent 64%)); }
+
+@keyframes board-stage-roll {
+  0% { transform: rotate(-7deg) scale(.94); }
+  50% { transform: rotate(8deg) scale(1.07); }
+  100% { transform: rotate(-7deg) scale(.94); }
+}
+
+@keyframes board-stage-move {
+  from { transform: translateX(-5px); filter: brightness(.9); }
+  to { transform: translateX(5px); filter: brightness(1.18); }
+}
+
+@keyframes board-stage-result {
+  from { opacity: .55; transform: translate(-50%,-50%) scale(.92); }
+  to { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+}
+
+@media (max-width: 900px) {
+  .board-camera-controls { right: 6px; bottom: 6px; grid-template-columns: 40px 52px 40px; gap: 3px; padding: 3px; }
+  .board-camera-controls button { min-width: 40px; min-height: 40px; padding: 0 6px; }
+  .board-camera-controls .camera-follow { min-width: 52px; }
+  .board-camera-controls .camera-follow b { display: none; }
+  .board-drag-hint { left: 6px !important; top: 6px !important; max-width: calc(100% - 170px); overflow: hidden; font-size: 10px !important; text-overflow: ellipsis; white-space: nowrap; }
+  .board-frame > .board-event-dock { width: min(320px,calc(100% - 76px)); min-height: 104px; max-height: calc(100% - 98px); grid-template-columns: 52px minmax(0,1fr); gap: 8px; padding: 11px; }
+  .board-frame > .board-event-dock[data-stage-mode="overview"],
+  .board-frame > .board-event-dock[data-stage-mode="rolling"],
+  .board-frame > .board-event-dock[data-stage-mode="moving"],
+  .board-frame > .board-event-dock[data-stage-mode="result"],
+  .board-frame > .board-event-dock[data-stage-mode="next-turn"] { width: min(290px,calc(100% - 92px)); }
+  .board-frame > .board-event-dock[data-stage-mode="decision"] { width: min(348px,calc(100% - 24px)); }
+  .board-frame > .board-event-dock .board-event-visual { width: 48px; height: 48px; }
+  .board-frame > .board-event-dock .board-event-copy strong { font-size: .82rem; }
+  .board-frame > .board-event-dock .board-event-copy p { font-size: .68rem; line-height: 1.35; }
+  .board-frame > .board-event-dock .board-event-actions button { min-height: 42px; font-size: .72rem; }
+  .quest-panel { grid-template-rows: minmax(0,1fr) minmax(76px,.42fr); }
+}
+
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked) .board-frame {
+    display: block !important;
+    overflow: hidden !important;
+    touch-action: none !important;
+  }
+  body:not(.mobile-portrait-locked) .board-camera {
+    position: absolute;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  body:not(.mobile-portrait-locked) .board-camera > .rectangle-board,
+  body:not(.mobile-portrait-locked) .board-camera > .board.rectangle-board {
+    --mobile-board-size: clamp(660px,184vw,760px);
+    width: var(--mobile-board-size);
+    height: var(--mobile-board-size);
+    min-width: var(--mobile-board-size);
+    min-height: var(--mobile-board-size);
+  }
+  body:not(.mobile-portrait-locked).board-focus-mode .board-camera > .rectangle-board,
+  body:not(.mobile-portrait-locked).board-focus-mode .board-camera > .board.rectangle-board {
+    --mobile-board-size: clamp(660px,184vw,760px);
+  }
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock { top: 50%; }
+  body:not(.mobile-portrait-locked) .landmark { width: 52px !important; height: 64px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-camera { will-change: auto; }
+  .board-frame > .board-event-dock,
+  .board-frame > .board-event-dock .board-event-visual,
+  .landmark { animation: none !important; transition: none !important; }
+}
