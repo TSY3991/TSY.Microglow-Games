@@ -111,17 +111,20 @@
    DOM board beneath it pans and scales. It is the sole actionable event UI. */
 .board-frame > .board-event-dock {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: 12px;
+  top: auto;
+  bottom: 12px;
   z-index: 88;
-  width: min(470px,48%);
-  min-height: 126px;
-  max-height: calc(100% - 104px);
+  width: min(420px,calc(100% - 128px));
+  min-height: 84px;
+  max-height: min(34%,220px);
   overflow: auto;
-  transform: translate(-50%,-50%);
+  transform: none;
   transform-origin: center;
   user-select: text;
   cursor: default;
+  opacity: .95;
+  pointer-events: none;
 }
 
 .board-event-dock::before {
@@ -137,9 +140,30 @@
   text-transform: uppercase;
 }
 
-.board-frame > .board-event-dock .board-event-copy { padding-top: 12px; }
-.board-frame > .board-event-dock[data-stage-mode="overview"] { width: min(390px,42%); }
-.board-frame > .board-event-dock[data-stage-mode="decision"] { width: min(520px,56%); border-color: var(--gold-bright); box-shadow: 0 20px 44px rgba(0,0,0,.7),0 0 34px color-mix(in srgb,var(--event-color),transparent 58%); }
+.board-frame > .board-event-dock .board-event-copy,
+.board-frame > .board-event-dock .board-event-visual,
+.board-frame > .board-event-dock .board-event-toggle,
+.board-frame > .board-event-dock .board-event-actions,
+.board-frame > .board-event-dock .board-event-actions button {
+  pointer-events: auto;
+}
+
+.board-frame > .board-event-dock .board-event-copy { padding-top: 10px; }
+.board-frame > .board-event-dock[data-stage-mode="overview"] { width: min(330px,calc(100% - 132px)); }
+.board-frame > .board-event-dock[data-stage-mode="rolling"],
+.board-frame > .board-event-dock[data-stage-mode="moving"],
+.board-frame > .board-event-dock[data-stage-mode="result"],
+.board-frame > .board-event-dock[data-stage-mode="next-turn"] {
+  width: min(340px,calc(100% - 132px));
+  min-height: 74px;
+}
+.board-frame > .board-event-dock[data-stage-mode="decision"] {
+  width: min(520px,calc(100% - 132px));
+  max-height: min(46%,280px);
+  border-color: var(--gold-bright);
+  box-shadow: 0 20px 44px rgba(0,0,0,.7),0 0 34px color-mix(in srgb,var(--event-color),transparent 58%);
+  pointer-events: auto;
+}
 .board-frame > .board-event-dock[data-stage-mode="rolling"] .board-event-visual { animation: board-stage-roll .72s cubic-bezier(.2,.8,.2,1) infinite; }
 .board-frame > .board-event-dock[data-stage-mode="moving"] .board-event-visual { animation: board-stage-move .7s ease-in-out infinite alternate; }
 .board-frame > .board-event-dock[data-stage-mode="result"] { animation: board-stage-result .42s ease-out both; }
@@ -213,8 +237,8 @@
 }
 
 @keyframes board-stage-result {
-  from { opacity: .55; transform: translate(-50%,-50%) scale(.92); }
-  to { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  from { opacity: .55; transform: translateY(8px) scale(.96); }
+  to { opacity: .95; transform: translateY(0) scale(1); }
 }
 
 @media (max-width: 900px) {
@@ -223,13 +247,13 @@
   .board-camera-controls .camera-follow { min-width: 52px; }
   .board-camera-controls .camera-follow b { display: none; }
   .board-drag-hint { left: 6px !important; top: 6px !important; max-width: calc(100% - 170px); overflow: hidden; font-size: 10px !important; text-overflow: ellipsis; white-space: nowrap; }
-  .board-frame > .board-event-dock { width: min(320px,calc(100% - 76px)); min-height: 104px; max-height: calc(100% - 98px); grid-template-columns: 52px minmax(0,1fr); gap: 8px; padding: 11px; }
+  .board-frame > .board-event-dock { left: 8px; bottom: 8px; width: min(260px,calc(100% - 118px)); min-height: 72px; max-height: 116px; grid-template-columns: 46px minmax(0,1fr); gap: 8px; padding: 9px; }
   .board-frame > .board-event-dock[data-stage-mode="overview"],
   .board-frame > .board-event-dock[data-stage-mode="rolling"],
   .board-frame > .board-event-dock[data-stage-mode="moving"],
   .board-frame > .board-event-dock[data-stage-mode="result"],
-  .board-frame > .board-event-dock[data-stage-mode="next-turn"] { width: min(290px,calc(100% - 92px)); }
-  .board-frame > .board-event-dock[data-stage-mode="decision"] { width: min(348px,calc(100% - 24px)); }
+  .board-frame > .board-event-dock[data-stage-mode="next-turn"] { width: min(250px,calc(100% - 120px)); }
+  .board-frame > .board-event-dock[data-stage-mode="decision"] { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: min(42%,240px); }
   .board-frame > .board-event-dock .board-event-visual { width: 48px; height: 48px; }
   .board-frame > .board-event-dock .board-event-copy strong { font-size: .82rem; }
   .board-frame > .board-event-dock .board-event-copy p { font-size: .68rem; line-height: 1.35; }
@@ -261,7 +285,7 @@
   body:not(.mobile-portrait-locked).board-focus-mode .board-camera > .board.rectangle-board {
     --mobile-board-size: clamp(660px,184vw,760px);
   }
-  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock { top: 50%; }
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock { top: auto; bottom: 8px; }
   body:not(.mobile-portrait-locked) .landmark { width: 52px !important; height: 64px !important; }
 }
 
@@ -270,4 +294,29 @@
   .board-frame > .board-event-dock,
   .board-frame > .board-event-dock .board-event-visual,
   .landmark { animation: none !important; transition: none !important; }
+}
+/* Keep the event dock off the board center, including the older portrait expanded state. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock:not(.is-expanded) {
+    left: auto;
+    right: 8px;
+    top: auto;
+    bottom: 8px;
+    width: 52px;
+    height: 52px;
+    min-height: 52px;
+    transform: none;
+  }
+
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-expanded {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: 8px;
+    width: auto;
+    height: auto;
+    min-height: 120px;
+    max-height: min(42%,240px);
+    transform: none;
+  }
 }
