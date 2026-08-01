@@ -320,3 +320,17 @@
     transform: none;
   }
 }
+@media (max-width: 900px) {
+  .board-camera-controls {
+    top: 8px;
+    right: 8px;
+    bottom: auto;
+    z-index: 86;
+  }
+
+  .board-frame > .board-event-dock[data-stage-mode="decision"],
+  .board-frame > .board-event-dock[data-stage-mode="result"],
+  .board-frame > .board-event-dock.has-actions {
+    z-index: 96;
+  }
+}
