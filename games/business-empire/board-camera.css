@@ -524,6 +524,14 @@
     top: 6px;
     right: 6px;
     bottom: auto;
+    /* Short landscape frames leave no vertical gap between the top-right
+       camera controls and the bottom-anchored dock once it expands edge-to-
+       edge for decision/result content (see rule below, ~900x420 and
+       shorter) — without this the dock (z-index 96) sits visually and
+       pointer-wise on top of the controls and swallows every tap. Winning
+       the stacking order here is enough: the controls are a small fixed
+       corner, so nothing else needs to move. */
+    z-index: 97;
     grid-template-columns: 34px 42px 34px;
     padding: 3px;
     gap: 3px;
@@ -567,6 +575,14 @@
     right: 8px;
     bottom: 8px;
     width: auto;
+    /* min-height must track max-height here, not just cap it: on very short
+       landscape frames (~375px tall) the dock was stopping at the generic
+       70px min-height instead of growing to fit its own action button, so
+       "結束回合" existed in the DOM but was clipped out of the dock's
+       overflow:auto box — unclickable even though it looked present.
+       Fixed px (not min(%, px)) because percentage height resolves against
+       an indefinite-height ancestor here and collapses instead of capping. */
+    min-height: 170px;
     max-height: min(52%,220px);
   }
 
