@@ -607,3 +607,141 @@
     font-size: 12px;
   }
 }
+
+
+/* Game-feel phase hierarchy polish - 20260810a. */
+body.player-turn-active .board-command {
+  border-color: color-mix(in srgb,var(--gold-bright),transparent 28%);
+  box-shadow: inset 0 0 0 1px rgba(255,224,142,.18),0 0 22px rgba(246,207,116,.14);
+}
+
+body[data-game-phase="roll"] .roll-button {
+  animation: phase-roll-cta 1.35s ease-in-out infinite;
+}
+
+body[data-game-phase="dice"] .board-dice,
+body[data-board-stage="rolling"] .board-dice {
+  animation: phase-dice-pop .56s cubic-bezier(.2,.8,.2,1) infinite alternate;
+}
+
+body.movement-active .board-frame {
+  box-shadow: inset 0 0 0 1px rgba(80,218,255,.2),0 0 34px rgba(68,214,255,.08);
+}
+
+.board-frame > .board-event-dock.is-actionable {
+  pointer-events: auto;
+}
+
+.board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) {
+  width: min(292px,calc(100% - 132px));
+  min-height: 64px;
+  max-height: 76px;
+  overflow: hidden;
+  opacity: .84;
+  grid-template-columns: 44px minmax(0,1fr);
+  align-items: center;
+}
+
+.board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-visual {
+  width: 42px;
+  height: 42px;
+  font-size: 18px;
+}
+
+.board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy {
+  padding-top: 8px;
+}
+
+.board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy p,
+.board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .offer-stats,
+.board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-actions {
+  display: none !important;
+}
+
+body[data-game-phase="moving"] .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded),
+body[data-game-phase="dice"] .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) {
+  opacity: .72;
+  transform: translateY(3px) scale(.98);
+}
+
+body[data-game-phase="decision"] .board-frame > .board-event-dock,
+.board-frame > .board-event-dock.has-actions {
+  border-color: color-mix(in srgb,var(--event-color,var(--gold-bright)),white 10%);
+  box-shadow: 0 22px 48px rgba(0,0,0,.72),0 0 36px color-mix(in srgb,var(--event-color,var(--gold-bright)),transparent 58%);
+}
+
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) {
+    width: 52px;
+    height: 52px;
+    min-height: 52px;
+    max-height: 52px;
+    grid-template-columns: 1fr;
+    padding: 7px;
+  }
+
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded)::before,
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy,
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-toggle {
+    display: none !important;
+  }
+
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-expanded[data-stage-mode="result"] {
+    max-height: min(36%,210px);
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  body[data-game-phase="roll"] .board-command {
+    box-shadow: inset 0 0 0 1px rgba(255,224,142,.24),0 0 16px rgba(246,207,116,.18);
+  }
+
+  .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) {
+    width: min(230px,calc(100% - 96px));
+    min-height: 52px;
+    max-height: 58px;
+    grid-template-columns: 34px minmax(0,1fr);
+    padding: 6px 8px;
+  }
+
+  .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded)::before {
+    top: 5px;
+    left: 8px;
+    font-size: 8px;
+  }
+
+  .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-visual {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+
+  .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy {
+    padding-top: 9px;
+  }
+
+  .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy strong {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-game-phase="roll"] .roll-button,
+  body[data-game-phase="dice"] .board-dice,
+  body[data-board-stage="rolling"] .board-dice {
+    animation: none !important;
+  }
+}
+
+@keyframes phase-roll-cta {
+  0%,100% { filter: brightness(1); transform: translateY(0); }
+  50% { filter: brightness(1.12); transform: translateY(-1px); }
+}
+
+@keyframes phase-dice-pop {
+  from { filter: brightness(1); transform: scale(1); }
+  to { filter: brightness(1.18); transform: scale(1.055); }
+}

@@ -611,8 +611,30 @@
     renderLandmarks();
     renderTokens();
     renderTurnStage();
+    syncExperienceState();
     renderRanking();
     renderLogs();
+  }
+
+  function syncExperienceState(stageMode = elements.boardEventDock?.dataset.stageMode || "overview", hasActions = elements.boardEventDock?.classList.contains("has-actions")) {
+    const actor = activeActor();
+    const phase = state.phase || "waiting";
+    const playerTurn = Boolean(state.started && !state.ended && actor?.isHuman);
+    const movementPhase = phase === "dice" || phase === "moving";
+    const decisionPhase = phase === "decision" || Boolean(hasActions);
+
+    document.body.dataset.gamePhase = phase;
+    document.body.dataset.boardStage = stageMode;
+    document.body.classList.toggle("player-turn-active", playerTurn);
+    document.body.classList.toggle("decision-active", decisionPhase);
+    document.body.classList.toggle("movement-active", movementPhase);
+    document.body.classList.toggle("ai-turn-active", Boolean(actor && !actor.isHuman));
+
+    if (elements.boardFrame) {
+      elements.boardFrame.dataset.gamePhase = phase;
+      elements.boardFrame.dataset.stageMode = stageMode;
+    }
+    if (elements.boardCommand) elements.boardCommand.dataset.stageMode = stageMode;
   }
 
   function renderStats() {
@@ -789,6 +811,7 @@
     elements.turnClock.style.setProperty("--turn-progress", `${Math.max(0, Math.min(100, (state.secondsLeft / TURN_SECONDS) * 100))}%`);
     elements.turnTimer.textContent = (actor?.isHuman || state.connected) ? String(state.secondsLeft) : "AI";
     elements.boardCommand.dataset.phase = state.phase;
+    syncExperienceState();
     elements.boardCommand.classList.toggle("is-human-turn", Boolean(actor?.isHuman));
     elements.boardCommandLabel.textContent = !actor ? "點擊骰子開始" : state.phase === "roll" ? "輪到你・擲骰前進" : state.phase === "decision" ? "處理落點事件" : state.phase === "ai" ? `${actorDisplayName(actor)}擲骰中` : phaseLabel();
 
@@ -989,6 +1012,7 @@
       button.disabled = Boolean(action.disabled);
       button.addEventListener("click", (clickEvent) => {
         closeMobileEventDrawer();
+        setBoardEventExpanded(false);
         action.run(clickEvent);
       }, { once: true });
       container.append(button);
@@ -1016,8 +1040,13 @@
     });
     renderEventActions(elements.boardEventActions, actions);
     const hasEnabledActions = actions.some((action) => !action.disabled);
+    const compactModes = ["overview", "rolling", "moving", "next-turn"];
+    const isCompact = compactModes.includes(stageMode) && !hasEnabledActions;
     elements.boardEventDock.classList.toggle("has-actions", hasEnabledActions);
-    if (isMobilePortrait()) setBoardEventExpanded(hasEnabledActions);
+    elements.boardEventDock.classList.toggle("is-actionable", hasEnabledActions || stageMode === "decision");
+    elements.boardEventDock.classList.toggle("is-compact", isCompact);
+    syncExperienceState(stageMode, hasEnabledActions);
+    if (isMobilePortrait()) setBoardEventExpanded(hasEnabledActions || stageMode === "result");
   }
 
   function updateBoardStage(stageMode, event, stats = []) {
