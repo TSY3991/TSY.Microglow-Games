@@ -3405,3 +3405,68 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     line-height: 1.08 !important;
   }
 }
+/* Mobile landscape nickname setup compact fit - 20260810j.
+   First-time players must see the nickname input and submit action without hunting through a scroll panel. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  .nickname-modal {
+    padding: max(6px, env(safe-area-inset-top)) 8px max(6px, env(safe-area-inset-bottom)) !important;
+    align-items: center !important;
+  }
+
+  .nickname-card {
+    width: min(560px, calc(100vw - 24px)) !important;
+    max-height: calc(100svh - 14px) !important;
+    gap: 7px !important;
+    padding: 12px 18px !important;
+    border-radius: 16px !important;
+    align-content: start !important;
+  }
+
+  .nickname-sigil {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 13px !important;
+    font-size: 1.25rem !important;
+  }
+
+  .nickname-card h2 {
+    font-size: 1.42rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .nickname-lead {
+    max-width: 100% !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  .nickname-form {
+    gap: 5px !important;
+  }
+
+  .nickname-form label {
+    font-size: 12px !important;
+  }
+
+  .nickname-form input {
+    min-height: 42px !important;
+    padding: 0 13px !important;
+    font-size: 15px !important;
+  }
+
+  .nickname-form > small {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  .nickname-status {
+    min-height: 15px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  .nickname-form .primary-button {
+    min-height: 42px !important;
+    font-size: 14px !important;
+  }
+}
