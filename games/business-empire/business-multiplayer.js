@@ -688,6 +688,9 @@
         if (!elements.queueWaiting) return;
         const waiting = Boolean(entry);
         elements.queueWaiting.hidden = !waiting;
+        container.classList.toggle("is-queue-waiting", waiting);
+        elements.app?.classList.toggle("is-queue-waiting", waiting);
+        container.closest(".multiplayer-card")?.classList.toggle("is-queue-waiting", waiting);
         if (!waiting) {
           stopQueueWaitTimer();
           if (elements.queueWaitTime) elements.queueWaitTime.textContent = "00:00";
@@ -757,6 +760,9 @@
     function destroy() {
       stopPresenceHeartbeat();
       stopQueueWaitTimer();
+      container.classList.remove("is-queue-waiting");
+      elements.app?.classList.remove("is-queue-waiting");
+      container.closest(".multiplayer-card")?.classList.remove("is-queue-waiting");
       if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
       if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
       if (invitesUnsubscribe) { invitesUnsubscribe(); invitesUnsubscribe = null; }

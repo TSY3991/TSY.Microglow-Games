@@ -3095,3 +3095,157 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     line-height: 1.15 !important;
   }
 }
+/* Matchmaking focused wait window - 20260810e */
+[data-business-multiplayer-root].is-queue-waiting [data-mp-panel="queue"] .mp-card {
+  position: relative;
+  overflow: hidden;
+  min-height: min(520px, calc(100svh - 190px));
+  align-content: stretch;
+  isolation: isolate;
+}
+
+[data-business-multiplayer-root].is-queue-waiting [data-mp-panel="queue"] .mp-card::before {
+  position: absolute;
+  inset: -18%;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(84,221,245,.18), transparent 30%),
+    radial-gradient(circle at 50% 70%, rgba(246,207,116,.11), transparent 38%);
+  content: "";
+  animation: mp-queue-glow 2.4s ease-in-out infinite alternate;
+}
+
+[data-business-multiplayer-root].is-queue-waiting [data-mp-panel="queue"] .mp-hint,
+[data-business-multiplayer-root].is-queue-waiting [data-mp-panel="queue"] [data-mp-action="enqueue"] {
+  display: none !important;
+}
+
+[data-business-multiplayer-root].is-queue-waiting .mp-match-wait {
+  min-height: min(360px, calc(100svh - 260px));
+  margin: 8px 0 12px;
+  border-color: rgba(246,207,116,.42);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(84,221,245,.2), transparent 34%),
+    linear-gradient(150deg, rgba(8,35,52,.98), rgba(8,10,28,.98));
+  box-shadow: inset 0 0 46px rgba(84,221,245,.08), 0 22px 48px rgba(0,0,0,.38), 0 0 34px rgba(84,221,245,.1);
+}
+
+[data-business-multiplayer-root].is-queue-waiting .mp-match-spinner {
+  width: 92px;
+  height: 92px;
+  border-width: 3px;
+}
+
+[data-business-multiplayer-root].is-queue-waiting .mp-match-wait strong { font-size: clamp(24px, 5vw, 34px); }
+[data-business-multiplayer-root].is-queue-waiting .mp-match-wait p { font-size: 14px; }
+[data-business-multiplayer-root].is-queue-waiting .mp-match-wait small { font-size: 13px; }
+
+[data-business-multiplayer-root].is-queue-waiting [data-mp-panel="queue"] .mp-actions {
+  justify-content: center;
+  order: 5;
+}
+
+[data-business-multiplayer-root].is-queue-waiting [data-mp-action="cancel-queue"] {
+  min-width: min(260px, 100%);
+  min-height: 48px;
+}
+
+@keyframes mp-queue-glow {
+  from { opacity: .72; transform: scale(.96); }
+  to { opacity: 1; transform: scale(1.04); }
+}
+
+@media (max-width: 900px) {
+  [data-business-multiplayer-root].is-queue-waiting [data-mp-panel="queue"] .mp-card {
+    min-height: min(500px, calc(100svh - 150px));
+    padding: 14px;
+  }
+
+  [data-business-multiplayer-root].is-queue-waiting .mp-match-wait {
+    min-height: min(330px, calc(100svh - 230px));
+    padding: 24px 14px;
+  }
+
+  [data-business-multiplayer-root].is-queue-waiting .mp-match-spinner {
+    width: 84px;
+    height: 84px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-business-multiplayer-root].is-queue-waiting [data-mp-panel="queue"] .mp-card::before,
+  [data-business-multiplayer-root].is-queue-waiting .mp-match-spinner,
+  [data-business-multiplayer-root].is-queue-waiting .mp-match-spinner::after {
+    animation: none !important;
+  }
+}
+/* Matchmaking first-screen fit - 20260810f */
+.multiplayer-card.is-queue-waiting {
+  overflow: auto;
+}
+
+.multiplayer-card.is-queue-waiting .multiplayer-heading {
+  min-height: 0;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+
+.multiplayer-card.is-queue-waiting .multiplayer-heading .modal-lead,
+.multiplayer-card.is-queue-waiting .multiplayer-emblem,
+.multiplayer-card.is-queue-waiting .mp-guest-banner,
+.multiplayer-card.is-queue-waiting .mp-tabs,
+.multiplayer-card.is-queue-waiting [data-mp-panel="queue"] h2 {
+  display: none !important;
+}
+
+.multiplayer-card.is-queue-waiting [data-mp-panel="queue"] .mp-card {
+  min-height: 0;
+  align-content: stretch;
+}
+
+.multiplayer-card.is-queue-waiting .mp-match-wait {
+  min-height: clamp(230px, 44svh, 340px);
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .multiplayer-card.is-queue-waiting {
+    max-height: calc(100svh - 8px);
+    padding: 10px;
+  }
+
+  .multiplayer-card.is-queue-waiting .multiplayer-heading {
+    margin-bottom: 6px;
+    padding-right: 42px;
+  }
+
+  .multiplayer-card.is-queue-waiting .multiplayer-heading h2 {
+    font-size: 1.15rem;
+  }
+
+  .multiplayer-card.is-queue-waiting .mp-match-wait {
+    min-height: 154px;
+    gap: 6px;
+    margin: 4px 0 8px;
+    padding: 12px;
+  }
+
+  .multiplayer-card.is-queue-waiting .mp-match-spinner {
+    width: 58px;
+    height: 58px;
+  }
+
+  .multiplayer-card.is-queue-waiting .mp-match-wait strong { font-size: 20px; }
+  .multiplayer-card.is-queue-waiting .mp-match-wait p { font-size: 12px; }
+  .multiplayer-card.is-queue-waiting .mp-match-wait small { font-size: 12px; }
+  .multiplayer-card.is-queue-waiting [data-mp-action="cancel-queue"] { min-height: 44px; }
+}
+
+@media (max-width: 900px) and (orientation: portrait) {
+  .multiplayer-card.is-queue-waiting {
+    padding: 12px 10px;
+  }
+
+  .multiplayer-card.is-queue-waiting .mp-match-wait {
+    min-height: min(320px, calc(100svh - 280px));
+  }
+}
