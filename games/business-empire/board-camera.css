@@ -2080,3 +2080,27 @@ button.top-immersive-button { display: none !important; }
     grid-column: 1 / -1 !important;
   }
 }
+/* Mobile landscape camera touch target pass - 20260810am. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .board-camera-controls {
+    grid-template-columns: 40px 52px 40px !important;
+    transform: none !important;
+  }
+
+  .board-camera-controls button {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    font-size: 15px !important;
+  }
+
+  .board-camera-controls .camera-follow {
+    min-width: 52px !important;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 320px) {
+  .board-camera-controls {
+    transform: scale(.92) !important;
+    transform-origin: top right !important;
+  }
+}

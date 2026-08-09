@@ -3470,3 +3470,28 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     font-size: 14px !important;
   }
 }
+/* Token name readability pass - 20260810k.
+   Player identity must remain legible on the board after camera zoom changes. */
+.token .pawn-name {
+  max-width: 82px;
+  padding: 2px 6px;
+  font-size: clamp(10px, .88vw, 13px);
+  line-height: 1.12;
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .token .pawn-name {
+    max-width: 92px;
+    padding: 2px 6px;
+    font-size: 11px;
+    line-height: 1.12;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 320px) {
+  .token .pawn-name {
+    max-width: 84px;
+    padding: 2px 5px;
+    font-size: 10px;
+  }
+}
