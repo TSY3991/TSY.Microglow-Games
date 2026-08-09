@@ -813,6 +813,32 @@
     return labels[state.phase] || "準備中";
   }
 
+  function updateRollButtonCopy(actor) {
+    if (!elements.roll) return;
+    const kicker = elements.roll.querySelector("span");
+    const label = elements.roll.querySelector("b");
+    if (state.phase === "ai" && actor && !actor.isHuman) {
+      if (kicker) kicker.textContent = "AI TURN";
+      if (label) label.textContent = "行動中";
+      elements.roll.setAttribute("aria-label", `${actorDisplayName(actor)}正在自動擲骰與移動`);
+      return;
+    }
+    if (state.phase === "moving") {
+      if (kicker) kicker.textContent = "MOVE";
+      if (label) label.textContent = "移動中";
+      elements.roll.setAttribute("aria-label", "角色正在逐格移動");
+      return;
+    }
+    if (state.phase === "decision") {
+      if (kicker) kicker.textContent = "EVENT";
+      if (label) label.textContent = "處理事件";
+      elements.roll.setAttribute("aria-label", "請處理目前落點事件");
+      return;
+    }
+    if (kicker) kicker.textContent = "ROLL";
+    if (label) label.textContent = "擲出骰子";
+    elements.roll.setAttribute("aria-label", "擲出骰子");
+  }
   function renderTurnStage() {
     const actor = activeActor();
     elements.activeName.textContent = actor ? actorDisplayName(actor) : "等待玩家";
@@ -830,6 +856,7 @@
     syncExperienceState();
     elements.boardCommand.classList.toggle("is-human-turn", Boolean(actor?.isHuman));
     elements.boardCommandLabel.textContent = !actor ? "點擊骰子開始" : state.phase === "roll" ? "輪到你・擲骰前進" : state.phase === "decision" ? "處理落點事件" : state.phase === "ai" ? `${actorDisplayName(actor)}擲骰中` : phaseLabel();
+    updateRollButtonCopy(actor);
 
     elements.playerSeats.replaceChildren();
     state.actors.forEach((player) => {

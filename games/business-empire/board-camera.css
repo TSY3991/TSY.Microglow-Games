@@ -1259,3 +1259,71 @@ body[data-game-phase="roll"] .roll-button {
     white-space: nowrap !important;
   }
 }
+/* Mobile portrait AI turn feedback - 20260810r.
+   The AI phase should read as active simulation, not a disabled player button. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    height: 62px !important;
+    min-height: 62px !important;
+    max-height: 62px !important;
+    grid-template-columns: 42px minmax(0,1fr) !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    opacity: .9 !important;
+    border-color: rgba(84,221,245,.42) !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded)::before,
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-toggle {
+    display: none !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-visual {
+    display: grid !important;
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy {
+    display: grid !important;
+    min-width: 0 !important;
+    padding-top: 1px !important;
+    align-content: center !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy small {
+    display: block !important;
+    color: var(--cyan) !important;
+    font-size: 9px !important;
+    letter-spacing: .12em !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy strong {
+    display: block !important;
+    overflow: hidden !important;
+    color: #fff1bd !important;
+    font-size: 13px !important;
+    line-height: 1.12 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-copy p,
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-stats,
+  body:not(.mobile-portrait-locked).ai-turn-active .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) .board-event-actions {
+    display: none !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-command .roll-button b {
+    font-size: 13px !important;
+  }
+
+  body:not(.mobile-portrait-locked).ai-turn-active .board-command .roll-button span {
+    display: block !important;
+    font-size: 8px !important;
+  }
+}
