@@ -1013,7 +1013,7 @@
       item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
       elements.offerStats.append(item);
     });
-    const panelActions = isMobileLandscape() ? actions : [];
+    const panelActions = (isMobileLandscape() || window.matchMedia("(min-width: 901px)").matches) ? actions : [];
     renderEventActions(elements.eventActions, panelActions);
     if (elements.eventActions) elements.eventActions.hidden = panelActions.length === 0;
     syncBoardEvent(event, actions, stats, stageModeFor(event, actions));

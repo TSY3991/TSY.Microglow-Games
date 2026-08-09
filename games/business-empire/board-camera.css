@@ -1137,3 +1137,88 @@ body[data-game-phase="roll"] .roll-button {
     max-height: min(58%, 280px);
   }
 }
+/* Desktop decision side-panel ownership - 20260810p.
+   Keep the map readable by moving actionable decisions to the right panel on desktop. */
+@media (min-width: 901px) {
+  body[data-game-phase="decision"] .quest-panel {
+    grid-template-rows: minmax(0,1fr) !important;
+  }
+
+  body[data-game-phase="decision"] .quest-panel .event-summary-card {
+    display: grid !important;
+    min-height: 0;
+    height: 100%;
+    grid-template-rows: auto minmax(0,1fr);
+    overflow: hidden;
+  }
+
+  body[data-game-phase="decision"] .quest-panel .action-deck,
+  body[data-game-phase="decision"] .quest-panel .story-scroll {
+    display: none !important;
+  }
+
+  body[data-game-phase="decision"] .quest-panel .event-content {
+    display: grid;
+    grid-template-rows: auto auto minmax(0,1fr) auto auto;
+    min-height: 0;
+  }
+
+  body[data-game-phase="decision"] .quest-panel .event-content > p {
+    max-height: 7.5em;
+    overflow: auto;
+  }
+
+  body[data-game-phase="decision"] .quest-panel .offer-stats:not([hidden]) {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 8px;
+  }
+
+  body[data-game-phase="decision"] .quest-panel .event-actions:not([hidden]) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(132px,1fr));
+    gap: 9px;
+    margin-top: 10px;
+  }
+
+  body[data-game-phase="decision"] .quest-panel .event-actions button {
+    min-height: 46px;
+    padding: 0 15px;
+    border-radius: 12px;
+    font-size: .9rem;
+    box-shadow: 0 3px 0 #8a5c15,0 10px 22px rgba(246,207,116,.18);
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] {
+    left: 14px;
+    bottom: 14px;
+    width: min(360px,calc(100% - 144px));
+    min-height: 66px;
+    max-height: 76px;
+    grid-template-columns: 44px minmax(0,1fr);
+    gap: 8px;
+    padding: 9px 11px;
+    overflow: hidden;
+    opacity: .84;
+    pointer-events: none;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-stats,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy p,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-toggle {
+    display: none !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy {
+    padding-top: 9px;
+    pointer-events: none;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
