@@ -1489,34 +1489,36 @@ body[data-game-phase="roll"] .roll-button {
     right: max(7px,env(safe-area-inset-right));
     z-index: 180;
     display: inline-flex;
-    min-height: 32px;
+    min-width: 84px;
+    min-height: 44px;
     align-items: center;
     justify-content: center;
-    padding: 0 10px;
+    padding: 0 14px;
     border: 1px solid rgba(246,207,116,.52);
     border-radius: 999px;
     color: #211602;
     background: linear-gradient(180deg,#fff0b4,#e9b94f);
     box-shadow: 0 5px 18px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.8);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 950;
   }
 }
-/* Short landscape immersive quick access - 20260810w. */
+/* Short landscape immersive quick access - 20260810x. */
 button.top-immersive-button { display: none !important; }
 @media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
   body.gameplay-active button.top-immersive-button {
     display: inline-flex !important;
-    min-height: 28px;
+    min-width: 58px;
+    min-height: 44px !important;
     align-items: center;
     justify-content: center;
-    padding: 0 9px;
+    padding: 0 12px;
     border: 1px solid rgba(246,207,116,.5);
-    border-radius: 10px;
+    border-radius: 999px;
     color: #211602;
     background: linear-gradient(180deg,#fff0b4,#e9b94f);
     box-shadow: 0 3px 12px rgba(246,207,116,.18), inset 0 1px rgba(255,255,255,.8);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 950;
     letter-spacing: .04em;
   }
