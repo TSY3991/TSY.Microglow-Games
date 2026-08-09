@@ -1502,3 +1502,26 @@ body[data-game-phase="roll"] .roll-button {
     font-weight: 950;
   }
 }
+/* Short landscape immersive quick access - 20260810v. */
+button.top-immersive-button { display: none !important; }
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  button.top-immersive-button {
+    display: inline-flex !important;
+    min-height: 28px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 9px;
+    border: 1px solid rgba(246,207,116,.5);
+    border-radius: 10px;
+    color: #211602;
+    background: linear-gradient(180deg,#fff0b4,#e9b94f);
+    box-shadow: 0 3px 12px rgba(246,207,116,.18), inset 0 1px rgba(255,255,255,.8);
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: .04em;
+  }
+
+  body.immersive-play-mode .top-immersive-button {
+    display: none !important;
+  }
+}

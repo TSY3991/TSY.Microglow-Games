@@ -1303,7 +1303,7 @@
     immersiveMode = Boolean(enabled && canUseImmersive && (state.started || state.connected));
     document.body.classList.toggle("immersive-play-mode", immersiveMode);
     elements.immersiveButtons.forEach((button) => {
-      button.textContent = immersiveMode ? "退出沉浸" : "沉浸遊玩";
+      button.textContent = button.classList.contains("top-immersive-button") ? (immersiveMode ? "退出" : "沉浸") : (immersiveMode ? "退出沉浸" : "沉浸遊玩");
       button.setAttribute("aria-pressed", String(immersiveMode));
       if (button === elements.immersiveExitButton) button.hidden = !immersiveMode;
     });
