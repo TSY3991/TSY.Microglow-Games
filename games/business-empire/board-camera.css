@@ -1327,3 +1327,27 @@ body[data-game-phase="roll"] .roll-button {
     font-size: 8px !important;
   }
 }
+/* Mobile portrait camera control safe area - 20260810s.
+   During automated movement the board frame can shift; keep camera controls in viewport. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked).movement-active .board-camera-controls,
+  body:not(.mobile-portrait-locked).ai-turn-active .board-camera-controls {
+    position: fixed !important;
+    top: max(58px, env(safe-area-inset-top)) !important;
+    right: 10px !important;
+    bottom: auto !important;
+    z-index: 120 !important;
+    opacity: .72 !important;
+    transform: scale(.82) !important;
+    transform-origin: top right !important;
+    transition: opacity .18s ease, transform .18s ease !important;
+  }
+
+  body:not(.mobile-portrait-locked).movement-active .board-camera-controls:focus-within,
+  body:not(.mobile-portrait-locked).movement-active .board-camera-controls:hover,
+  body:not(.mobile-portrait-locked).ai-turn-active .board-camera-controls:focus-within,
+  body:not(.mobile-portrait-locked).ai-turn-active .board-camera-controls:hover {
+    opacity: 1 !important;
+    transform: scale(.9) !important;
+  }
+}
