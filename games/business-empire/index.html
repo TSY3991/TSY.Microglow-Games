@@ -10,7 +10,7 @@
     <link rel="icon" href="../../assets/logo-mark.png" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20260727a">
     <link rel="stylesheet" href="./business.css?v=20260810d">
-    <link rel="stylesheet" href="./board-camera.css?v=20260810t">
+    <link rel="stylesheet" href="./board-camera.css?v=20260810u">
   </head>
   <body>
     <main class="empire-shell">
@@ -40,11 +40,13 @@
               <button type="button" data-action="audio" aria-pressed="true">♫ 開</button>
               <button type="button" data-action="instructions">玩法卷軸</button>
               <button type="button" data-action="focus">放大棋盤</button>
+              <button type="button" data-action="immersive" aria-pressed="false">沉浸遊玩</button>
               <button type="button" data-action="restart">重新冒險</button>
             </div>
           </div>
         </div>
       </header>
+      <button class="immersive-exit-button" type="button" data-action="immersive-exit" hidden>退出沉浸</button>
 
       <section class="adventurer-hud" aria-label="玩家財務狀態">
         <div class="player-banner">
@@ -341,6 +343,6 @@
     <script src="../../shared/multiplayer-client.js?v=20260729c"></script>
     <script src="./business-multiplayer.js?v=20260729f"></script>
     <script src="./board-camera.js?v=20260810b"></script>
-    <script src="./business.js?v=20260810k"></script>
+    <script src="./business.js?v=20260810l"></script>
   </body>
 </html>

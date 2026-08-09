@@ -243,6 +243,8 @@
     turnClock: document.querySelector("[data-turn-clock]"),
     turnTimer: document.querySelector("[data-turn-timer]"),
     focusButton: document.querySelector('[data-action="focus"]'),
+    immersiveButtons: [...document.querySelectorAll('[data-action="immersive"], [data-action="immersive-exit"]')],
+    immersiveExitButton: document.querySelector('[data-action="immersive-exit"]'),
     audioButton: document.querySelector('[data-action="audio"]'),
     orientationGuard: document.querySelector("[data-orientation-guard]"),
     orientationState: document.querySelector("[data-orientation-state]"),
@@ -269,6 +271,7 @@
   let musicStep = 0;
   let portraitBypass = false;
   let boardFocused = false;
+  let immersiveMode = false;
   let tileInspectorTimerId = null;
   let arrivalTimerId = null;
   let audioEnabled = readAudioPreference();
@@ -515,6 +518,7 @@
     state.phase = "roll";
     state.secondsLeft = TURN_SECONDS;
     lastBoardTrackKey = "";
+    setImmersiveMode(false);
     setBoardFocus(false);
     ensureAudio();
     playEffect("start");
@@ -1261,6 +1265,12 @@
     });
   }
 
+  function isShortLandscapeViewport() {
+    const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
+    const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
+    return width <= 900 && width > height && height <= 430;
+  }
+
   function preferredCameraScale() {
     const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
     const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
@@ -1281,6 +1291,23 @@
     document.body.classList.toggle("board-focus-mode", boardFocused);
     elements.focusButton.textContent = boardFocused ? "返回全圖" : "放大棋盤";
     elements.focusButton.setAttribute("aria-pressed", String(boardFocused));
+    boardCamera?.resumeFollow();
+    window.requestAnimationFrame(() => {
+      boardCamera?.refresh();
+      followActiveActor(true);
+    });
+  }
+
+  function setImmersiveMode(enabled) {
+    const canUseImmersive = isShortLandscapeViewport();
+    immersiveMode = Boolean(enabled && canUseImmersive && (state.started || state.connected));
+    document.body.classList.toggle("immersive-play-mode", immersiveMode);
+    elements.immersiveButtons.forEach((button) => {
+      button.textContent = immersiveMode ? "退出沉浸" : "沉浸遊玩";
+      button.setAttribute("aria-pressed", String(immersiveMode));
+      if (button === elements.immersiveExitButton) button.hidden = !immersiveMode;
+    });
+    if (immersiveMode && !boardFocused) setBoardFocus(true);
     boardCamera?.resumeFollow();
     window.requestAnimationFrame(() => {
       boardCamera?.refresh();
@@ -1931,6 +1958,7 @@
 
   function resetToIntro() {
     stopTurnTimer();
+    setImmersiveMode(false);
     setBoardFocus(false);
     setupState = createSetupState();
     state = createEmptyState();
@@ -1994,6 +2022,9 @@
       resetToIntro();
     });
     elements.focusButton.addEventListener("click", () => { setBoardFocus(!boardFocused); closeHeaderMenus(); });
+    elements.immersiveButtons.forEach((button) => {
+      button.addEventListener("click", () => { setImmersiveMode(!immersiveMode); closeHeaderMenus(); });
+    });
     elements.audioButton.addEventListener("click", () => { toggleAudio(); closeHeaderMenus(); });
     elements.cameraButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -2137,6 +2168,7 @@
     const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
     document.documentElement.style.setProperty("--empire-height", height + "px");
     document.documentElement.style.setProperty("--empire-width", width + "px");
+    if (immersiveMode && !isShortLandscapeViewport()) setImmersiveMode(false);
     syncOrientationGuard();
     boardCamera?.refresh();
     window.requestAnimationFrame(() => followActiveActor(false));
