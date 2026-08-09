@@ -1649,3 +1649,54 @@ button.top-immersive-button { display: none !important; }
     line-height: 1.15 !important;
   }
 }
+/* Mobile portrait event action full-width guard - 20260810af. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"],
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy {
+    grid-column: 1 / -1 !important;
+    justify-self: stretch !important;
+    align-self: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy small,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy strong,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy p,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy small,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy strong,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy p,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy small,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy strong,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy p {
+    padding-right: 46px !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-actions,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-actions,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-actions {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-actions button,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-actions button,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+}
