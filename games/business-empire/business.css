@@ -3249,3 +3249,118 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     min-height: min(320px, calc(100svh - 280px));
   }
 }
+/* Setup ready-step mobile CTA correction - 20260810g.
+   Keep the final setup action visible and readable on portrait phones and short landscape browser chrome. */
+@media (max-width: 900px) and (orientation: portrait) {
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-layout {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-map {
+    min-height: 86px !important;
+    padding: 10px 12px !important;
+    align-content: center !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-route {
+    display: none !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-map > strong {
+    font-size: 1rem !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-map > p {
+    font-size: .76rem !important;
+    line-height: 1.32 !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-roster ol {
+    gap: 5px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-roster li {
+    grid-template-columns: 24px 34px minmax(0,1fr) auto !important;
+    gap: 6px !important;
+    padding: 5px 7px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-settings {
+    grid-template-columns: repeat(4,minmax(0,1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-settings span {
+    min-height: 44px !important;
+    padding: 6px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer {
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer > span {
+    display: none !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer .primary-button,
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer .secondary-button {
+    min-height: 44px !important;
+    font-size: .88rem !important;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-layout {
+    grid-template-columns: minmax(0,1fr) !important;
+    gap: 6px !important;
+    max-height: 192px !important;
+    overflow: auto !important;
+    overscroll-behavior: contain !important;
+    padding-right: 2px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-map {
+    display: none !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-roster ol {
+    gap: 4px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-roster li {
+    grid-template-columns: 24px 34px minmax(0,1fr) auto !important;
+    min-height: 42px !important;
+    gap: 6px !important;
+    padding: 4px 7px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-settings {
+    grid-template-columns: repeat(4,minmax(0,1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-settings span {
+    min-height: 40px !important;
+    padding: 5px 7px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer {
+    margin-top: 6px !important;
+    padding-top: 6px !important;
+    gap: 8px !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer > span {
+    display: none !important;
+  }
+
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer .primary-button,
+  .setup-stage[data-setup-stage="3"]:not([hidden]) .setup-footer .secondary-button {
+    min-width: 132px !important;
+    min-height: 44px !important;
+    font-size: 13px !important;
+  }
+}
