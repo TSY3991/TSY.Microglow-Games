@@ -630,6 +630,7 @@
 
     document.body.dataset.gamePhase = phase;
     document.body.dataset.boardStage = stageMode;
+    document.body.classList.toggle("gameplay-active", Boolean(state.started && !state.ended));
     document.body.classList.toggle("player-turn-active", playerTurn);
     document.body.classList.toggle("decision-active", decisionPhase);
     document.body.classList.toggle("movement-active", movementPhase);
