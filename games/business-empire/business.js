@@ -1303,7 +1303,10 @@
     const width = Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth);
     const height = Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight);
     if (width <= 900 && height > width) return boardFocused ? 1.34 : 1.12;
-    if (width <= 900) return boardFocused ? 1.28 : 1;
+    if (width <= 900) {
+      const ultraShort = height <= 320;
+      return boardFocused ? (ultraShort ? 1.6 : 1.5) : (ultraShort ? 1.46 : 1.38);
+    }
     return boardFocused ? 1.16 : undefined;
   }
 
