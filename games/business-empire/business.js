@@ -534,6 +534,12 @@
       description: "擲骰前進，落點事件處理完畢後會進行月度現金流結算。"
     });
     renderAll();
+    // scheduleActiveTokenTracking() inside renderTokens() misses the very first
+    // frame — camera fit hasn't stabilised yet, so on some mobile widths the
+    // token stays hugged against the fit-all edge. Force a recenter now and
+    // again next rAF, once layout is definitely settled.
+    centerActiveToken();
+    window.requestAnimationFrame(centerActiveToken);
     setRollEnabled(true);
     startTurnTimer();
   }
