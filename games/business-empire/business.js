@@ -1097,6 +1097,7 @@
     elements.boardEventDock.classList.toggle("is-compact", isCompact);
     syncExperienceState(stageMode, hasEnabledActions);
     if (isMobilePortrait()) setBoardEventExpanded(hasEnabledActions || stageMode === "result");
+    scheduleEventDockAvoidance();
   }
 
   function updateBoardStage(stageMode, event, stats = []) {
@@ -1117,6 +1118,32 @@
 
   function isMobileLandscape() {
     return window.matchMedia("(max-width: 900px) and (orientation: landscape)").matches;
+  }
+
+  function syncShortLandscapeEventDockSide() {
+    const dock = elements.boardEventDock;
+    if (!dock) return;
+    const stageMode = dock.dataset.stageMode || "overview";
+    const shouldAvoidToken = state.phase === "decision" && isShortLandscapeViewport() && (dock.classList.contains("has-actions") || stageMode === "decision" || stageMode === "result");
+    if (!shouldAvoidToken) {
+      dock.classList.remove("event-dock-left");
+      return;
+    }
+    const token = elements.tokens?.querySelector(".token.is-active");
+    const frame = elements.boardFrame;
+    if (!token || !frame) {
+      dock.classList.remove("event-dock-left");
+      return;
+    }
+    const tokenRect = token.getBoundingClientRect();
+    const frameRect = frame.getBoundingClientRect();
+    const tokenCenterX = tokenRect.left + tokenRect.width / 2;
+    const switchLine = frameRect.left + frameRect.width * 0.58;
+    dock.classList.toggle("event-dock-left", tokenCenterX > switchLine);
+  }
+
+  function scheduleEventDockAvoidance() {
+    window.requestAnimationFrame(syncShortLandscapeEventDockSide);
   }
 
   function syncMobileEventDrawer(shouldOpen) {
@@ -1285,6 +1312,7 @@
     if (!boardCamera || !state.started || !actor) return;
     const point = tokenPoint(actor);
     boardCamera.focusPercent(point.left, point.top, { force, scale: preferredCameraScale() });
+    scheduleEventDockAvoidance();
   }
 
   function setBoardFocus(enabled) {
@@ -1329,6 +1357,7 @@
     if (trackKey === lastBoardTrackKey) return;
     lastBoardTrackKey = trackKey;
     window.requestAnimationFrame(() => followActiveActor(false));
+    scheduleEventDockAvoidance();
   }
 
   function stopTurnTimer() {
@@ -2173,6 +2202,7 @@
     syncOrientationGuard();
     boardCamera?.refresh();
     window.requestAnimationFrame(() => followActiveActor(false));
+    scheduleEventDockAvoidance();
   }
 
   function syncOrientationGuard() {

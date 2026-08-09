@@ -1754,3 +1754,12 @@ button.top-immersive-button { display: none !important; }
     margin-top: 8px !important;
   }
 }
+/* Short landscape event side auto-avoidance - 20260810ah. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.event-dock-left.has-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.event-dock-left[data-stage-mode="decision"],
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.event-dock-left[data-stage-mode="result"] {
+    left: max(8px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+  }
+}
