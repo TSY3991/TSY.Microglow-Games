@@ -1302,7 +1302,7 @@
     const player = human();
     if (!player || state.ended || state.activeActorId !== player.id) return;
     state.turnExpired = true;
-    addLog(`${player.name}回合時間到，由商會自動代管。`);
+    addLog(`${actorDisplayName(player)}回合時間到，由商會自動代管。`);
     if (state.phase === "roll") {
       rollHuman();
       return;
@@ -1342,7 +1342,7 @@
     renderAll();
     const roll = randomInt(1, 6);
     await animateDice(roll);
-    addLog(`${player.name}擲出 ${roll}。`);
+    addLog(`${actorDisplayName(player)}擲出 ${roll}。`);
     state.phase = "moving";
     state.movingActorId = player.id;
     renderAll();
@@ -1442,7 +1442,7 @@
     if (tile.type === "learn") {
       const cost = actor.circle === "elite" ? 5000 : 2500;
       showEvent({ type: tile.type, title: "商業奧術課程", description: "提升能力會增加風險事件成功率、降低突發支出，並讓資產買入最多享 10% 折扣。" }, [
-        { label: `進修 ${formatMoney(cost)}`, disabled: actor.cash < cost, run: () => { actor.cash -= cost; actor.skill += 1; addLog(`${actor.name}進修完成，能力提升至 ${actor.skill}。`); finishHumanTurn(); } },
+        { label: `進修 ${formatMoney(cost)}`, disabled: actor.cash < cost, run: () => { actor.cash -= cost; actor.skill += 1; addLog(`${actorDisplayName(actor)}進修完成，能力提升至 ${actor.skill}。`); finishHumanTurn(); } },
         { label: "這次跳過", run: finishHumanTurn }
       ], [["目前能力", String(actor.skill)], ["買入折扣", `${Math.round(discountFor(actor) * 100)}%`]]);
       return;
@@ -1469,7 +1469,7 @@
       description: `風險 ${template.risk}。買入後每月收入 ${formatMoney(template.monthlyIncome)}，每月維護 ${formatMoney(template.monthlyCost)}。${discount ? `你的能力使買入價降低 ${Math.round(discount * 100)}%。` : ""}`
     }, [
       { label: `買入 ${formatMoney(price)}`, disabled: actor.cash < price, run: () => { buyAsset(actor, template, price); finishHumanTurn(); } },
-      { label: "放棄機會", run: () => { addLog(`${actor.name}放棄 ${template.name}。`); finishHumanTurn(); } }
+      { label: "放棄機會", run: () => { addLog(`${actorDisplayName(actor)}放棄 ${template.name}。`); finishHumanTurn(); } }
     ], [
       ["買入現金", formatMoney(price)],
       ["每月淨流入", formatSigned(netIncome)],
@@ -1489,7 +1489,7 @@
       boardPosition: actor.position,
       instanceId: `${template.id}-${instanceSequence += 1}`
     });
-    addLog(`${actor.name}買入「${template.name}」，每月淨流入 ${formatSigned(template.monthlyIncome - template.monthlyCost)}。`);
+    addLog(`${actorDisplayName(actor)}買入「${template.name}」，每月淨流入 ${formatSigned(template.monthlyIncome - template.monthlyCost)}。`);
   }
 
   function presentBank(actor) {
@@ -1499,7 +1499,7 @@
       title: "星鑄銀行",
       description: "可借入 $15,000，帳面負債增加 $18,000，並產生每月信用成本；也可優先償還既有信用貸款。"
     }, [
-      { label: "借入 $15,000", disabled: creditAvailable(actor) < 18000, run: () => { actor.cash += 15000; actor.bankDebt += 18000; addLog(`${actor.name}向星鑄銀行借入 $15,000。`); finishHumanTurn(); } },
+      { label: "借入 $15,000", disabled: creditAvailable(actor) < 18000, run: () => { actor.cash += 15000; actor.bankDebt += 18000; addLog(`${actorDisplayName(actor)}向星鑄銀行借入 $15,000。`); finishHumanTurn(); } },
       { label: "償還 $5,000", disabled: !canRepay, run: () => { repayBankDebt(actor, 5000); finishHumanTurn(); } },
       { label: "離開銀行", run: finishHumanTurn }
     ], [["銀行負債", formatMoney(actor.bankDebt)], ["可用信用", formatMoney(creditAvailable(actor))]]);
@@ -1509,7 +1509,7 @@
     const paid = Math.min(amount, actor.cash, actor.bankDebt);
     actor.cash -= paid;
     actor.bankDebt -= paid;
-    addLog(`${actor.name}償還銀行負債 ${formatMoney(paid)}。`);
+    addLog(`${actorDisplayName(actor)}償還銀行負債 ${formatMoney(paid)}。`);
   }
 
   function presentGate(actor) {
@@ -1526,7 +1526,7 @@
         ? "你已具備進入精英圈的條件。內圈機會報酬更高，風險與資金需求也會同步提高。"
         : "需達成任一條件：被動收入達支出的 55%、淨資產達 $250,000，或能力達 4。"
     }, qualified ? [
-      { label: "進入精英圈", run: () => { actor.circle = "elite"; actor.position = 0; addLog(`${actor.name}通過躍升門，進入精英圈。`); renderTokens(); finishHumanTurn(); } },
+      { label: "進入精英圈", run: () => { actor.circle = "elite"; actor.position = 0; addLog(`${actorDisplayName(actor)}通過躍升門，進入精英圈。`); renderTokens(); finishHumanTurn(); } },
       { label: "留在基礎圈", run: finishHumanTurn }
     ] : [
       { label: "繼續累積", run: finishHumanTurn }
@@ -1566,11 +1566,11 @@
     const player = human();
     const result = settleActor(player);
     if (result.failed) {
-      endGame(false, `${player.name}的現金與可用信用不足，商業帝國在本期結算後破產。`, player);
+      endGame(false, `${actorDisplayName(player)}的現金與可用信用不足，商業帝國在本期結算後破產。`, player);
       return;
     }
     if (hasWon(player)) {
-      endGame(true, `${player.name}的被動收入已支付全部每月支出，財務自由達成。`, player);
+      endGame(true, `${actorDisplayName(player)}的被動收入已支付全部每月支出，財務自由達成。`, player);
       return;
     }
 
@@ -1586,7 +1586,7 @@
   function settleActor(actor) {
     const flow = monthlyCashflow(actor);
     actor.cash += flow;
-    addLog(`${actor.name}月結 ${formatSigned(flow)}。`, actor.isHuman);
+    addLog(`${actorDisplayName(actor)}月結 ${formatSigned(flow)}。`, actor.isHuman);
     if (actor.cash >= 0) return { failed: false, flow };
 
     const needed = Math.abs(actor.cash);
@@ -1594,7 +1594,7 @@
     if (needed <= available) {
       actor.cash = 0;
       actor.bankDebt += needed;
-      addLog(`${actor.name}啟用緊急信用 ${formatMoney(needed)}。`, actor.isHuman);
+      addLog(`${actorDisplayName(actor)}啟用緊急信用 ${formatMoney(needed)}。`, actor.isHuman);
       return { failed: false, flow, emergencyCredit: needed };
     }
     return { failed: true, flow };
@@ -1609,20 +1609,20 @@
       state.secondsLeft = 0;
       state.movingActorId = actor.id;
       renderAll();
-      showEvent({ type: "income", icon: actor.avatar, stageMode: "rolling", label: "對手擲骰", title: `${actor.name}正在行動`, description: `${actor.title}準備沿著城市道路前進。` });
+      showEvent({ type: "income", icon: actor.avatar, stageMode: "rolling", label: "對手擲骰", title: `${actorDisplayName(actor)}正在行動`, description: `${actor.title}準備沿著城市道路前進。` });
       const roll = randomInt(1, 6);
       await animateDice(roll);
-      addLog(`${actor.name}擲出 ${roll}。`);
+      addLog(`${actorDisplayName(actor)}擲出 ${roll}。`);
       await moveActor(actor, roll, true);
       state.movingActorId = null;
       resolveAiTile(actor, currentTile(actor));
       const settlement = settleActor(actor);
       if (settlement.failed) {
         actor.eliminated = true;
-        addLog(`${actor.name}信用斷裂，退出競爭。`);
+        addLog(`${actorDisplayName(actor)}信用斷裂，退出競爭。`);
       } else if (hasWon(actor)) {
         renderAll();
-        endGame(false, `${actor.name}率先讓被動收入覆蓋每月支出，贏得本屆微光商會競賽。`, actor);
+        endGame(false, `${actorDisplayName(actor)}率先讓被動收入覆蓋每月支出，贏得本屆微光商會競賽。`, actor);
         return;
       }
       renderAll();
@@ -1644,7 +1644,7 @@
         }
         if (actor.cash >= price) buyAsset(actor, asset, price);
       } else {
-        addLog(`${actor.name}放棄 ${asset.name}。`);
+        addLog(`${actorDisplayName(actor)}放棄 ${asset.name}。`);
       }
       return;
     }
@@ -1652,21 +1652,21 @@
     if (tile.type === "income") {
       const [, amount] = rollIncomeEvent();
       actor.cash += amount;
-      addLog(`${actor.name}取得收入 ${formatMoney(amount)}。`);
+      addLog(`${actorDisplayName(actor)}取得收入 ${formatMoney(amount)}。`);
       return;
     }
 
     if (tile.type === "expense") {
       const { amount } = rollExpenseEvent(actor);
       actor.cash -= amount;
-      addLog(`${actor.name}支付突發支出 ${formatMoney(amount)}。`);
+      addLog(`${actorDisplayName(actor)}支付突發支出 ${formatMoney(amount)}。`);
       return;
     }
 
     if (tile.type === "risk") {
       const { success, amount } = rollRiskEvent(actor);
       actor.cash += amount;
-      addLog(`${actor.name}的風險行動${success ? "獲利" : "失利"} ${formatMoney(amount)}。`);
+      addLog(`${actorDisplayName(actor)}的風險行動${success ? "獲利" : "失利"} ${formatMoney(amount)}。`);
       return;
     }
 
@@ -1675,7 +1675,7 @@
       if (actor.cash > cost + (actor.strategy === "conservative" ? 18000 : 7000)) {
         actor.cash -= cost;
         actor.skill += 1;
-        addLog(`${actor.name}進修，能力提升至 ${actor.skill}。`);
+        addLog(`${actorDisplayName(actor)}進修，能力提升至 ${actor.skill}。`);
       }
       return;
     }
@@ -1686,7 +1686,7 @@
       } else if (actor.strategy === "aggressive" && actor.cash < 16000 && creditAvailable(actor) >= 18000) {
         actor.cash += 15000;
         actor.bankDebt += 18000;
-        addLog(`${actor.name}借入進攻資金 $15,000。`);
+        addLog(`${actorDisplayName(actor)}借入進攻資金 $15,000。`);
       }
       return;
     }
@@ -1695,7 +1695,7 @@
       if (actor.circle === "basic" && canEnterElite(actor)) {
         actor.circle = "elite";
         actor.position = 0;
-        addLog(`${actor.name}進入精英圈。`);
+        addLog(`${actorDisplayName(actor)}進入精英圈。`);
       } else if (actor.circle === "elite") {
         actor.cash += 6000;
       }
@@ -1704,7 +1704,7 @@
 
     const [, amount] = rollDestinyEvent(actor);
     actor.cash += amount;
-    addLog(`${actor.name}遇到命運事件 ${formatSigned(amount)}。`);
+    addLog(`${actorDisplayName(actor)}遇到命運事件 ${formatSigned(amount)}。`);
   }
 
   function shouldAiBuy(actor, asset, price) {
@@ -1833,7 +1833,7 @@
     portalStats.recordRun(GAME_ID, GAME_TITLE, score, best);
     elements.resultKicker.textContent = won ? "財務自由達成" : "本局挑戰結束";
     elements.resultEmblem.textContent = won ? "♛" : "◇";
-    elements.resultTitle.textContent = won ? "微光帝國建成" : `${focusActor.name}主導了結局`;
+    elements.resultTitle.textContent = won ? "微光帝國建成" : `${actorDisplayName(focusActor)}主導了結局`;
     elements.resultMessage.textContent = message;
     elements.resultStats.innerHTML = `
       <div><span>本局分數</span><strong>${new Intl.NumberFormat("zh-TW").format(score)}</strong></div>
@@ -1897,7 +1897,7 @@
     const shortfall = Math.max(0, loan - gross);
     player.cash += proceeds;
     player.bankDebt += shortfall;
-    addLog(`${player.name}出售「${asset.name}」，扣除資產貸款後收回 ${formatMoney(proceeds)}${shortfall ? `，並留下 ${formatMoney(shortfall)} 信用缺口` : ""}。`);
+    addLog(`${actorDisplayName(player)}出售「${asset.name}」，扣除資產貸款後收回 ${formatMoney(proceeds)}${shortfall ? `，並留下 ${formatMoney(shortfall)} 信用缺口` : ""}。`);
     renderAll();
     openAssets();
   }
@@ -2472,7 +2472,7 @@
     try {
       const result = await mm.callBusinessAction(state.matchId, "roll", crypto.randomUUID());
       await animateDice(result.dice);
-      addLog(`${player.name}擲出 ${result.dice}。`);
+      addLog(`${actorDisplayName(player)}擲出 ${result.dice}。`);
       state.phase = "moving";
       state.movingActorId = player.id;
       renderAll();
@@ -2577,9 +2577,9 @@
     playEffect(won ? "victory" : "lose");
     elements.resultKicker.textContent = won ? "財務自由達成" : "本局比賽結束";
     elements.resultEmblem.textContent = won ? "♛" : "◇";
-    elements.resultTitle.textContent = winnerActor ? `${winnerActor.name}主導了結局` : "比賽結束";
+    elements.resultTitle.textContent = winnerActor ? `${actorDisplayName(winnerActor)}主導了結局` : "比賽結束";
     elements.resultMessage.textContent = winnerActor
-      ? (won ? "你的被動收入已支付全部每月支出，財務自由達成。" : `${winnerActor.name}率先達成財務自由，贏得本局比賽。`)
+      ? (won ? "你的被動收入已支付全部每月支出，財務自由達成。" : `${actorDisplayName(winnerActor)}率先達成財務自由，贏得本局比賽。`)
       : "比賽已結束。";
     const score = player ? scoreOf(player) : 0;
     const existingBest = Number(portalStats.readGame(GAME_ID).bestScore) || 0;
