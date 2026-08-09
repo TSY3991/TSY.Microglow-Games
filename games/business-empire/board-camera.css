@@ -1540,3 +1540,59 @@ button.top-immersive-button { display: none !important; }
     align-items: center !important;
   }
 }
+/* Short landscape actionable event dock - 20260810z.
+   The right-side quest card is hidden in the camera-first layout, so decisions must stay tappable on the board dock. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    min-height: 126px !important;
+    max-height: min(54%, 224px) !important;
+    grid-template-columns: 42px minmax(0,1fr) !important;
+    gap: 8px !important;
+    padding: 9px 10px max(10px, env(safe-area-inset-bottom)) !important;
+    overflow: auto !important;
+    opacity: .97 !important;
+    pointer-events: auto !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy {
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0,1fr) auto;
+    min-height: 0;
+    padding-top: 10px !important;
+    pointer-events: auto !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy p,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy p {
+    display: block !important;
+    max-height: 34px;
+    overflow: auto;
+    margin: 3px 0 0;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-actions {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+    pointer-events: auto !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-actions button,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-actions button {
+    min-height: 44px !important;
+    padding: 0 10px !important;
+    border-radius: 11px !important;
+    font-size: 12px !important;
+    pointer-events: auto !important;
+  }
+}
