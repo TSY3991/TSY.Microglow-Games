@@ -1117,3 +1117,23 @@ body[data-game-phase="roll"] .roll-button {
     max-height: 30px;
   }
 }
+
+/* Desktop decision action target - 20260810n. */
+@media (min-width: 901px) {
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions button,
+  .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-actions button {
+    min-height: 44px;
+    padding: 0 15px;
+    border-radius: 11px;
+    font-size: .84rem;
+  }
+}
+
+/* Desktop decision dock fit - 20260810o. */
+@media (min-width: 901px) {
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"],
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions {
+    min-height: 188px;
+    max-height: min(58%, 280px);
+  }
+}
