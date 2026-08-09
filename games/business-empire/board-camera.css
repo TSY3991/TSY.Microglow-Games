@@ -823,3 +823,36 @@ body[data-game-phase="decision"] .board-event-actions button:first-child:last-ch
     transition: none !important;
   }
 }
+
+
+/* Mobile portrait event safe-area sheet - 20260810d. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-expanded {
+    left: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    min-height: 118px;
+    max-height: min(38%, 236px);
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-radius: 16px;
+    transform: none !important;
+  }
+
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-expanded .board-event-toggle {
+    right: 8px;
+    top: 8px;
+    width: 44px;
+    height: 44px;
+  }
+
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-expanded .board-event-actions {
+    padding-right: 2px;
+    padding-bottom: max(2px, env(safe-area-inset-bottom));
+  }
+
+  body:not(.mobile-portrait-locked) .board-frame > .board-event-dock.is-expanded .board-event-actions button {
+    min-height: 46px;
+  }
+}
