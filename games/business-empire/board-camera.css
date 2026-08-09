@@ -856,3 +856,36 @@ body[data-game-phase="decision"] .board-event-actions button:first-child:last-ch
     min-height: 46px;
   }
 }
+
+
+/* Mobile landscape grid-row correction - 20260810e. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .board-panel {
+    grid-template-rows: minmax(52px, auto) minmax(0, 1fr) !important;
+  }
+
+  .board-status,
+  .legend {
+    display: none !important;
+  }
+
+  .turn-banner {
+    grid-row: 1 !important;
+  }
+
+  .board-frame {
+    grid-row: 2 !important;
+    min-height: 180px;
+    height: 100% !important;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 390px) {
+  .board-panel {
+    grid-template-rows: minmax(48px, auto) minmax(0, 1fr) !important;
+  }
+
+  .board-frame {
+    min-height: 150px;
+  }
+}
