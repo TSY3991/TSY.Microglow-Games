@@ -3001,3 +3001,30 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
   .mp-match-spinner,
   .mp-match-spinner::after { animation-duration: 2.2s; }
 }
+
+
+/* Mobile portrait board-first viewport correction - 20260810c. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked) .game-layout {
+    grid-template-rows: minmax(0,1fr) !important;
+    gap: 0 !important;
+    min-height: 0;
+    height: 100%;
+  }
+
+  body:not(.mobile-portrait-locked) .quest-panel {
+    display: none !important;
+  }
+
+  body:not(.mobile-portrait-locked) .board-panel {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0,1fr) !important;
+    padding-bottom: max(5px, env(safe-area-inset-bottom));
+  }
+
+  body:not(.mobile-portrait-locked) .board-frame {
+    min-height: 0;
+    height: 100% !important;
+  }
+}
