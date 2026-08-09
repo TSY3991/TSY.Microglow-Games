@@ -1030,3 +1030,90 @@ body[data-game-phase="roll"] .roll-button {
     box-shadow: 0 18px 48px rgba(0,0,0,.3);
   }
 }
+
+/* Mobile portrait compact decision sheet - 20260810l. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.is-expanded,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    min-height: 150px;
+    max-height: min(32%, 210px);
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 9px 10px max(10px, env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.is-expanded .board-event-visual,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-visual {
+    display: none !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.is-expanded .board-event-copy,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy {
+    display: grid;
+    grid-template-rows: auto auto minmax(0,1fr) auto auto;
+    min-height: 0;
+    padding-top: 15px;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy small {
+    font-size: 9px;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy strong {
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy p {
+    max-height: 34px;
+    overflow: auto;
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-stats:not([hidden]) {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(132px,1fr));
+    gap: 6px;
+    margin-top: 7px;
+    padding-right: 0;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions button {
+    min-height: 46px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 13px;
+  }
+}
+
+/* Mobile portrait decision button fit - 20260810m. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-stats {
+    display: none !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy {
+    grid-template-rows: auto auto minmax(0,1fr) auto;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy p {
+    max-height: 30px;
+  }
+}
