@@ -622,6 +622,7 @@
     const playerTurn = Boolean(state.started && !state.ended && actor?.isHuman);
     const movementPhase = phase === "dice" || phase === "moving";
     const decisionPhase = phase === "decision" || Boolean(hasActions);
+    const actionMeta = nextActionMeta(actor, phase, playerTurn, decisionPhase, movementPhase);
 
     document.body.dataset.gamePhase = phase;
     document.body.dataset.boardStage = stageMode;
@@ -634,7 +635,22 @@
       elements.boardFrame.dataset.gamePhase = phase;
       elements.boardFrame.dataset.stageMode = stageMode;
     }
-    if (elements.boardCommand) elements.boardCommand.dataset.stageMode = stageMode;
+    if (elements.boardCommand) {
+      elements.boardCommand.dataset.stageMode = stageMode;
+      elements.boardCommand.dataset.actionIntent = actionMeta.intent;
+      if (actionMeta.label) elements.boardCommand.dataset.actionLabel = actionMeta.label;
+      else elements.boardCommand.removeAttribute("data-action-label");
+    }
+  }
+
+  function nextActionMeta(actor, phase, playerTurn, decisionPhase, movementPhase) {
+    if (!state.started || state.ended || !actor) return { intent: "idle", label: "" };
+    if (movementPhase) return { intent: "watch", label: phase === "dice" ? "\u9ab0\u5b50\u6f14\u51fa\u4e2d" : "\u89d2\u8272\u79fb\u52d5\u4e2d" };
+    if (playerTurn && phase === "roll") return { intent: "roll", label: "\u4e0b\u4e00\u6b65\uff1a\u64f2\u9ab0" };
+    if (playerTurn && decisionPhase) return { intent: "event", label: "\u4e0b\u4e00\u6b65\uff1a\u8655\u7406\u4e8b\u4ef6" };
+    if (phase === "settling" || phase === "turn_end") return { intent: "settle", label: "\u73fe\u91d1\u6d41\u7d50\u7b97" };
+    if (!actor.isHuman || phase === "ai") return { intent: "wait", label: "\u7b49\u5f85\u5c0d\u624b" };
+    return { intent: "idle", label: "" };
   }
 
   function renderStats() {
@@ -1292,9 +1308,15 @@
     if (state.phase === "decision") autoResolveDecision();
   }
 
+  function availableDecisionButtons() {
+    return [elements.boardEventActions, elements.eventActions]
+      .filter(Boolean)
+      .flatMap((container) => [...container.querySelectorAll("button:not(:disabled)")]);
+  }
+
   function autoResolveDecision() {
     if (state.ended || state.phase !== "decision") return;
-    const choices = [...elements.eventActions.querySelectorAll("button:not(:disabled)")];
+    const choices = availableDecisionButtons();
     const fallback = choices.at(-1);
     if (fallback) {
       fallback.click();
@@ -2014,9 +2036,20 @@
         setBoardEventExpanded(false);
         if (!state.started && !state.connected) elements.introModal.hidden = false;
       }
-      if ((event.key === "Enter" || event.key === " ") && !elements.roll.disabled && !document.querySelector(".modal:not([hidden])") && !document.body.classList.contains("mobile-portrait-preview") && !document.body.classList.contains("mobile-portrait-locked")) {
-        event.preventDefault();
-        rollHuman();
+      const isConfirmKey = event.key === "Enter" || event.key === " ";
+      const hasOpenModal = document.querySelector(".modal:not([hidden])");
+      const portraitBlocked = document.body.classList.contains("mobile-portrait-preview") || document.body.classList.contains("mobile-portrait-locked");
+      if (isConfirmKey && !hasOpenModal && !portraitBlocked) {
+        if (!elements.roll.disabled) {
+          event.preventDefault();
+          rollHuman();
+          return;
+        }
+        const decisionChoices = state.phase === "decision" ? availableDecisionButtons() : [];
+        if (decisionChoices.length === 1) {
+          event.preventDefault();
+          decisionChoices[0].click();
+        }
       }
     });
 

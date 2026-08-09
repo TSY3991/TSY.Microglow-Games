@@ -745,3 +745,81 @@ body[data-game-phase="decision"] .board-frame > .board-event-dock,
   from { filter: brightness(1); transform: scale(1); }
   to { filter: brightness(1.18); transform: scale(1.055); }
 }
+
+
+/* Primary-action guidance polish - 20260810b. */
+.board-command[data-action-label]::after {
+  position: absolute;
+  right: 8px;
+  top: -11px;
+  z-index: 3;
+  max-width: calc(100% - 16px);
+  padding: 3px 8px;
+  border: 1px solid rgba(246,207,116,.48);
+  border-radius: 999px;
+  color: #fff5c8;
+  background: linear-gradient(180deg,rgba(20,34,48,.96),rgba(7,16,28,.96));
+  box-shadow: 0 8px 18px rgba(0,0,0,.35),0 0 18px rgba(246,207,116,.1);
+  content: attr(data-action-label);
+  font-size: clamp(9px,.72vw,12px);
+  font-weight: 950;
+  letter-spacing: .04em;
+  line-height: 1.15;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.board-command[data-action-intent="roll"]::after {
+  border-color: rgba(255,225,136,.82);
+  color: #201608;
+  background: linear-gradient(180deg,#fff2ae,#f0b94e);
+}
+
+.board-command[data-action-intent="event"]::after {
+  border-color: color-mix(in srgb,var(--event-color,var(--gold-bright)),white 12%);
+  color: #fff8df;
+  background: linear-gradient(180deg,color-mix(in srgb,var(--event-color,var(--gold-bright)),#18263a 38%),rgba(10,16,29,.98));
+}
+
+.board-command[data-action-intent="watch"]::after,
+.board-command[data-action-intent="wait"]::after,
+.board-command[data-action-intent="settle"]::after {
+  border-color: rgba(84,221,245,.44);
+  color: #bff6ff;
+}
+
+body[data-game-phase="decision"] .board-event-actions button:first-child:last-child,
+.board-event-dock[data-stage-mode="result"] .board-event-actions button:first-child:last-child {
+  min-height: 48px;
+  font-size: .92rem;
+}
+
+@media (max-width: 900px) {
+  .board-command[data-action-label]::after {
+    top: -8px;
+    right: 5px;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  body[data-game-phase="decision"] .board-event-actions button:first-child:last-child,
+  .board-event-dock[data-stage-mode="result"] .board-event-actions button:first-child:last-child {
+    min-height: 44px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .board-command[data-action-label]::after {
+    top: auto;
+    right: 6px;
+    bottom: -11px;
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-command[data-action-label]::after {
+    transition: none !important;
+  }
+}
