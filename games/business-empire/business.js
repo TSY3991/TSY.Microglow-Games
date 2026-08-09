@@ -1013,7 +1013,9 @@
       item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
       elements.offerStats.append(item);
     });
-    renderEventActions(elements.eventActions, []);
+    const panelActions = isMobileLandscape() ? actions : [];
+    renderEventActions(elements.eventActions, panelActions);
+    if (elements.eventActions) elements.eventActions.hidden = panelActions.length === 0;
     syncBoardEvent(event, actions, stats, stageModeFor(event, actions));
     if (state.started && actions.length && activeActor()?.isHuman) playEffect(event.type || "event");
     syncMobileEventDrawer(false);
