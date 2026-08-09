@@ -1596,3 +1596,14 @@ button.top-immersive-button { display: none !important; }
     pointer-events: auto !important;
   }
 }
+/* Short landscape board-first decision layout - 20260810aa.
+   When event actions live on the board dock, remove the side panel so the camera viewport stays playable. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  body[data-game-phase="decision"] .game-layout {
+    grid-template-columns: minmax(0,1fr) !important;
+  }
+
+  body[data-game-phase="decision"] .quest-panel {
+    display: none !important;
+  }
+}
