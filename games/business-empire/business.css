@@ -3364,3 +3364,44 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     font-size: 13px !important;
   }
 }
+/* Gameplay primary action touch correction - 20260810i.
+   Keep the roll CTA readable and tappable during active play on phones. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked) .board-command .roll-button {
+    min-height: 50px !important;
+    min-width: 96px !important;
+    padding: 5px 9px !important;
+    font-size: 13px !important;
+  }
+
+  body:not(.mobile-portrait-locked) .board-command .roll-button span {
+    display: block !important;
+    font-size: 9px !important;
+    letter-spacing: .14em !important;
+  }
+
+  body:not(.mobile-portrait-locked) .board-command .roll-button b {
+    font-size: 14px !important;
+    line-height: 1.08 !important;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  .board-command .roll-button {
+    min-height: 44px !important;
+    min-width: 88px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+  }
+
+  .board-command .roll-button span {
+    display: block !important;
+    font-size: 8px !important;
+    letter-spacing: .12em !important;
+  }
+
+  .board-command .roll-button b {
+    font-size: 13px !important;
+    line-height: 1.08 !important;
+  }
+}
