@@ -1700,3 +1700,57 @@ button.top-immersive-button { display: none !important; }
     text-align: center !important;
   }
 }
+/* Short landscape event side panel - 20260810ag.
+   Keep the active token and nearby board visible while decisions are open. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"],
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] {
+    left: auto !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    top: 8px !important;
+    bottom: 8px !important;
+    width: clamp(252px, 32vw, 288px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: start !important;
+    transform: none !important;
+    overflow: auto !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-visual,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-visual,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-visual {
+    display: none !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-top: 14px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy strong,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy strong,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy strong {
+    white-space: normal !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy p,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy p,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy p {
+    -webkit-line-clamp: 2 !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    margin-top: 8px !important;
+  }
+}
