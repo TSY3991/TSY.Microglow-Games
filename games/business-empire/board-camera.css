@@ -1941,3 +1941,142 @@ button.top-immersive-button { display: none !important; }
     display: none !important;
   }
 }
+/* Ultra-short mobile landscape decision fit - 20260810aj.
+   Decision actions must be reachable without scrolling inside the board dock. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 320px) {
+  body[data-game-phase="decision"] .board-frame > .board-event-dock,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions {
+    top: 8px !important;
+    bottom: 8px !important;
+    width: min(302px, calc(100% - 108px)) !important;
+    min-height: 0 !important;
+    max-height: calc(100% - 16px) !important;
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 7px !important;
+    overflow: hidden !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-visual {
+    display: grid !important;
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 16px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy {
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto !important;
+    min-height: 0 !important;
+    padding-top: 2px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy small {
+    font-size: 8px !important;
+    line-height: 1 !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy strong {
+    overflow: hidden !important;
+    font-size: 12px !important;
+    line-height: 1.08 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-copy p {
+    max-height: 28px !important;
+    overflow: hidden !important;
+    margin-top: 3px !important;
+    font-size: 9px !important;
+    line-height: 1.25 !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-stats:not([hidden]) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    margin-top: 4px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-stats div {
+    min-height: 26px !important;
+    padding: 3px 5px !important;
+    border-radius: 8px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-stats span {
+    font-size: 8px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-stats strong {
+    font-size: 10px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 5px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions button {
+    min-height: 36px !important;
+    padding: 0 7px !important;
+    border-radius: 9px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions button:first-child:last-child {
+    grid-column: 1 / -1 !important;
+  }
+}
+/* Mobile landscape decision action reach - 20260810al.
+   Keep every decision button inside the visible event dock on browser-chrome constrained phones. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy {
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+    min-height: 0 !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy p,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy p,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy p {
+    max-height: 38px !important;
+    overflow: hidden !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-stats,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-stats,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-stats {
+    display: none !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy > .board-event-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy > .board-event-actions,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy > .board-event-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 7px !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy > .board-event-actions button,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy > .board-event-actions button,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy > .board-event-actions button {
+    min-height: 40px !important;
+    padding: 0 8px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+
+  body[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions .board-event-copy > .board-event-actions button:first-child:last-child,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-copy > .board-event-actions button:first-child:last-child,
+  body[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] .board-event-copy > .board-event-actions button:first-child:last-child {
+    grid-column: 1 / -1 !important;
+  }
+}
