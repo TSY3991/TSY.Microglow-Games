@@ -1527,3 +1527,16 @@ button.top-immersive-button { display: none !important; }
     display: none !important;
   }
 }
+/* Short landscape immersive shortcut clearance - 20260810y.
+   Keep 44px touch targets from overlapping the mobile financial bar. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  body:not(.immersive-play-mode) .empire-shell {
+    grid-template-rows: 48px 30px minmax(0,1fr) !important;
+  }
+
+  body:not(.immersive-play-mode) .game-topbar {
+    min-height: 48px !important;
+    height: 48px !important;
+    align-items: center !important;
+  }
+}
