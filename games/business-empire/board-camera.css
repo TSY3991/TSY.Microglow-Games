@@ -737,8 +737,8 @@ body[data-game-phase="decision"] .board-frame > .board-event-dock,
 }
 
 @keyframes phase-roll-cta {
-  0%,100% { filter: brightness(1); transform: translateY(0); }
-  50% { filter: brightness(1.12); transform: translateY(-1px); }
+  0%,100% { filter: brightness(1); box-shadow: 0 3px 0 #8a5c15,0 7px 14px rgba(246,207,116,.14); }
+  50% { filter: brightness(1.12); box-shadow: 0 3px 0 #8a5c15,0 0 22px rgba(246,207,116,.28); }
 }
 
 @keyframes phase-dice-pop {
@@ -887,5 +887,25 @@ body[data-game-phase="decision"] .board-event-actions button:first-child:last-ch
 
   .board-frame {
     min-height: 150px;
+  }
+}
+
+
+/* Stable primary tap target - 20260810f. */
+body[data-game-phase="roll"] .roll-button {
+  transform: none !important;
+}
+
+
+/* Mobile landscape viewport fit correction - 20260810g. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .game-layout {
+    height: calc(100dvh - 112px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 390px) {
+  .game-layout {
+    height: calc(100dvh - 108px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
   }
 }
