@@ -1351,3 +1351,91 @@ body[data-game-phase="roll"] .roll-button {
     transform: scale(.9) !important;
   }
 }
+/* Short mobile landscape immersive board viewport - 20260810t.
+   Real phone browser chrome often leaves only 375-430px page height; prioritize playable board area. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
+  .empire-shell {
+    grid-template-rows: 34px 30px minmax(0,1fr) !important;
+    gap: 3px !important;
+    padding-top: max(3px,env(safe-area-inset-top)) !important;
+    padding-bottom: max(3px,env(safe-area-inset-bottom)) !important;
+  }
+
+  .game-topbar {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 2px 5px !important;
+    border-radius: 10px !important;
+  }
+
+  .return-menu-toggle,
+  .account-status-button,
+  .tools-menu-toggle,
+  .top-actions button {
+    min-height: 28px !important;
+    padding: 0 8px !important;
+    font-size: 11px !important;
+  }
+
+  .brand-sigil { width: 26px !important; height: 26px !important; }
+  .game-brand strong { font-size: 12px !important; }
+  .return-menu-toggle span { display: none !important; }
+
+  .mobile-stat-bar {
+    min-height: 30px !important;
+    height: 30px !important;
+    gap: 3px !important;
+  }
+
+  .mobile-stat {
+    min-height: 30px !important;
+    padding: 2px 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .mobile-stat small { font-size: 8px !important; line-height: 1 !important; }
+  .mobile-stat strong { font-size: 13px !important; line-height: 1.02 !important; }
+
+  .game-layout {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .board-panel {
+    grid-template-rows: 50px minmax(0,1fr) !important;
+    gap: 3px !important;
+    padding: 3px !important;
+  }
+
+  .turn-banner {
+    min-height: 50px !important;
+    grid-template-rows: 50px !important;
+    padding: 3px 5px !important;
+  }
+
+  .turn-avatar { width: 34px !important; height: 34px !important; }
+  .turn-copy strong { font-size: 12px !important; }
+
+  .board-command {
+    min-height: 44px !important;
+    grid-template-columns: 36px minmax(100px,1fr) !important;
+    padding: 4px !important;
+  }
+
+  .board-dice,
+  .board-dice .dice {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    font-size: 17px !important;
+  }
+
+  .roll-button {
+    min-height: 40px !important;
+    padding: 0 10px !important;
+  }
+
+  .roll-button b { font-size: 14px !important; }
+  .turn-clock { min-height: 44px !important; }
+  .turn-clock strong { font-size: 16px !important; }
+}
