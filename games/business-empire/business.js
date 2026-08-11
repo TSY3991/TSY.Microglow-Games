@@ -346,6 +346,7 @@
       difficulty: setupState?.difficulty || "guild",
       connected: false,
       aiFastForward: false,
+      aiFastForwardLocked: false,
       matchId: null,
       myUserId: null,
       turnDeadlineAt: null
@@ -1856,25 +1857,26 @@
   }
 
   function aiFastForwardActions() {
-    if (state.connected || state.aiFastForward) return [];
-    return [{ label: "\u5feb\u8f49\u5c0d\u624b", run: enableAiFastForward }];
+    if (state.connected || state.aiFastForward || state.aiFastForwardLocked) return [];
+    return [{ label: "\u672c\u5c40\u5feb\u8f49\u5c0d\u624b", run: enableAiFastForward }];
   }
 
   function enableAiFastForward() {
     if (state.connected || state.phase !== "ai") return;
+    state.aiFastForwardLocked = true;
     state.aiFastForward = true;
     showEvent({
       type: "income",
       icon: "»",
       stageMode: "next-turn",
       label: "\u5feb\u8f49\u4e2d",
-      title: "\u6b63\u5728\u5feb\u8f49\u5c0d\u624b\u56de\u5408",
-      description: "\u4fdd\u7559\u64f2\u9ab0\u8207\u843d\u9ede\u7d50\u679c\uff0c\u4f46\u7e2e\u77ed\u5c0d\u624b\u52d5\u756b\u8207\u7b49\u5f85\u6642\u9593\u3002"
-    }, [], [["\u901f\u5ea6", "\u5feb\u8f49"]]);
+      title: "\u672c\u5c40\u5df2\u958b\u555f\u5c0d\u624b\u5feb\u8f49",
+      description: "\u672c\u5c40\u5f8c\u7e8c\u5c0d\u624b\u56de\u5408\u6703\u81ea\u52d5\u52a0\u901f\uff0c\u4fdd\u7559\u64f2\u9ab0\u3001\u843d\u9ede\u7d50\u679c\u8207\u640d\u76ca\u56de\u994b\u3002"
+    }, [], [["\u901f\u5ea6", "\u672c\u5c40\u81ea\u52d5\u5feb\u8f49"]]);
   }
 
   async function runAiTurns() {
-    state.aiFastForward = false;
+    state.aiFastForward = Boolean(state.aiFastForwardLocked);
     const opponents = state.actors.filter((actor) => !actor.isHuman && !actor.eliminated);
     for (const actor of opponents) {
       if (state.ended) return;
