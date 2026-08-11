@@ -1820,7 +1820,8 @@
       addLog(`${actorDisplayName(actor)}擲出 ${roll}。`);
       await moveActor(actor, roll, true);
       state.movingActorId = null;
-      resolveAiTile(actor, currentTile(actor));
+      const tile = currentTile(actor);
+      const outcome = resolveAiTile(actor, tile);
       const settlement = settleActor(actor);
       if (settlement.failed) {
         actor.eliminated = true;
@@ -1831,48 +1832,77 @@
         return;
       }
       renderAll();
-      await sleep(520);
+      showAiResultStage(actor, tile, outcome, settlement);
+      await sleep(720);
     }
   }
 
   function resolveAiTile(actor, tile) {
     if (["stock", "realEstate", "business"].includes(tile.type)) {
       const { template: asset, price } = pickAssetOffer(actor, tile.type);
+      const netIncome = asset.monthlyIncome - asset.monthlyCost;
+      let borrowed = 0;
       if (shouldAiBuy(actor, asset, price)) {
         if (actor.cash < price && actor.strategy === "aggressive") {
           const needed = price - actor.cash + 5000;
           const credit = Math.min(creditAvailable(actor), Math.ceil(needed / 15000) * 18000);
           if (credit > 0) {
+            borrowed = credit;
             actor.bankDebt += credit;
             actor.cash += Math.round(credit * (15000 / 18000));
           }
         }
-        if (actor.cash >= price) buyAsset(actor, asset, price);
+        if (actor.cash >= price) {
+          buyAsset(actor, asset, price);
+          return {
+            title: "買入資產",
+            description: `${actorDisplayName(actor)}買入 ${asset.name}，每月淨流增加 ${formatSigned(netIncome)}。`,
+            stat: ["資產", asset.name],
+            detail: borrowed > 0 ? ["追加信用", formatMoney(borrowed)] : ["買入價", formatMoney(price)]
+          };
+        }
       } else {
         addLog(`${actorDisplayName(actor)}放棄 ${asset.name}。`);
       }
-      return;
+      return {
+        title: "觀望機會",
+        description: `${actorDisplayName(actor)}評估 ${asset.name} 後選擇保留現金。`,
+        stat: ["機會", asset.name],
+        detail: ["買入價", formatMoney(price)]
+      };
     }
 
     if (tile.type === "income") {
       const [, amount] = rollIncomeEvent();
       actor.cash += amount;
       addLog(`${actorDisplayName(actor)}取得收入 ${formatMoney(amount)}。`);
-      return;
+      return {
+        title: "收入入帳",
+        description: `${actorDisplayName(actor)}取得一次性收入 ${formatMoney(amount)}。`,
+        stat: ["收入", formatSigned(amount)]
+      };
     }
 
     if (tile.type === "expense") {
       const { amount } = rollExpenseEvent(actor);
       actor.cash -= amount;
       addLog(`${actorDisplayName(actor)}支付突發支出 ${formatMoney(amount)}。`);
-      return;
+      return {
+        title: "突發支出",
+        description: `${actorDisplayName(actor)}支付突發成本 ${formatMoney(amount)}。`,
+        stat: ["支出", formatSigned(-amount)]
+      };
     }
 
     if (tile.type === "risk") {
       const { success, amount } = rollRiskEvent(actor);
       actor.cash += amount;
       addLog(`${actorDisplayName(actor)}的風險行動${success ? "獲利" : "失利"} ${formatMoney(amount)}。`);
-      return;
+      return {
+        title: success ? "風險獲利" : "風險失利",
+        description: `${actorDisplayName(actor)}風險判定${success ? "成功" : "失敗"}，現金變動 ${formatSigned(amount)}。`,
+        stat: [success ? "獲利" : "損失", formatSigned(amount)]
+      };
     }
 
     if (tile.type === "learn") {
@@ -1881,19 +1911,45 @@
         actor.cash -= cost;
         actor.skill += 1;
         addLog(`${actorDisplayName(actor)}進修，能力提升至 ${actor.skill}。`);
+        return {
+          title: "能力提升",
+          description: `${actorDisplayName(actor)}投入 ${formatMoney(cost)} 進修，能力提升至 ${actor.skill}。`,
+          stat: ["能力", String(actor.skill)]
+        };
       }
-      return;
+      return {
+        title: "保留學習資金",
+        description: `${actorDisplayName(actor)}暫緩進修，保留現金應對後續事件。`,
+        stat: ["能力", String(actor.skill)]
+      };
     }
 
     if (tile.type === "loan") {
       if (actor.bankDebt > 0 && actor.cash > 25000) {
         repayBankDebt(actor, 5000);
-      } else if (actor.strategy === "aggressive" && actor.cash < 16000 && creditAvailable(actor) >= 18000) {
+        return {
+          title: "償還信用",
+          description: `${actorDisplayName(actor)}償還部分銀行負債，降低每月信用壓力。`,
+          stat: ["償還", "-$5,000"],
+          detail: ["銀行負債", formatMoney(actor.bankDebt)]
+        };
+      }
+      if (actor.strategy === "aggressive" && actor.cash < 16000 && creditAvailable(actor) >= 18000) {
         actor.cash += 15000;
         actor.bankDebt += 18000;
         addLog(`${actorDisplayName(actor)}借入進攻資金 $15,000。`);
+        return {
+          title: "借入資金",
+          description: `${actorDisplayName(actor)}借入 $15,000，準備追求更高報酬機會。`,
+          stat: ["借入", "+$15,000"],
+          detail: ["銀行負債", formatMoney(actor.bankDebt)]
+        };
       }
-      return;
+      return {
+        title: "銀行觀望",
+        description: `${actorDisplayName(actor)}沒有新增貸款或償還操作。`,
+        stat: ["銀行負債", formatMoney(actor.bankDebt)]
+      };
     }
 
     if (tile.type === "gate") {
@@ -1901,17 +1957,54 @@
         actor.circle = "elite";
         actor.position = 0;
         addLog(`${actorDisplayName(actor)}進入精英圈。`);
-      } else if (actor.circle === "elite") {
-        actor.cash += 6000;
+        return {
+          title: "進入精英圈",
+          description: `${actorDisplayName(actor)}通過躍升門，進入高風險高報酬區域。`,
+          stat: ["圈層", "精英圈"]
+        };
       }
-      return;
+      if (actor.circle === "elite") {
+        actor.cash += 6000;
+        return {
+          title: "精英分紅",
+          description: `${actorDisplayName(actor)}在精英圈取得額外分紅 ${formatMoney(6000)}。`,
+          stat: ["分紅", "+$6,000"]
+        };
+      }
+      return {
+        title: "尚未躍升",
+        description: `${actorDisplayName(actor)}尚未達成進入精英圈條件。`,
+        stat: ["圈層", "基礎圈"]
+      };
     }
 
     const [, amount] = rollDestinyEvent(actor);
     actor.cash += amount;
     addLog(`${actorDisplayName(actor)}遇到命運事件 ${formatSigned(amount)}。`);
+    return {
+      title: "命運事件",
+      description: `${actorDisplayName(actor)}觸發命運事件，現金變動 ${formatSigned(amount)}。`,
+      stat: ["變動", formatSigned(amount)]
+    };
   }
 
+  function showAiResultStage(actor, tile, outcome, settlement) {
+    const flow = settlement?.flow || 0;
+    const stats = [
+      ["落點", tile.label],
+      outcome?.stat || ["行動", outcome?.title || "已處理"],
+      outcome?.detail || ["本月淨流", formatSigned(flow)],
+      ["現金", formatMoney(actor.cash)]
+    ];
+    showEvent({
+      type: tile.type,
+      icon: actor.avatar,
+      stageMode: "next-turn",
+      label: "對手結果",
+      title: `${actorDisplayName(actor)}｜${outcome?.title || tile.label}`,
+      description: outcome?.description || `${actorDisplayName(actor)}已完成落點事件與月度結算。`
+    }, [], stats);
+  }
   function shouldAiBuy(actor, asset, price) {
     const netYield = (asset.monthlyIncome - asset.monthlyCost) / Math.max(1, price);
     if (actor.strategy === "conservative") {
