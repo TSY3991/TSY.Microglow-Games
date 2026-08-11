@@ -3682,3 +3682,149 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     animation: none !important;
   }
 }
+/* Finance feedback pulse - 20260811e.
+   Make cashflow changes visible without changing gameplay values. */
+[data-stat],
+[data-mobile-stat] {
+  position: relative;
+}
+
+[data-stat].stat-delta-up,
+[data-mobile-stat].stat-delta-up {
+  animation: statValueUp .82s ease-out both;
+}
+
+[data-stat].stat-delta-down,
+[data-mobile-stat].stat-delta-down {
+  animation: statValueDown .82s ease-out both;
+}
+
+[data-stat].stat-delta-up::after,
+[data-stat].stat-delta-down::after,
+[data-mobile-stat].stat-delta-up::after,
+[data-mobile-stat].stat-delta-down::after {
+  content: attr(data-delta);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  z-index: 20;
+  min-width: max-content;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--mint);
+  background: rgba(4,14,23,.92);
+  box-shadow: 0 0 12px rgba(111,241,181,.26);
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1.25;
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: statDeltaBubble .82s ease-out both;
+}
+
+[data-stat].stat-delta-down::after,
+[data-mobile-stat].stat-delta-down::after {
+  color: var(--danger);
+  box-shadow: 0 0 12px rgba(255,116,130,.26);
+}
+
+.resource.stat-card-up,
+.mobile-stat.stat-card-up {
+  animation: statCardUp .9s ease-out both;
+}
+
+.resource.stat-card-down,
+.mobile-stat.stat-card-down {
+  animation: statCardDown .9s ease-out both;
+}
+
+.finance-fx-pop {
+  position: fixed;
+  z-index: 240;
+  padding: 4px 9px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--mint);
+  background: rgba(3,12,20,.94);
+  box-shadow: 0 0 18px rgba(111,241,181,.28), 0 8px 18px rgba(0,0,0,.36);
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: .02em;
+  line-height: 1.15;
+  pointer-events: none;
+  transform: translate(-50%,-50%);
+  animation: financePopFloat 1.18s ease-out both;
+}
+
+.finance-fx-pop.is-negative {
+  color: var(--danger);
+  box-shadow: 0 0 18px rgba(255,116,130,.28), 0 8px 18px rgba(0,0,0,.36);
+}
+
+@keyframes statValueUp {
+  0% { color: var(--mint); text-shadow: 0 0 0 rgba(111,241,181,0); transform: scale(1); }
+  36% { color: #c8ffe4; text-shadow: 0 0 16px rgba(111,241,181,.62); transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes statValueDown {
+  0% { color: var(--danger); text-shadow: 0 0 0 rgba(255,116,130,0); transform: scale(1); }
+  36% { color: #ffd4dc; text-shadow: 0 0 16px rgba(255,116,130,.62); transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes statDeltaBubble {
+  0% { opacity: 0; transform: translate(-50%,8px) scale(.88); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-18px) scale(1); }
+}
+
+@keyframes statCardUp {
+  0% { border-color: rgba(111,241,181,.72); box-shadow: 0 0 0 rgba(111,241,181,0), inset 0 1px rgba(255,255,255,.04); }
+  42% { border-color: rgba(111,241,181,.92); box-shadow: 0 0 22px rgba(111,241,181,.24), inset 0 0 18px rgba(111,241,181,.08); }
+  100% { }
+}
+
+@keyframes statCardDown {
+  0% { border-color: rgba(255,116,130,.72); box-shadow: 0 0 0 rgba(255,116,130,0), inset 0 1px rgba(255,255,255,.04); }
+  42% { border-color: rgba(255,116,130,.92); box-shadow: 0 0 22px rgba(255,116,130,.24), inset 0 0 18px rgba(255,116,130,.08); }
+  100% { }
+}
+
+@keyframes financePopFloat {
+  0% { opacity: 0; transform: translate(-50%,-20%) scale(.9); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-155%) scale(1.06); }
+}
+
+@media (max-width: 900px) {
+  [data-mobile-stat].stat-delta-up::after,
+  [data-mobile-stat].stat-delta-down::after {
+    bottom: -22px;
+    font-size: 10px;
+  }
+
+  .finance-fx-pop {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-stat].stat-delta-up,
+  [data-stat].stat-delta-down,
+  [data-mobile-stat].stat-delta-up,
+  [data-mobile-stat].stat-delta-down,
+  [data-stat].stat-delta-up::after,
+  [data-stat].stat-delta-down::after,
+  [data-mobile-stat].stat-delta-up::after,
+  [data-mobile-stat].stat-delta-down::after,
+  .resource.stat-card-up,
+  .resource.stat-card-down,
+  .mobile-stat.stat-card-up,
+  .mobile-stat.stat-card-down,
+  .finance-fx-pop {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

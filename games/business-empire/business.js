@@ -279,6 +279,7 @@
   let playerNickname = "冒險者";
   let nicknameRequestSequence = 0;
   let lastBoardTrackKey = "";
+  let lastFinanceValues = null;
   let boardCamera = null;
 
   init();
@@ -507,6 +508,7 @@
     };
 
     state = createEmptyState();
+    lastFinanceValues = null;
     state.started = true;
     state.difficulty = setupState.difficulty;
     state.actors = [
@@ -711,10 +713,15 @@
       worth: empty ? 0 : netWorth(player)
     };
     Object.entries(values).forEach(([key, value]) => {
+      const previous = lastFinanceValues?.[key];
+      const delta = typeof previous === "number" ? value - previous : 0;
       document.querySelectorAll(`[data-stat="${key}"], [data-mobile-stat="${key}"]`).forEach((target) => {
         target.textContent = formatMoney(value);
+        if (!empty && state.started && delta !== 0) flashStatChange(target, key, delta);
       });
     });
+    if (!empty) lastFinanceValues = { ...values };
+    else lastFinanceValues = null;
     document.querySelector('[data-stat="turn"]').textContent = String(state.round);
     elements.circleLabel.textContent = empty || player.circle === "basic" ? "基礎城區" : "精英內城";
     const current = activeActor();
@@ -1043,6 +1050,38 @@
   function formatSigned(value) {
     if (value === 0) return "$0";
     return `${value > 0 ? "+" : "−"}$${new Intl.NumberFormat("zh-TW").format(Math.round(Math.abs(value)))}`;
+  }
+
+  function flashStatChange(target, key, delta) {
+    if (!target || key === "turn") return;
+    const direction = delta > 0 ? "up" : "down";
+    target.dataset.delta = formatSigned(delta);
+    target.dataset.deltaTone = direction;
+    target.classList.remove("stat-delta-up", "stat-delta-down");
+    void target.offsetWidth;
+    target.classList.add(direction === "up" ? "stat-delta-up" : "stat-delta-down");
+    const holder = target.closest(".resource, .mobile-stat");
+    if (holder) {
+      holder.classList.remove("stat-card-up", "stat-card-down");
+      void holder.offsetWidth;
+      holder.classList.add(direction === "up" ? "stat-card-up" : "stat-card-down");
+    }
+    if (key === "cash" || key === "worth" || key === "passive" || key === "expense") {
+      spawnFinancePop(target, delta, key);
+    }
+  }
+
+  function spawnFinancePop(target, delta, key) {
+    const rect = target.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const pop = document.createElement("div");
+    pop.className = `finance-fx-pop ${delta > 0 ? "is-positive" : "is-negative"}`;
+    pop.dataset.statKey = key;
+    pop.textContent = formatSigned(delta);
+    pop.style.left = `${Math.min(window.innerWidth - 18, Math.max(18, rect.left + rect.width / 2))}px`;
+    pop.style.top = `${Math.max(32, rect.top + rect.height / 2)}px`;
+    document.body.append(pop);
+    window.setTimeout(() => pop.remove(), 1280);
   }
 
   function randomItem(list) {
@@ -2045,6 +2084,7 @@
     setBoardFocus(false);
     setupState = createSetupState();
     state = createEmptyState();
+    lastFinanceValues = null;
     lastBoardTrackKey = "";
     elements.dice.textContent = "◈";
     elements.resultModal.hidden = true;
