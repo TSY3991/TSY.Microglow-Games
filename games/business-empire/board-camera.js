@@ -58,6 +58,10 @@
     }
 
     function writeTransform() {
+      if (frame.scrollLeft || frame.scrollTop) {
+        frame.scrollLeft = 0;
+        frame.scrollTop = 0;
+      }
       stage.style.transform = `translate3d(${state.x.toFixed(2)}px,${state.y.toFixed(2)}px,0) scale(${state.scale.toFixed(4)})`;
       frame.style.setProperty("--camera-scale", state.scale.toFixed(4));
       options.onChange?.({ x: state.x, y: state.y, scale: state.scale, suspended: state.suspended });

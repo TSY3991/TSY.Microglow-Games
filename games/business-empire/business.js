@@ -1647,6 +1647,9 @@
     state.busy = false;
     renderAll();
     showEvent({ type: "income", icon: "✦", stageMode: "overview", label: `第 ${state.round} 回合`, title: "輪到你行動", description: "觀察現金流與排名，在 45 秒內擲骰並處理下一個商業事件。" });
+    centerActiveToken();
+    window.requestAnimationFrame(centerActiveToken);
+    window.requestAnimationFrame(() => window.requestAnimationFrame(centerActiveToken));
     setRollEnabled(true);
     startTurnTimer();
   }
