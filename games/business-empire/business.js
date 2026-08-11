@@ -1015,6 +1015,18 @@
     return `${currentPercent}% → ${nextPercent}%`;
   }
 
+
+  function assetFundingStatus(actor, price) {
+    const afterCash = actor.cash - price;
+    if (afterCash < 0) return ["資金缺口", formatMoney(Math.abs(afterCash))];
+    return ["買後現金", formatMoney(afterCash)];
+  }
+
+  function assetBuyLabel(actor, price) {
+    const shortage = price - actor.cash;
+    return shortage > 0 ? `資金不足 ${formatMoney(shortage)}` : `買入 ${formatMoney(price)}`;
+  }
+
   function canEnterElite(actor) {
     return passiveIncome(actor) >= monthlyExpense(actor) * 0.55 || netWorth(actor) >= ELITE_NET_WORTH || actor.skill >= 4;
   }
@@ -1713,11 +1725,11 @@
       title: template.name,
       description: `風險 ${template.risk}。買入後每月收入 ${formatMoney(template.monthlyIncome)}，每月維護 ${formatMoney(template.monthlyCost)}。${discount ? `你的能力使買入價降低 ${Math.round(discount * 100)}%。` : ""}`
     }, [
-      { label: `買入 ${formatMoney(price)}`, disabled: actor.cash < price, run: () => { buyAsset(actor, template, price); finishHumanTurn(); } },
+      { label: assetBuyLabel(actor, price), disabled: actor.cash < price, run: () => { buyAsset(actor, template, price); finishHumanTurn(); } },
       { label: "放棄機會", run: () => { addLog(`${actorDisplayName(actor)}放棄 ${template.name}。`); finishHumanTurn(); } }
     ], [
       ["買入現金", formatMoney(price)],
-      ["買後現金", formatMoney(actor.cash - price)],
+      assetFundingStatus(actor, price),
       ["每月淨流入", formatSigned(netIncome)],
       ["自由進度", assetFreedomImpact(actor, template)],
       ["資產價值", formatMoney(template.value)],
@@ -2839,11 +2851,11 @@
       title: template.name,
       description: `風險 ${template.risk}。買入後每月收入 ${formatMoney(template.monthlyIncome)}，每月維護 ${formatMoney(template.monthlyCost)}。`
     }, [
-      { label: `買入 ${formatMoney(price)}`, disabled: player.cash < price, run: () => runConnectedAction("buy_asset") },
+      { label: assetBuyLabel(player, price), disabled: player.cash < price, run: () => runConnectedAction("buy_asset") },
       { label: "放棄機會", run: () => runConnectedAction("skip") }
     ], [
       ["買入現金", formatMoney(price)],
-      ["買後現金", formatMoney(player.cash - price)],
+      assetFundingStatus(player, price),
       ["每月淨流入", formatSigned(netIncome)],
       ["自由進度", assetFreedomImpact(player, template)],
       ["資產價值", formatMoney(template.value)],
