@@ -1225,8 +1225,41 @@
     dock.classList.toggle("event-dock-left", tokenCenterX > switchLine);
   }
 
+  function clampPercent(value) {
+    return Math.min(95, Math.max(5, value));
+  }
+
+  function shouldFocusForEventDock() {
+    const dock = elements.boardEventDock;
+    if (!dock || state.phase !== "decision") return false;
+    const stageMode = dock.dataset.stageMode || "overview";
+    return dock.classList.contains("has-actions") || stageMode === "decision" || stageMode === "result";
+  }
+
+  function focusActiveActorAroundEventDock() {
+    if (!boardCamera || !state.started || !shouldFocusForEventDock()) return;
+    const actor = activeActor();
+    if (!actor) return;
+    const point = tokenPoint(actor);
+    let left = point.left;
+    let top = point.top;
+    if (isMobilePortrait()) {
+      top = clampPercent(point.top + 14);
+    } else if (isShortLandscapeViewport()) {
+      const dockOnLeft = elements.boardEventDock?.classList.contains("event-dock-left");
+      left = clampPercent(point.left + (dockOnLeft ? -14 : 14));
+      top = clampPercent(point.top + 4);
+    } else {
+      return;
+    }
+    boardCamera.focusPercent(left, top, { scale: preferredCameraScale() });
+  }
+
   function scheduleEventDockAvoidance() {
-    window.requestAnimationFrame(syncShortLandscapeEventDockSide);
+    window.requestAnimationFrame(() => {
+      syncShortLandscapeEventDockSide();
+      focusActiveActorAroundEventDock();
+    });
   }
 
   function syncMobileEventDrawer(shouldOpen) {

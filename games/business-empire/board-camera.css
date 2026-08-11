@@ -2293,3 +2293,33 @@ button.top-immersive-button { display: none !important; }
     transform: none !important;
   }
 }
+/* Mobile decision dock viewport fit - 20260811h.
+   Keep event actions fully tappable inside the visible phone viewport. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock.has-actions,
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="decision"],
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock[data-stage-mode="result"] {
+    position: fixed !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    top: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: calc(100dvw - 16px) !important;
+    max-height: min(42dvh, 236px) !important;
+    overflow: auto !important;
+    transform: none !important;
+    z-index: 80 !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body:not(.mobile-portrait-locked)[data-game-phase="decision"] .board-frame > .board-event-dock .board-event-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
