@@ -277,6 +277,7 @@
   let boardFocused = false;
   let immersiveMode = false;
   let immersiveAutoDismissed = false;
+  let viewportSyncFrameId = 0;
   let tileInspectorTimerId = null;
   let arrivalTimerId = null;
   let routeTrailTimerId = null;
@@ -2451,9 +2452,13 @@
       document.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
     });
 
-    window.addEventListener("resize", syncViewportSize);
-    window.addEventListener("orientationchange", () => window.setTimeout(syncViewportSize, 100));
-    window.visualViewport?.addEventListener("resize", syncViewportSize);
+    window.addEventListener("resize", scheduleViewportSync, { passive: true });
+    window.addEventListener("orientationchange", () => {
+      window.setTimeout(scheduleViewportSync, 100);
+      window.setTimeout(scheduleViewportSync, 360);
+    });
+    window.visualViewport?.addEventListener("resize", scheduleViewportSync, { passive: true });
+    window.visualViewport?.addEventListener("scroll", scheduleViewportSync, { passive: true });
   }
 
   function closeHeaderMenus() {
@@ -2483,6 +2488,14 @@
     });
     document.addEventListener("click", (event) => {
       if (!event.target.closest(".top-tools,.return-nav")) closeHeaderMenus();
+    });
+  }
+
+  function scheduleViewportSync() {
+    if (viewportSyncFrameId) return;
+    viewportSyncFrameId = window.requestAnimationFrame(() => {
+      viewportSyncFrameId = 0;
+      syncViewportSize();
     });
   }
 
