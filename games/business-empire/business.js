@@ -1003,6 +1003,18 @@
     return actor.salary + passiveIncome(actor) - monthlyExpense(actor);
   }
 
+  function freedomProgressPercent(passive, expense) {
+    return Math.min(100, Math.floor((passive / Math.max(1, expense)) * 100));
+  }
+
+  function assetFreedomImpact(actor, template) {
+    const currentPercent = freedomProgressPercent(passiveIncome(actor), monthlyExpense(actor));
+    const nextPassive = passiveIncome(actor) + template.monthlyIncome;
+    const nextExpense = monthlyExpense(actor) + template.monthlyCost;
+    const nextPercent = freedomProgressPercent(nextPassive, nextExpense);
+    return `${currentPercent}% → ${nextPercent}%`;
+  }
+
   function canEnterElite(actor) {
     return passiveIncome(actor) >= monthlyExpense(actor) * 0.55 || netWorth(actor) >= ELITE_NET_WORTH || actor.skill >= 4;
   }
@@ -1706,6 +1718,7 @@
     ], [
       ["買入現金", formatMoney(price)],
       ["每月淨流入", formatSigned(netIncome)],
+      ["自由進度", assetFreedomImpact(actor, template)],
       ["資產價值", formatMoney(template.value)],
       ["新增負債", formatMoney(template.loanPrincipal || 0)]
     ]);
@@ -2830,6 +2843,7 @@
     ], [
       ["買入現金", formatMoney(price)],
       ["每月淨流入", formatSigned(netIncome)],
+      ["自由進度", assetFreedomImpact(player, template)],
       ["資產價值", formatMoney(template.value)],
       ["新增負債", formatMoney(template.loanPrincipal || 0)]
     ]);
