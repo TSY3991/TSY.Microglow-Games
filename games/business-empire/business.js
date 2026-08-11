@@ -1194,7 +1194,8 @@
 
   function updateBoardStage(stageMode, event, stats = []) {
     const actions = state.phase === "ai" && !state.connected && !state.aiFastForward ? aiFastForwardActions() : [];
-    syncBoardEvent({ ...event, stageMode }, actions, stats, stageMode);
+    const stageStats = state.phase === "ai" && !state.connected && state.aiFastForwardLocked ? [...stats, ["\u901f\u5ea6", "\u672c\u5c40\u5feb\u8f49"]] : stats;
+    syncBoardEvent({ ...event, stageMode }, actions, stageStats, stageMode);
   }
 
   function isMobilePortrait() {
@@ -1866,6 +1867,7 @@
     if (state.connected || state.phase !== "ai") return;
     state.aiFastForwardLocked = true;
     state.aiFastForward = true;
+    addLog("\u5df2\u958b\u555f\u672c\u5c40\u5c0d\u624b\u5feb\u8f49\u3002");
     showEvent({
       type: "income",
       icon: "»",
