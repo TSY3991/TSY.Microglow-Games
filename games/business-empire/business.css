@@ -3828,3 +3828,32 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     animation-iteration-count: 1 !important;
   }
 }
+/* Settlement stage readability - 20260811f.
+   Give monthly cashflow a short, readable beat before AI turns start. */
+.board-event-dock[data-stage-mode="settlement"] {
+  border-color: color-mix(in srgb,var(--event-color,var(--mint)),var(--gold-bright) 52%);
+}
+
+.board-event-dock[data-stage-mode="settlement"] .board-event-visual {
+  animation: settlementStagePulse 1.05s ease-in-out infinite alternate;
+}
+
+.board-event-dock[data-stage-mode="settlement"] .board-event-stats:not([hidden]) div {
+  border-color: rgba(246,207,116,.22);
+  background: linear-gradient(145deg,rgba(246,207,116,.08),rgba(84,221,245,.035));
+}
+
+.board-event-dock[data-stage-mode="settlement"] .board-event-stats strong {
+  color: var(--gold-bright);
+}
+
+@keyframes settlementStagePulse {
+  from { filter: brightness(1); transform: translateZ(0) scale(.98); }
+  to { filter: brightness(1.18); transform: translateZ(0) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-event-dock[data-stage-mode="settlement"] .board-event-visual {
+    animation: none !important;
+  }
+}

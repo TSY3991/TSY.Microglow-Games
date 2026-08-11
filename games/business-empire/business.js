@@ -10,6 +10,7 @@
   const AI_STEP_MS = 220;
   const DICE_SPIN_FRAMES = 9;
   const DICE_FRAME_MS = 85;
+  const SETTLEMENT_STAGE_MS = 950;
   const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
   const portalStats = window.MicroglowGameStats;
   const ANIMATED_TOKEN_IDS = new Set(["starlight-merchant", "rune-artisan", "moon-investor", "ai-warden", "ai-pioneer", "ai-phantom"]);
@@ -1099,6 +1100,7 @@
     event: "落點事件",
     decision: "等待決策",
     result: "結果結算",
+    settlement: "月度結算",
     "next-turn": "回合交接"
   };
 
@@ -1745,6 +1747,10 @@
       endGame(false, `${actorDisplayName(player)}的現金與可用信用不足，商業帝國在本期結算後破產。`, player);
       return;
     }
+    renderAll();
+    showSettlementStage(player, result);
+    await sleep(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 120 : SETTLEMENT_STAGE_MS);
+    if (state.ended) return;
     if (hasWon(player)) {
       endGame(true, `${actorDisplayName(player)}的被動收入已支付全部每月支出，財務自由達成。`, player);
       return;
@@ -1774,6 +1780,29 @@
       return { failed: false, flow, emergencyCredit: needed };
     }
     return { failed: true, flow };
+  }
+
+  function showSettlementStage(actor, result) {
+    const flow = result.flow || 0;
+    const income = actor.salary + passiveIncome(actor);
+    const expense = monthlyExpense(actor);
+    const stats = [
+      ["收入合計", formatMoney(income)],
+      ["每月支出", formatMoney(expense)],
+      ["本月淨流", formatSigned(flow)],
+      ["結算後現金", formatMoney(actor.cash)]
+    ];
+    if (result.emergencyCredit) stats.push(["緊急信用", formatMoney(result.emergencyCredit)]);
+    showEvent({
+      type: flow >= 0 ? "income" : "expense",
+      icon: flow >= 0 ? "✦" : "⌁",
+      stageMode: "settlement",
+      label: "月度結算",
+      title: flow >= 0 ? "本月現金流為正" : "本月現金流承壓",
+      description: result.emergencyCredit
+        ? "本月現金流結算後啟用緊急信用，請留意負債壓力。"
+        : "薪資、被動收入與每月支出已完成結算，下一步交由對手行動。"
+    }, [], stats);
   }
 
   async function runAiTurns() {
