@@ -2278,10 +2278,18 @@
   function openAssets() {
     if (!state.started) return;
     const player = human();
-    const myTurn = !state.connected || state.activeActorId === player?.id;
+    if (!player) return;
+    const myTurn = !state.connected || state.activeActorId === player.id;
+    const passive = passiveIncome(player);
+    const expense = monthlyExpense(player);
+    const flow = monthlyCashflow(player);
+    const freedomGap = Math.max(0, expense - passive);
     elements.assetSummary.innerHTML = `
       <div><span>資產數</span><strong>${player.assets.length}</strong></div>
-      <div><span>每月被動收入</span><strong>${formatMoney(passiveIncome(player))}</strong></div>
+      <div><span>每月被動收入</span><strong>${formatMoney(passive)}</strong></div>
+      <div><span>本月淨流</span><strong>${formatSigned(flow)}</strong></div>
+      <div><span>自由進度</span><strong>${freedomProgressPercent(passive, expense)}%</strong></div>
+      <div><span>距離自由</span><strong>${freedomGap > 0 ? formatMoney(freedomGap) : "已達標"}</strong></div>
       <div><span>銀行負債</span><strong>${formatMoney(player.bankDebt)}</strong></div>
     `;
     elements.assetList.replaceChildren();
@@ -2293,10 +2301,22 @@
     } else {
       player.assets.forEach((asset) => {
         const saleGross = Math.round(asset.value * 0.7);
-        const saleCash = Math.max(0, saleGross - (asset.loanPrincipal || 0));
+        const loan = asset.loanPrincipal || 0;
+        const saleCash = Math.max(0, saleGross - loan);
+        const netFlow = asset.monthlyIncome - asset.monthlyCost;
+        const typeLabel = TILE_META[asset.type]?.label || "資產";
         const item = document.createElement("div");
         item.className = "asset-item";
-        item.innerHTML = `<div><strong>${asset.name}</strong><span>每月 ${formatSigned(asset.monthlyIncome - asset.monthlyCost)}・售出可得 ${formatMoney(saleCash)}</span></div>`;
+        item.innerHTML = `
+          <div class="asset-copy">
+            <div class="asset-item-head"><small>${escapeHtml(typeLabel)}</small><strong>${escapeHtml(asset.name)}</strong></div>
+            <div class="asset-metrics">
+              <span><b>月收入</b><strong>${formatMoney(asset.monthlyIncome)}</strong></span>
+              <span><b>維護</b><strong>${formatMoney(asset.monthlyCost)}</strong></span>
+              <span><b>月淨流</b><strong>${formatSigned(netFlow)}</strong></span>
+            </div>
+            <span class="asset-sale-note">售出可得 ${formatMoney(saleCash)}${loan ? `・資產貸款 ${formatMoney(loan)}` : ""}</span>
+          </div>`;
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = "出售";
