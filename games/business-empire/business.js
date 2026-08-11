@@ -202,6 +202,9 @@
     turnLabel: document.querySelector("[data-turn-label]"),
     goalProgress: document.querySelector("[data-goal-progress]"),
     goalMeter: document.querySelector("[data-goal-meter]"),
+    mobileGoalProgress: document.querySelector("[data-mobile-goal-progress]"),
+    mobileGoalPercent: document.querySelector("[data-mobile-goal-percent]"),
+    mobileGoalMeter: document.querySelector("[data-mobile-goal-meter]"),
     playerPortrait: document.querySelector("[data-player-portrait]"),
     playerName: document.querySelector("[data-player-name]"),
     playerTitle: document.querySelector("[data-player-title]"),
@@ -736,8 +739,14 @@
     elements.circleLabel.textContent = empty || player.circle === "basic" ? "基礎城區" : "精英內城";
     const current = activeActor();
     elements.turnLabel.textContent = state.ended ? "本局已結束" : current ? `輪到 ${actorDisplayName(current)}・${phaseLabel()}` : "等待選擇角色";
-    elements.goalProgress.textContent = `${formatMoney(values.passive)} / ${formatMoney(values.expense)}`;
-    elements.goalMeter.style.width = `${Math.min(100, (values.passive / Math.max(1, values.expense)) * 100)}%`;
+    const goalRatio = Math.min(100, (values.passive / Math.max(1, values.expense)) * 100);
+    const goalPercent = Math.floor(goalRatio);
+    const goalText = `${formatMoney(values.passive)} / ${formatMoney(values.expense)}`;
+    elements.goalProgress.textContent = goalText;
+    elements.goalMeter.style.width = `${goalRatio}%`;
+    if (elements.mobileGoalProgress) elements.mobileGoalProgress.textContent = goalText;
+    if (elements.mobileGoalPercent) elements.mobileGoalPercent.textContent = `${goalPercent}%`;
+    if (elements.mobileGoalMeter) elements.mobileGoalMeter.style.width = `${goalRatio}%`;
     elements.cashflowPreview.textContent = `淨現金流 ${formatSigned(empty ? 0 : monthlyCashflow(player))}`;
     elements.playerName.textContent = empty ? "尚未選角" : actorDisplayName(player);
     elements.playerTitle.textContent = empty ? "等待進入微光城" : `${player.name}・${player.title}`;
