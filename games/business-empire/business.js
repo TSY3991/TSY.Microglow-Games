@@ -274,6 +274,7 @@
   let immersiveMode = false;
   let tileInspectorTimerId = null;
   let arrivalTimerId = null;
+  let routeTrailTimerId = null;
   let audioEnabled = readAudioPreference();
   let playerNickname = "冒險者";
   let nicknameRequestSequence = 0;
@@ -561,6 +562,7 @@
       cell.style.setProperty("--tile-prop", `url("./assets/tile-props/${tile.type}.png")`);
       cell.title = tile.label;
       cell.dataset.tileIndex = String(index);
+      cell.dataset.circle = circle;
       cell.dataset.edge = point.edge;
       cell.setAttribute("aria-label", `${index + 1}. ${tile.label}`);
       cell.innerHTML = `<span class="tile-cap"></span><span class="tile-index">${index + 1}</span><span class="tile-building" aria-hidden="true"><i></i><i></i><i></i></span><span class="tile-icon">${tile.icon}</span><span class="tile-label">${tile.label}</span>`;
@@ -615,6 +617,40 @@
     if (tileInspectorTimerId !== null) window.clearTimeout(tileInspectorTimerId);
     tileInspectorTimerId = null;
     elements.tileInspector.hidden = true;
+  }
+
+  function clearRouteTrail() {
+    if (routeTrailTimerId !== null) window.clearTimeout(routeTrailTimerId);
+    routeTrailTimerId = null;
+    document.querySelectorAll('.rectangle-board .tile[data-route-state]').forEach((tile) => {
+      delete tile.dataset.routeState;
+      delete tile.dataset.routeStep;
+    });
+  }
+
+  function tileElement(circle, position) {
+    return document.querySelector(`.rectangle-board .tile[data-circle="${circle}"][data-tile-index="${position}"]`);
+  }
+
+  function markRouteProgress(actor, visitedPositions, currentPosition, stateName = "current") {
+    document.querySelectorAll('.rectangle-board .tile[data-route-state]').forEach((tile) => {
+      delete tile.dataset.routeState;
+      delete tile.dataset.routeStep;
+    });
+    visitedPositions.forEach((position, index) => {
+      const tile = tileElement(actor.circle, position);
+      if (!tile) return;
+      tile.dataset.routeState = position === currentPosition ? stateName : "trail";
+      tile.dataset.routeStep = String(index + 1);
+    });
+  }
+
+  function holdArrivalTile(actor, position) {
+    markRouteProgress(actor, [position], position, "arrival");
+    if (routeTrailTimerId !== null) window.clearTimeout(routeTrailTimerId);
+    routeTrailTimerId = window.setTimeout(() => {
+      clearRouteTrail();
+    }, 3600);
   }
   function renderAll() {
     renderStats();
@@ -1483,18 +1519,23 @@
 
   async function moveActor(actor, steps, animate) {
     const length = actor.circle === "basic" ? basicTiles.length : eliteTiles.length;
+    const visitedPositions = [];
+    clearRouteTrail();
     for (let step = 0; step < steps; step += 1) {
       actor.position = (actor.position + 1) % length;
+      visitedPositions.push(actor.position);
       if (animate) {
-        updateBoardStage("moving", { type: "income", icon: "➜", label: "逐格前進", title: `${actorDisplayName(actor)}移動中`, description: `已前進 ${step + 1}／${steps} 格，鏡頭正跟隨目前角色。` }, [["剩餘步數", String(steps - step - 1)], ["目前位置", String(actor.position + 1)]]);
+        markRouteProgress(actor, visitedPositions, actor.position, step + 1 === steps ? "arrival" : "current");
+        updateBoardStage("moving", { type: "income", icon: "➜", label: "逐格前進", title: `${actorDisplayName(actor)}移動中`, description: `已前進 ${step + 1}／${steps} 格，發光路徑標示本回合經過的街區。` }, [["剩餘步數", String(steps - step - 1)], ["目前位置", String(actor.position + 1)]]);
         renderTokens();
         playEffect("step");
         await sleep(actor.isHuman ? PLAYER_STEP_MS : AI_STEP_MS);
       }
     }
+    holdArrivalTile(actor, actor.position);
     markActorArrival(actor);
     renderTokens();
-    updateBoardStage("result", { type: currentTile(actor).type, icon: "◆", label: "抵達棋格", title: `抵達「${currentTile(actor).label}」`, description: "角色已完成移動，正在解析落點事件。" }, [["落點", String(actor.position + 1)]]);
+    updateBoardStage("result", { type: currentTile(actor).type, icon: "◆", label: "抵達棋格", title: `抵達「${currentTile(actor).label}」`, description: "角色已完成移動，發光落點正在解析事件。" }, [["落點", String(actor.position + 1)]]);
   }
 
   function currentTile(actor) {

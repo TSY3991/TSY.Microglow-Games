@@ -3604,3 +3604,81 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     top: -30px;
   }
 }
+/* Board movement route feedback - 20260811d.
+   Highlight the path and final tile during dice movement without changing tile DOM or rules. */
+.rectangle-board .tile[data-route-state] {
+  z-index: 8;
+  outline: 2px solid color-mix(in srgb,var(--tile-color),var(--gold-bright) 42%);
+  outline-offset: 3px;
+  filter: brightness(1.14) saturate(1.16);
+}
+
+.rectangle-board .tile[data-route-state]::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 14px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb,var(--tile-color),transparent 58%), transparent 66%),
+    linear-gradient(135deg, rgba(246,207,116,.16), rgba(84,221,245,.1));
+  box-shadow: 0 0 18px color-mix(in srgb,var(--tile-color),transparent 48%);
+  opacity: .76;
+}
+
+.rectangle-board .tile[data-route-state="trail"] {
+  opacity: .92;
+  outline-color: rgba(246,207,116,.42);
+}
+
+.rectangle-board .tile[data-route-state="trail"]::before {
+  opacity: .46;
+}
+
+.rectangle-board .tile[data-route-state="current"],
+.rectangle-board .tile[data-route-state="arrival"] {
+  outline-color: var(--gold-bright);
+  box-shadow:
+    0 11px 0 rgba(2,7,13,.82),
+    0 16px 22px rgba(0,0,0,.64),
+    0 0 24px color-mix(in srgb,var(--tile-color),transparent 42%),
+    0 0 0 3px rgba(246,207,116,.18),
+    inset 0 1px rgba(255,255,255,.26),
+    inset 0 -8px rgba(0,0,0,.28);
+}
+
+.rectangle-board .tile[data-route-state="current"]::before,
+.rectangle-board .tile[data-route-state="arrival"]::before {
+  animation: routeTilePulse .72s ease-in-out infinite alternate;
+  opacity: .9;
+}
+
+.rectangle-board .tile[data-route-state="arrival"] .tile-label {
+  color: #fff8d8;
+  text-shadow: 0 1px 2px #000, 0 0 10px rgba(246,207,116,.48);
+}
+
+@keyframes routeTilePulse {
+  from { transform: scale(.97); opacity: .62; }
+  to { transform: scale(1.05); opacity: .96; }
+}
+
+@media (max-width: 900px) {
+  .rectangle-board .tile[data-route-state] {
+    outline-width: 2px;
+    outline-offset: 2px;
+  }
+
+  .rectangle-board .tile[data-route-state]::before {
+    inset: -4px;
+    border-radius: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rectangle-board .tile[data-route-state="current"]::before,
+  .rectangle-board .tile[data-route-state="arrival"]::before {
+    animation: none !important;
+  }
+}
