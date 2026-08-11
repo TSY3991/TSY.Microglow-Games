@@ -273,6 +273,7 @@
   let portraitBypass = false;
   let boardFocused = false;
   let immersiveMode = false;
+  let immersiveAutoDismissed = false;
   let tileInspectorTimerId = null;
   let arrivalTimerId = null;
   let routeTrailTimerId = null;
@@ -522,6 +523,7 @@
     state.phase = "roll";
     state.secondsLeft = TURN_SECONDS;
     lastBoardTrackKey = "";
+    immersiveAutoDismissed = false;
     setImmersiveMode(false);
     setBoardFocus(false);
     ensureAudio();
@@ -538,6 +540,7 @@
       description: "擲骰前進，落點事件處理完畢後會進行月度現金流結算。"
     });
     renderAll();
+    window.requestAnimationFrame(syncAutoImmersiveMode);
     // scheduleActiveTokenTracking() inside renderTokens() misses the very first
     // frame — camera fit hasn't stabilised yet, so on some mobile widths the
     // token stays hugged against the fit-all edge. Force a recenter now and
@@ -1451,7 +1454,7 @@
     immersiveMode = Boolean(enabled && canUseImmersive && (state.started || state.connected));
     document.body.classList.toggle("immersive-play-mode", immersiveMode);
     elements.immersiveButtons.forEach((button) => {
-      button.textContent = button.classList.contains("top-immersive-button") ? (immersiveMode ? "退出" : "沉浸") : (immersiveMode ? "退出沉浸" : "沉浸遊玩");
+      button.textContent = button.classList.contains("top-immersive-button") ? (immersiveMode ? "\u9000\u51fa" : "\u6c89\u6d78") : (immersiveMode ? "\u9000\u51fa\u6c89\u6d78" : "\u6c89\u6d78\u904a\u73a9");
       button.setAttribute("aria-pressed", String(immersiveMode));
       if (button === elements.immersiveExitButton) button.hidden = !immersiveMode;
     });
@@ -1461,6 +1464,11 @@
       boardCamera?.refresh();
       followActiveActor(true);
     });
+  }
+
+  function syncAutoImmersiveMode() {
+    const shouldUseImmersive = isShortLandscapeViewport() && (state.started || state.connected) && !state.ended && !immersiveAutoDismissed;
+    if (shouldUseImmersive && !immersiveMode) setImmersiveMode(true);
   }
 
   function centerActiveToken() {
@@ -2236,6 +2244,7 @@
   function resetToIntro() {
     stopTurnTimer();
     setImmersiveMode(false);
+    immersiveAutoDismissed = false;
     setBoardFocus(false);
     setupState = createSetupState();
     state = createEmptyState();
@@ -2301,7 +2310,13 @@
     });
     elements.focusButton.addEventListener("click", () => { setBoardFocus(!boardFocused); closeHeaderMenus(); });
     elements.immersiveButtons.forEach((button) => {
-      button.addEventListener("click", () => { setImmersiveMode(!immersiveMode); closeHeaderMenus(); });
+      button.addEventListener("click", () => {
+        const nextImmersive = !immersiveMode;
+        immersiveAutoDismissed = !nextImmersive && isShortLandscapeViewport();
+        if (nextImmersive) immersiveAutoDismissed = false;
+        setImmersiveMode(nextImmersive);
+        closeHeaderMenus();
+      });
     });
     elements.audioButton.addEventListener("click", () => { toggleAudio(); closeHeaderMenus(); });
     elements.cameraButtons.forEach((button) => {
@@ -2447,6 +2462,7 @@
     document.documentElement.style.setProperty("--empire-height", height + "px");
     document.documentElement.style.setProperty("--empire-width", width + "px");
     if (immersiveMode && !isShortLandscapeViewport()) setImmersiveMode(false);
+    syncAutoImmersiveMode();
     syncOrientationGuard();
     boardCamera?.refresh();
     window.requestAnimationFrame(() => followActiveActor(false));
@@ -2515,9 +2531,11 @@
       state.started = true;
       connectedLastEventNo = 0;
       connectedLatestEventSummary = "";
+      immersiveAutoDismissed = false;
       setBoardFocus(false);
       elements.dice.textContent = "◈";
       await refreshConnectedMatch({ initial: true });
+      window.requestAnimationFrame(syncAutoImmersiveMode);
       if (connectedUnsubscribe) connectedUnsubscribe();
       connectedUnsubscribe = mm.subscribeMatch(matchId, () => {
         refreshConnectedMatch({}).catch((error) => addLog(error.message || "同步比賽狀態失敗。"));
