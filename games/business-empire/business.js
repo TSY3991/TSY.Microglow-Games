@@ -1193,7 +1193,7 @@
   }
 
   function updateBoardStage(stageMode, event, stats = []) {
-    const actions = state.phase === "ai" && !state.connected && !state.aiFastForward ? aiFastForwardActions() : [];
+    const actions = state.phase === "ai" && !state.connected ? aiSpeedActions() : [];
     const stageStats = state.phase === "ai" && !state.connected && state.aiFastForwardLocked ? [...stats, ["\u901f\u5ea6", "\u672c\u5c40\u5feb\u8f49"]] : stats;
     syncBoardEvent({ ...event, stageMode }, actions, stageStats, stageMode);
   }
@@ -1858,8 +1858,10 @@
     return Boolean(!state.connected && state.aiFastForward && state.phase === "ai");
   }
 
-  function aiFastForwardActions() {
-    if (state.connected || state.aiFastForward || state.aiFastForwardLocked) return [];
+  function aiSpeedActions() {
+    if (state.connected) return [];
+    if (state.aiFastForwardLocked) return [{ label: "\u6062\u5fa9\u539f\u901f", run: disableAiFastForward }];
+    if (state.aiFastForward) return [];
     return [{ label: "\u672c\u5c40\u5feb\u8f49\u5c0d\u624b", run: enableAiFastForward }];
   }
 
@@ -1875,7 +1877,22 @@
       label: "\u5feb\u8f49\u4e2d",
       title: "\u672c\u5c40\u5df2\u958b\u555f\u5c0d\u624b\u5feb\u8f49",
       description: "\u672c\u5c40\u5f8c\u7e8c\u5c0d\u624b\u56de\u5408\u6703\u81ea\u52d5\u52a0\u901f\uff0c\u4fdd\u7559\u64f2\u9ab0\u3001\u843d\u9ede\u7d50\u679c\u8207\u640d\u76ca\u56de\u994b\u3002"
-    }, [], [["\u901f\u5ea6", "\u672c\u5c40\u81ea\u52d5\u5feb\u8f49"]]);
+    }, aiSpeedActions(), [["\u901f\u5ea6", "\u672c\u5c40\u81ea\u52d5\u5feb\u8f49"]]);
+  }
+
+  function disableAiFastForward() {
+    if (state.connected || state.phase !== "ai") return;
+    state.aiFastForwardLocked = false;
+    state.aiFastForward = false;
+    addLog("\u5df2\u6062\u5fa9\u5c0d\u624b\u539f\u901f\u56de\u5408\u3002");
+    showEvent({
+      type: "learn",
+      icon: "↺",
+      stageMode: "next-turn",
+      label: "\u539f\u901f",
+      title: "\u5c0d\u624b\u56de\u5408\u5df2\u6062\u5fa9\u539f\u901f",
+      description: "\u5f8c\u7e8c\u5c0d\u624b\u64f2\u9ab0\u8207\u79fb\u52d5\u5c07\u56de\u5230\u6b63\u5e38\u901f\u5ea6\uff0c\u65b9\u4fbf\u89c0\u5bdf\u6bcf\u4e00\u6b65\u7d50\u679c\u3002"
+    }, aiSpeedActions(), [["\u901f\u5ea6", "\u539f\u901f"]]);
   }
 
   async function runAiTurns() {
@@ -1888,7 +1905,7 @@
       state.secondsLeft = 0;
       state.movingActorId = actor.id;
       renderAll();
-      showEvent({ type: "income", icon: actor.avatar, stageMode: "rolling", label: "對手擲骰", title: `${actorDisplayName(actor)}正在行動`, description: `${actor.title}準備沿著城市道路前進。` }, aiFastForwardActions());
+      showEvent({ type: "income", icon: actor.avatar, stageMode: "rolling", label: "對手擲骰", title: `${actorDisplayName(actor)}正在行動`, description: `${actor.title}準備沿著城市道路前進。` }, aiSpeedActions());
       const roll = randomInt(1, 6);
       await animateDice(roll);
       addLog(`${actorDisplayName(actor)}擲出 ${roll}。`);
@@ -2077,7 +2094,7 @@
       label: "對手結果",
       title: `${actorDisplayName(actor)}｜${outcome?.title || tile.label}`,
       description: outcome?.description || `${actorDisplayName(actor)}已完成落點事件與月度結算。`
-    }, aiFastForwardActions(), stats);
+    }, aiSpeedActions(), stats);
   }
   function shouldAiBuy(actor, asset, price) {
     const netYield = (asset.monthlyIncome - asset.monthlyCost) / Math.max(1, price);
