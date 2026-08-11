@@ -1868,12 +1868,17 @@
 
   function showSettlementStage(actor, result) {
     const flow = result.flow || 0;
-    const income = actor.salary + passiveIncome(actor);
+    const passive = passiveIncome(actor);
+    const income = actor.salary + passive;
     const expense = monthlyExpense(actor);
+    const freedomGap = Math.max(0, expense - passive);
     const stats = [
       ["收入合計", formatMoney(income)],
+      ["被動收入", formatMoney(passive)],
       ["每月支出", formatMoney(expense)],
       ["本月淨流", formatSigned(flow)],
+      ["自由進度", `${freedomProgressPercent(passive, expense)}%`],
+      ["距離自由", freedomGap > 0 ? formatMoney(freedomGap) : "已達標"],
       ["結算後現金", formatMoney(actor.cash)]
     ];
     if (result.emergencyCredit) stats.push(["緊急信用", formatMoney(result.emergencyCredit)]);
