@@ -8,6 +8,9 @@
   const TURN_SECONDS = 45;
   const PLAYER_STEP_MS = 300;
   const AI_STEP_MS = 220;
+  const AI_FAST_STEP_MS = 48;
+  const AI_FAST_DICE_FRAME_MS = 18;
+  const AI_FAST_RESULT_MS = 160;
   const DICE_SPIN_FRAMES = 9;
   const DICE_FRAME_MS = 85;
   const SETTLEMENT_STAGE_MS = 950;
@@ -342,6 +345,7 @@
       arrivalActorId: null,
       difficulty: setupState?.difficulty || "guild",
       connected: false,
+      aiFastForward: false,
       matchId: null,
       myUserId: null,
       turnDeadlineAt: null
@@ -1187,7 +1191,8 @@
   }
 
   function updateBoardStage(stageMode, event, stats = []) {
-    syncBoardEvent({ ...event, stageMode }, [], stats, stageMode);
+    const actions = state.phase === "ai" && !state.connected && !state.aiFastForward ? aiFastForwardActions() : [];
+    syncBoardEvent({ ...event, stageMode }, actions, stats, stageMode);
   }
 
   function isMobilePortrait() {
@@ -1578,7 +1583,7 @@
     elements.dice.classList.add("is-rolling");
     for (let index = 0; index < DICE_SPIN_FRAMES; index += 1) {
       elements.dice.textContent = DICE_FACES[randomInt(1, 6) - 1];
-      await sleep(DICE_FRAME_MS);
+      await sleep(isAiFastForwarding() ? AI_FAST_DICE_FRAME_MS : DICE_FRAME_MS);
     }
     elements.dice.textContent = DICE_FACES[result - 1];
     elements.dice.setAttribute("aria-label", `骰子結果 ${result}`);
@@ -1611,7 +1616,7 @@
         updateBoardStage("moving", { type: "income", icon: "➜", label: "逐格前進", title: `${actorDisplayName(actor)}移動中`, description: `已前進 ${step + 1}／${steps} 格，發光路徑標示本回合經過的街區。` }, [["剩餘步數", String(steps - step - 1)], ["目前位置", String(actor.position + 1)]]);
         renderTokens();
         playEffect("step");
-        await sleep(actor.isHuman ? PLAYER_STEP_MS : AI_STEP_MS);
+        await sleep(actor.isHuman ? PLAYER_STEP_MS : (isAiFastForwarding() ? AI_FAST_STEP_MS : AI_STEP_MS));
       }
     }
     holdArrivalTile(actor, actor.position);
@@ -1846,7 +1851,30 @@
     }, [], stats);
   }
 
+  function isAiFastForwarding() {
+    return Boolean(!state.connected && state.aiFastForward && state.phase === "ai");
+  }
+
+  function aiFastForwardActions() {
+    if (state.connected || state.aiFastForward) return [];
+    return [{ label: "\u5feb\u8f49\u5c0d\u624b", run: enableAiFastForward }];
+  }
+
+  function enableAiFastForward() {
+    if (state.connected || state.phase !== "ai") return;
+    state.aiFastForward = true;
+    showEvent({
+      type: "income",
+      icon: "»",
+      stageMode: "next-turn",
+      label: "\u5feb\u8f49\u4e2d",
+      title: "\u6b63\u5728\u5feb\u8f49\u5c0d\u624b\u56de\u5408",
+      description: "\u4fdd\u7559\u64f2\u9ab0\u8207\u843d\u9ede\u7d50\u679c\uff0c\u4f46\u7e2e\u77ed\u5c0d\u624b\u52d5\u756b\u8207\u7b49\u5f85\u6642\u9593\u3002"
+    }, [], [["\u901f\u5ea6", "\u5feb\u8f49"]]);
+  }
+
   async function runAiTurns() {
+    state.aiFastForward = false;
     const opponents = state.actors.filter((actor) => !actor.isHuman && !actor.eliminated);
     for (const actor of opponents) {
       if (state.ended) return;
@@ -1855,7 +1883,7 @@
       state.secondsLeft = 0;
       state.movingActorId = actor.id;
       renderAll();
-      showEvent({ type: "income", icon: actor.avatar, stageMode: "rolling", label: "對手擲骰", title: `${actorDisplayName(actor)}正在行動`, description: `${actor.title}準備沿著城市道路前進。` });
+      showEvent({ type: "income", icon: actor.avatar, stageMode: "rolling", label: "對手擲骰", title: `${actorDisplayName(actor)}正在行動`, description: `${actor.title}準備沿著城市道路前進。` }, aiFastForwardActions());
       const roll = randomInt(1, 6);
       await animateDice(roll);
       addLog(`${actorDisplayName(actor)}擲出 ${roll}。`);
@@ -1874,7 +1902,7 @@
       }
       renderAll();
       showAiResultStage(actor, tile, outcome, settlement);
-      await sleep(720);
+      await sleep(state.aiFastForward ? AI_FAST_RESULT_MS : 720);
     }
   }
 
@@ -2044,7 +2072,7 @@
       label: "對手結果",
       title: `${actorDisplayName(actor)}｜${outcome?.title || tile.label}`,
       description: outcome?.description || `${actorDisplayName(actor)}已完成落點事件與月度結算。`
-    }, [], stats);
+    }, aiFastForwardActions(), stats);
   }
   function shouldAiBuy(actor, asset, price) {
     const netYield = (asset.monthlyIncome - asset.monthlyCost) / Math.max(1, price);
