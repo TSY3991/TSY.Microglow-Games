@@ -2104,3 +2104,192 @@ button.top-immersive-button { display: none !important; }
     transform-origin: top right !important;
   }
 }
+/* Event stage presentation pass - 20260811a.
+   Visual-only treatment: keep existing dock placement, sizes and action layout intact. */
+.board-frame > .board-event-dock {
+  isolation: isolate;
+  overflow: hidden;
+  backdrop-filter: blur(12px) saturate(1.16);
+  -webkit-backdrop-filter: blur(12px) saturate(1.16);
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb,var(--event-color,var(--cyan)),transparent 76%), transparent 32%),
+    radial-gradient(circle at 88% 76%, rgba(246,207,116,.12), transparent 34%),
+    linear-gradient(145deg, rgba(7,22,38,.96), rgba(2,7,15,.94) 62%, rgba(11,8,22,.94)) !important;
+  box-shadow:
+    0 18px 34px rgba(0,0,0,.58),
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 0 26px color-mix(in srgb,var(--event-color,var(--cyan)),transparent 72%),
+    inset 0 1px rgba(255,255,255,.14) !important;
+  transform: translate(-50%,-50%) translateZ(0);
+}
+
+.board-frame > .board-event-dock::before,
+.board-frame > .board-event-dock::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.board-frame > .board-event-dock::before {
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(115deg, transparent 0 27%, rgba(255,255,255,.08) 39%, transparent 52% 100%),
+    repeating-linear-gradient(90deg, rgba(84,221,245,.045) 0 1px, transparent 1px 18px);
+  opacity: .72;
+  transform: translateX(-8%);
+}
+
+.board-frame > .board-event-dock::after {
+  left: 14px;
+  right: 14px;
+  top: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb,var(--event-color,var(--cyan)),white 20%), var(--gold-bright), transparent);
+  box-shadow: 0 0 14px color-mix(in srgb,var(--event-color,var(--cyan)),transparent 28%);
+  opacity: .86;
+}
+
+.board-frame > .board-event-dock .board-event-visual {
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+  background:
+    radial-gradient(circle at 48% 32%, color-mix(in srgb,var(--event-color,var(--cyan)),white 18%), transparent 22%),
+    radial-gradient(circle at 50% 54%, color-mix(in srgb,var(--event-color,var(--cyan)),transparent 36%), rgba(3,10,20,.92) 72%) !important;
+  box-shadow:
+    inset 0 0 20px rgba(255,255,255,.1),
+    inset 0 -8px 18px rgba(0,0,0,.36),
+    0 10px 20px rgba(0,0,0,.48),
+    0 0 18px color-mix(in srgb,var(--event-color,var(--cyan)),transparent 62%) !important;
+}
+
+.board-frame > .board-event-dock .board-event-visual::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  z-index: -1;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(255,255,255,.1), transparent 68%);
+}
+
+.board-frame > .board-event-dock .board-event-copy small {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb,var(--event-color,var(--cyan)),transparent 42%);
+  border-radius: 999px;
+  color: color-mix(in srgb,var(--event-color,var(--cyan)),white 18%) !important;
+  background: color-mix(in srgb,var(--event-color,var(--cyan)),transparent 88%);
+  text-shadow: 0 0 8px color-mix(in srgb,var(--event-color,var(--cyan)),transparent 56%);
+}
+
+.board-frame > .board-event-dock .board-event-copy strong {
+  text-shadow: 0 1px 2px #000, 0 0 12px rgba(246,207,116,.18);
+}
+
+.board-frame > .board-event-dock .board-event-actions button {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow:
+    0 4px 0 #8a5c15,
+    0 0 18px rgba(246,207,116,.28),
+    inset 0 1px rgba(255,255,255,.32) !important;
+}
+
+.board-frame > .board-event-dock .board-event-actions button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0 35%, rgba(255,255,255,.34) 48%, transparent 62% 100%);
+  opacity: .5;
+  transform: translateX(-120%);
+}
+
+.board-frame > .board-event-dock.has-actions .board-event-actions button:first-child::before,
+.board-frame > .board-event-dock[data-stage-mode="decision"] .board-event-actions button:first-child::before {
+  animation: boardEventButtonSweep 1.75s ease-in-out infinite;
+}
+
+.board-frame > .board-event-dock[data-stage-mode="rolling"] .board-event-visual {
+  animation: boardEventDicePulse .72s ease-in-out infinite alternate;
+}
+
+.board-frame > .board-event-dock[data-stage-mode="moving"]::before {
+  opacity: .9;
+  animation: boardEventScan 1.2s linear infinite;
+}
+
+.board-frame > .board-event-dock[data-stage-mode="decision"],
+.board-frame > .board-event-dock.has-actions {
+  border-color: color-mix(in srgb,var(--event-color,var(--cyan)),var(--gold-bright) 48%) !important;
+}
+
+.board-frame > .board-event-dock[data-stage-mode="result"] .board-event-visual {
+  animation: boardEventResultPop .64s cubic-bezier(.2,1.4,.38,1) 1;
+}
+
+.board-frame > .board-event-dock[data-stage-mode="next-turn"] {
+  box-shadow:
+    0 18px 34px rgba(0,0,0,.58),
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 0 30px rgba(246,207,116,.22),
+    inset 0 1px rgba(255,255,255,.14) !important;
+}
+
+@keyframes boardEventButtonSweep {
+  0%, 38% { transform: translateX(-120%); }
+  70%, 100% { transform: translateX(120%); }
+}
+
+@keyframes boardEventDicePulse {
+  from { transform: translateZ(0) rotate(-2deg) scale(.97); }
+  to { transform: translateZ(0) rotate(2deg) scale(1.06); }
+}
+
+@keyframes boardEventScan {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 140px 0, 18px 0; }
+}
+
+@keyframes boardEventResultPop {
+  0% { transform: translateZ(0) scale(.86); filter: brightness(1.35); }
+  72% { transform: translateZ(0) scale(1.08); }
+  100% { transform: translateZ(0) scale(1); filter: brightness(1); }
+}
+
+@media (max-width: 900px) {
+  .board-frame > .board-event-dock .board-event-copy small {
+    padding: 1px 5px;
+  }
+
+  .board-frame > .board-event-dock .board-event-actions button::before {
+    opacity: .34;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-frame > .board-event-dock,
+  .board-frame > .board-event-dock::before,
+  .board-frame > .board-event-dock .board-event-visual,
+  .board-frame > .board-event-dock .board-event-actions button::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* Mobile landscape compact event dock bounds fix - 20260811c.
+   Compact non-decision states are pinned by left/bottom, so clear the center translate. */
+@media (max-width: 920px) and (orientation: landscape) {
+  .board-frame > .board-event-dock[data-stage-mode="overview"]:not(.has-actions),
+  .board-frame > .board-event-dock[data-stage-mode="rolling"]:not(.has-actions),
+  .board-frame > .board-event-dock[data-stage-mode="moving"]:not(.has-actions),
+  .board-frame > .board-event-dock[data-stage-mode="next-turn"]:not(.has-actions),
+  .board-frame > .board-event-dock.is-compact:not(.has-actions):not(.is-expanded) {
+    transform: none !important;
+  }
+}
