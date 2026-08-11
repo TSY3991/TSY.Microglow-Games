@@ -1717,6 +1717,7 @@
       { label: "放棄機會", run: () => { addLog(`${actorDisplayName(actor)}放棄 ${template.name}。`); finishHumanTurn(); } }
     ], [
       ["買入現金", formatMoney(price)],
+      ["買後現金", formatMoney(actor.cash - price)],
       ["每月淨流入", formatSigned(netIncome)],
       ["自由進度", assetFreedomImpact(actor, template)],
       ["資產價值", formatMoney(template.value)],
@@ -2842,6 +2843,7 @@
       { label: "放棄機會", run: () => runConnectedAction("skip") }
     ], [
       ["買入現金", formatMoney(price)],
+      ["買後現金", formatMoney(player.cash - price)],
       ["每月淨流入", formatSigned(netIncome)],
       ["自由進度", assetFreedomImpact(player, template)],
       ["資產價值", formatMoney(template.value)],
