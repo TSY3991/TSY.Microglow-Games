@@ -1221,7 +1221,7 @@
     elements.boardEventDock.classList.toggle("is-actionable", hasEnabledActions || stageMode === "decision");
     elements.boardEventDock.classList.toggle("is-compact", isCompact);
     syncExperienceState(stageMode, hasEnabledActions);
-    if (isMobilePortrait()) setBoardEventExpanded(hasEnabledActions || stageMode === "result");
+    if (isMobilePortrait() || isShortLandscapeViewport()) setBoardEventExpanded(hasEnabledActions || stageMode === "result");
     scheduleEventDockAvoidance();
   }
 
@@ -1237,7 +1237,8 @@
 
   function setBoardEventExpanded(expanded) {
     if (!elements.boardEventDock || !elements.boardEventToggle) return;
-    const next = Boolean(expanded && isMobilePortrait());
+    const compactMobile = isMobilePortrait() || isShortLandscapeViewport();
+    const next = Boolean(expanded && compactMobile);
     elements.boardEventDock.classList.toggle("is-expanded", next);
     elements.boardEventToggle.setAttribute("aria-expanded", String(next));
     elements.boardEventToggle.setAttribute("aria-label", next ? "收合棋盤事件提示" : "展開棋盤事件提示");
@@ -2603,7 +2604,7 @@
     document.documentElement.dataset.mobileOrientation = mobilePortrait ? "portrait" : "landscape";
     document.body.classList.remove("mobile-portrait-preview");
     document.body.classList.toggle("mobile-portrait-locked", extremeNarrowPortrait);
-    if (!mobilePortrait) setBoardEventExpanded(false);
+    if (!mobilePortrait && !isShortLandscapeViewport()) setBoardEventExpanded(false);
   }
   function sleep(milliseconds) {
     return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
