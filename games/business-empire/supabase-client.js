@@ -1,6 +1,111 @@
 (function () {
   "use strict";
 
+  // Diagnostic error reporting: catch window errors and unhandled promise
+  // rejections and forward a bounded sample to Supabase. Installed first so
+  // errors thrown while the rest of this file (or its dependencies) are
+  // initialising still get captured — buffered locally until the RPC path is
+  // ready.
+  const ERR_APP = "business-empire";
+  const ERR_MAX_PER_SESSION = 20;
+  const ERR_DEDUP_WINDOW = 30;
+  const errQueue = [];
+  const errSeen = new Set();
+  let errSent = 0;
+  let errFlushTimer = null;
+
+  function errSignature(msg, stack) {
+    const s = String(stack || msg || "").slice(0, 200);
+    return s;
+  }
+  function enqueueError(payload) {
+    if (errSent >= ERR_MAX_PER_SESSION) return;
+    const sig = errSignature(payload.message, payload.stack);
+    if (errSeen.has(sig)) return;
+    errSeen.add(sig);
+    if (errSeen.size > ERR_DEDUP_WINDOW) {
+      const first = errSeen.values().next().value;
+      errSeen.delete(first);
+    }
+    errQueue.push(payload);
+    errSent += 1;
+    scheduleFlush();
+  }
+  function scheduleFlush() {
+    if (errFlushTimer) return;
+    errFlushTimer = window.setTimeout(flushErrors, 500);
+  }
+  async function flushErrors() {
+    errFlushTimer = null;
+    if (!errQueue.length) return;
+    const client = window.MicroglowAuth && window.MicroglowAuth.client;
+    if (!client) {
+      // Not ready yet; retry later, keep queue bounded.
+      if (errQueue.length > ERR_MAX_PER_SESSION) errQueue.length = ERR_MAX_PER_SESSION;
+      window.setTimeout(flushErrors, 2000);
+      return;
+    }
+    const batch = errQueue.splice(0, errQueue.length);
+    for (const payload of batch) {
+      try {
+        await client.rpc("report_client_error", {
+          p_app: ERR_APP,
+          p_message: payload.message,
+          p_stack: payload.stack || null,
+          p_url: payload.url || null,
+          p_user_agent: payload.userAgent || null,
+          p_context: payload.context || {}
+        });
+      } catch (_) {
+        // Never let the reporter cascade — silently drop and move on.
+      }
+    }
+  }
+  window.addEventListener("error", (event) => {
+    try {
+      enqueueError({
+        message: event.message || (event.error && event.error.message) || "(error event)",
+        stack: event.error && event.error.stack,
+        url: location.href,
+        userAgent: navigator.userAgent,
+        context: {
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          gameVer: (window.MicroglowGameVersion || null)
+        }
+      });
+    } catch (_) {}
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    try {
+      const reason = event.reason;
+      const message = (reason && (reason.message || String(reason))) || "(unhandled rejection)";
+      const stack = reason && reason.stack;
+      enqueueError({
+        message,
+        stack,
+        url: location.href,
+        userAgent: navigator.userAgent,
+        context: { kind: "unhandledrejection", gameVer: (window.MicroglowGameVersion || null) }
+      });
+    } catch (_) {}
+  });
+  window.MicroglowDiag = {
+    reportClientError(message, extra) {
+      enqueueError({
+        message: String(message || "(manual)"),
+        stack: (extra && extra.stack) || null,
+        url: location.href,
+        userAgent: navigator.userAgent,
+        context: Object.assign(
+          { kind: "manual", gameVer: (window.MicroglowGameVersion || null) },
+          (extra && extra.context) || {}
+        )
+      });
+    }
+  };
+
   const TURNSTILE_SITE_KEY = "0x4AAAAAAD7mtP2SYLK59ifA";
   const CAPTCHA_TIMEOUT_MS = 15000;
   const RENDER_INITIAL_DELAY_MS = 1000;
