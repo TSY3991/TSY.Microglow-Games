@@ -939,9 +939,12 @@
       if (player.eliminated) seat.classList.add("is-eliminated");
       seat.dataset.variant = player.variant || "";
       seat.style.setProperty("--seat-color", player.color);
+      const stale = isPresenceStale(player.id);
+      if (stale) seat.classList.add("is-stale");
+      const staleBadge = stale ? '<span class="seat-stale" title="超過 20 秒未回應">・疑似離線</span>' : "";
       seat.innerHTML = `
         <span class="seat-avatar" style="--sprite:url('./assets/tokens/${player.spriteId}.png')"><b>${player.avatar}</b></span>
-        <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : (state.connected ? `P${player.seat + 1}` : "AI")}</small><strong>${escapeHtml(actorDisplayName(player))}</strong><em>${escapeHtml(actorStatusLine(player, player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"))}</em></span>
+        <span class="seat-copy"><small>P${player.seat + 1}・${player.isHuman ? "你" : (state.connected ? `P${player.seat + 1}` : "AI")}${staleBadge}</small><strong>${escapeHtml(actorDisplayName(player))}</strong><em>${escapeHtml(actorStatusLine(player, player.eliminated ? "已退場" : player.id === state.activeActorId ? phaseLabel() : "等待中"))}</em></span>
       `;
       elements.playerSeats.append(seat);
     });
@@ -2251,6 +2254,7 @@
 
   function endGame(won, message, focusActor) {
     stopTurnTimer();
+    stopHeartbeat();
     state.ended = true;
     state.busy = false;
     setBoardFocus(false);
@@ -2622,6 +2626,41 @@
   let connectedRefreshPending = false;
   let connectedLastEventNo = 0;
   let connectedLatestEventSummary = "";
+  let heartbeatStop = null;
+  let presenceTickId = null;
+  // Per-user presence: user_id -> { lastSeenAt: number(ms), isConnected: bool }
+  const presenceByUser = new Map();
+  // A player is "疑似離線" if their last heartbeat is older than this.
+  const PRESENCE_STALE_MS = 20000;
+
+  function isPresenceStale(userId) {
+    if (!state.connected || !userId) return false;
+    if (userId === state.myUserId) return false; // never flag self
+    const entry = presenceByUser.get(userId);
+    if (!entry) return false;
+    if (entry.isConnected === false) return true;
+    return (Date.now() - entry.lastSeenAt) > PRESENCE_STALE_MS;
+  }
+
+  function ingestPresence(data) {
+    if (!data || !Array.isArray(data.players)) return;
+    const serverNow = data.now ? new Date(data.now).getTime() : Date.now();
+    const skew = Date.now() - serverNow;
+    data.players.forEach((row) => {
+      const t = row.last_seen_at ? new Date(row.last_seen_at).getTime() + skew : Date.now();
+      presenceByUser.set(row.user_id, {
+        lastSeenAt: t,
+        isConnected: row.is_connected !== false
+      });
+    });
+    renderPlayerSeats();
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatStop) { try { heartbeatStop(); } catch (_) {} heartbeatStop = null; }
+    if (presenceTickId) { window.clearInterval(presenceTickId); presenceTickId = null; }
+    presenceByUser.clear();
+  }
 
   function findAssetTemplate(assetKey) {
     const catalogs = [BASIC_ASSETS, ELITE_ASSETS];
@@ -2663,6 +2702,15 @@
       connectedUnsubscribe = mm.subscribeMatch(matchId, () => {
         refreshConnectedMatch({}).catch((error) => addLog(error.message || "同步比賽狀態失敗。"));
       });
+      stopHeartbeat();
+      if (typeof mm.startHeartbeat === "function") {
+        heartbeatStop = mm.startHeartbeat(matchId, ingestPresence, 10000);
+        // Re-render seats every 5s so the "疑似離線" badge appears / clears
+        // even when no server event or heartbeat response has arrived.
+        presenceTickId = window.setInterval(() => {
+          if (state.connected && !state.ended) renderPlayerSeats();
+        }, 5000);
+      }
     } catch (error) {
       showEvent({ type: "expense", title: "無法載入連線對戰", description: error.message || "請返回大廳重新嘗試。" });
     }

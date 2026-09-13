@@ -276,6 +276,34 @@
     return data;
   }
 
+  async function matchHeartbeat(matchId) {
+    const { data, error } = await client.rpc("match_heartbeat", { p_match_id: matchId });
+    if (error) throw error;
+    return data;
+  }
+
+  // Fire-and-forget heartbeat driver. Calls match_heartbeat every `periodMs`
+  // (default 10s) and hands the response to onPresence. Errors are swallowed
+  // so a transient network blip does not break the game loop; the next tick
+  // will retry. Returns a stop() function.
+  function startHeartbeat(matchId, onPresence, periodMs) {
+    const period = Math.max(2000, periodMs || 10000);
+    let stopped = false;
+    async function tick() {
+      if (stopped) return;
+      try {
+        const data = await matchHeartbeat(matchId);
+        if (!stopped && data && typeof onPresence === "function") onPresence(data);
+      } catch (_) { /* transient — try again next tick */ }
+    }
+    tick();
+    const id = window.setInterval(tick, period);
+    return function stop() {
+      stopped = true;
+      window.clearInterval(id);
+    };
+  }
+
   function subscribeMatch(matchId, onChange) {
     const channel = client
       .channel(`business-match-${matchId}`)
@@ -296,6 +324,8 @@
     getProfiles,
     callBusinessAction,
     forceAdvanceExpiredTurn,
-    subscribeMatch
+    subscribeMatch,
+    matchHeartbeat,
+    startHeartbeat
   };
 })();

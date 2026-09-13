@@ -245,6 +245,8 @@ button:disabled { cursor: not-allowed; filter: grayscale(.7); opacity: .45; }
 }
 .player-seat.is-current { border-color: var(--seat-color); background: color-mix(in srgb,var(--seat-color),transparent 88%); box-shadow: inset 0 0 12px color-mix(in srgb,var(--seat-color),transparent 85%),0 0 11px color-mix(in srgb,var(--seat-color),transparent 76%); opacity: 1; }
 .player-seat.is-eliminated { filter: grayscale(1); opacity: .35; }
+.player-seat.is-stale { outline: 1px dashed rgba(255,180,90,.55); outline-offset: -3px; }
+.seat-stale { color: #ffb35a; font-weight: 700; }
 .seat-avatar { width: 32px; height: 38px; border-color: color-mix(in srgb,var(--seat-color),white 35%); }
 .seat-copy { display: grid; min-width: 0; }
 .seat-copy small,.seat-copy strong,.seat-copy em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
