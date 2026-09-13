@@ -276,6 +276,12 @@
     return data;
   }
 
+  async function getClientMinVersion(app) {
+    const { data, error } = await client.rpc("get_client_min_version", { p_app: app });
+    if (error) throw error;
+    return data;
+  }
+
   async function matchHeartbeat(matchId) {
     const { data, error } = await client.rpc("match_heartbeat", { p_match_id: matchId });
     if (error) throw error;
@@ -326,6 +332,7 @@
     forceAdvanceExpiredTurn,
     subscribeMatch,
     matchHeartbeat,
-    startHeartbeat
+    startHeartbeat,
+    getClientMinVersion
   };
 })();

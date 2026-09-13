@@ -3,6 +3,10 @@
 
   const GAME_ID = "microglow-business-empire";
   const GAME_TITLE = "微光商業帝國";
+  // Bumped in step with the ?v=YYYYMMDD<letter> cache-bust on this file.
+  // Compared against private.client_versions.min_version on boot.
+  const CLIENT_VERSION = "20260913b";
+  window.MicroglowGameVersion = CLIENT_VERSION;
   const ELITE_NET_WORTH = 250000;
   const MAX_LOGS = 8;
   const TURN_SECONDS = 45;
@@ -312,6 +316,7 @@
     } else {
       addLog("歡迎來到微光城，請先選擇角色。", false);
     }
+    checkClientVersion();
     window.__microglowBusinessEmpire = {
       snapshot: () => JSON.parse(JSON.stringify(state)),
       formatMoney,
@@ -2660,6 +2665,46 @@
     if (heartbeatStop) { try { heartbeatStop(); } catch (_) {} heartbeatStop = null; }
     if (presenceTickId) { window.clearInterval(presenceTickId); presenceTickId = null; }
     presenceByUser.clear();
+  }
+
+  async function checkClientVersion() {
+    const mm = window.MicroglowMatch;
+    if (!mm || typeof mm.getClientMinVersion !== "function") return;
+    let data;
+    try { data = await mm.getClientMinVersion(GAME_ID); } catch (_) { return; }
+    if (!data) return;
+    const min = data.min_version;
+    if (min && String(CLIENT_VERSION) < String(min)) {
+      showClientOutdatedOverlay(min, data.notice);
+    }
+  }
+
+  function showClientOutdatedOverlay(minVersion, notice) {
+    if (document.getElementById("client-outdated-overlay")) return;
+    const overlay = document.createElement("div");
+    overlay.id = "client-outdated-overlay";
+    overlay.setAttribute("role", "alertdialog");
+    overlay.style.cssText =
+      "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;" +
+      "justify-content:center;background:rgba(6,10,20,.92);backdrop-filter:blur(4px);" +
+      "color:#fff;font-family:inherit;padding:24px;";
+    const noticeLine = notice
+      ? `<p style="margin:0 0 18px;color:#ffb35a;">${String(notice).replace(/[<>&]/g, "")}</p>`
+      : "";
+    overlay.innerHTML =
+      `<div style="max-width:420px;text-align:center;background:rgba(20,26,44,.95);` +
+      `border:1px solid rgba(255,180,90,.5);border-radius:14px;padding:28px 24px;">` +
+      `<h2 style="margin:0 0 12px;font-size:1.25rem;color:#ffcf80;">版本已過期</h2>` +
+      `<p style="margin:0 0 8px;">目前版本 ${CLIENT_VERSION}，需要 ${minVersion} 或更新。</p>` +
+      `<p style="margin:0 0 18px;opacity:.75;font-size:.85rem;">請重新整理頁面以取得最新版本。</p>` +
+      noticeLine +
+      `<button type="button" id="client-outdated-reload" style="background:#ffb35a;color:#111;` +
+      `border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">重新整理</button>` +
+      `</div>`;
+    document.body.appendChild(overlay);
+    document.getElementById("client-outdated-reload").addEventListener("click", () => {
+      window.location.reload();
+    });
   }
 
   function findAssetTemplate(assetKey) {
