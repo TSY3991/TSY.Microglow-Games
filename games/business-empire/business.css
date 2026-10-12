@@ -2755,14 +2755,12 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
 .ready-roster li small { font-size: 13px; line-height: 1.35; }
 .ready-roster li .ready-member-meta { margin-top: 2px; color: var(--cyan); font-size: 13px; font-weight: 850; }
 .ready-roster li em { font-size: 11px; }
+/* Result ranking keeps all required metrics on small screens. */
 @media (max-width: 900px) {
   .ready-roster li { min-height: 60px; }
   .ready-roster li strong,
   .ready-roster li small,
   .ready-roster li .ready-member-meta { font-size: 13px; }
-}
-/* Result ranking keeps all required metrics on small screens. */
-@media (max-width: 900px) {
   .result-ranking li {
     grid-template-columns: 28px 40px repeat(3,minmax(54px,1fr)) minmax(70px,.8fr);
     grid-template-rows: auto auto;
@@ -2802,6 +2800,7 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     font-size: 13px !important;
   }
 }
+/* Landscape decision text must remain readable. */
 @media (max-width: 900px) and (orientation: landscape) {
   .turn-banner {
     grid-template-columns: minmax(112px,.72fr) minmax(166px,182px) 46px minmax(0,1.45fr);
@@ -2813,9 +2812,6 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
   .seat-copy small,
   .seat-copy strong,
   .seat-copy em { white-space: nowrap; }
-}
-/* Landscape decision text must remain readable. */
-@media (max-width: 900px) and (orientation: landscape) {
   body:not(.mobile-portrait-locked) .quest-panel .event-actions button { font-size: 13px !important; }
 }
 /* First-time nickname, matchmaking wait state, and portrait board scale - 2026-07-29 */
@@ -3007,6 +3003,8 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
 
 
 /* Mobile portrait board-first viewport correction - 20260810c. */
+/* Mobile portrait event stage bottom sheet - 20260810d.
+   Keep desktop center stage, but avoid covering the playable board on portrait phones. */
 @media (max-width: 900px) and (orientation: portrait) {
   body:not(.mobile-portrait-locked) .game-layout {
     grid-template-rows: minmax(0,1fr) !important;
@@ -3030,10 +3028,6 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     min-height: 0;
     height: 100% !important;
   }
-}
-/* Mobile portrait event stage bottom sheet - 20260810d.
-   Keep desktop center stage, but avoid covering the playable board on portrait phones. */
-@media (max-width: 900px) and (orientation: portrait) {
   body:not(.mobile-portrait-locked) .board-event-dock.is-expanded {
     left: 10px !important;
     right: 10px !important;
@@ -3243,6 +3237,8 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
   .multiplayer-card.is-queue-waiting [data-mp-action="cancel-queue"] { min-height: 44px; }
 }
 
+/* Setup ready-step mobile CTA correction - 20260810g.
+   Keep the final setup action visible and readable on portrait phones and short landscape browser chrome. */
 @media (max-width: 900px) and (orientation: portrait) {
   .multiplayer-card.is-queue-waiting {
     padding: 12px 10px;
@@ -3251,10 +3247,6 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
   .multiplayer-card.is-queue-waiting .mp-match-wait {
     min-height: min(320px, calc(100svh - 280px));
   }
-}
-/* Setup ready-step mobile CTA correction - 20260810g.
-   Keep the final setup action visible and readable on portrait phones and short landscape browser chrome. */
-@media (max-width: 900px) and (orientation: portrait) {
   .setup-stage[data-setup-stage="3"]:not([hidden]) .ready-layout {
     grid-template-columns: 1fr !important;
     gap: 8px !important;
@@ -3389,6 +3381,8 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
   }
 }
 
+/* Mobile landscape nickname setup compact fit - 20260810j.
+   First-time players must see the nickname input and submit action without hunting through a scroll panel. */
 @media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
   .board-command .roll-button {
     min-height: 44px !important;
@@ -3407,10 +3401,6 @@ body[data-account-type="member"] .account-status-button { border-color: rgba(111
     font-size: 13px !important;
     line-height: 1.08 !important;
   }
-}
-/* Mobile landscape nickname setup compact fit - 20260810j.
-   First-time players must see the nickname input and submit action without hunting through a scroll panel. */
-@media (max-width: 900px) and (orientation: landscape) and (max-height: 430px) {
   .nickname-modal {
     padding: max(6px, env(safe-area-inset-top)) 8px max(6px, env(safe-area-inset-bottom)) !important;
     align-items: center !important;
