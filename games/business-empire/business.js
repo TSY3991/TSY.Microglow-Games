@@ -5,9 +5,19 @@
   const GAME_TITLE = "微光商業帝國";
   // Bumped in step with the ?v=YYYYMMDD<letter> cache-bust on this file.
   // Compared against private.client_versions.min_version on boot.
-  const CLIENT_VERSION = "20260913b";
+  const CLIENT_VERSION = "20261012a";
   window.MicroglowGameVersion = CLIENT_VERSION;
   const ELITE_NET_WORTH = 250000;
+  const LOAN_CASH = 15000;
+  const LOAN_DEBT = 18000;
+  const LOAN_REPAYMENT = 5000;
+  const ELITE_DIVIDEND = 6000;
+  const LEARN_COST_ELITE = 5000;
+  const LEARN_COST_BASIC = 2500;
+  const AI_LEARN_RESERVE_CONSERVATIVE = 18000;
+  const AI_LEARN_RESERVE_OTHER = 7000;
+  const AI_REPAY_CASH_THRESHOLD = 25000;
+  const AI_BORROW_CASH_THRESHOLD = 16000;
   const MAX_LOGS = 8;
   const TURN_SECONDS = 45;
   const PLAYER_STEP_MS = 300;
@@ -994,7 +1004,7 @@
 
   function monthlyExpense(actor) {
     const assetCosts = actor.assets.reduce((total, asset) => total + asset.monthlyCost, 0);
-    const creditCost = actor.bankDebt > 0 ? Math.ceil(actor.bankDebt / 18000) * 260 : 0;
+    const creditCost = actor.bankDebt > 0 ? Math.ceil(actor.bankDebt / LOAN_DEBT) * 260 : 0;
     return actor.baseExpense + assetCosts + creditCost;
   }
 
@@ -1065,6 +1075,33 @@
     const success = Math.random() < successChance;
     const magnitude = actor.circle === "elite" ? randomInt(7000, 15000) : randomInt(2200, 6200);
     return { success, amount: success ? magnitude : -magnitude, successChance };
+  }
+
+  function applyIncomeEvent(actor) {
+    const event = rollIncomeEvent();
+    actor.cash += event[1];
+    return event;
+  }
+
+  function applyExpenseEvent(actor) {
+    const event = rollExpenseEvent(actor);
+    actor.cash -= event.amount;
+    return event;
+  }
+
+  function applyRiskEvent(actor) {
+    const event = rollRiskEvent(actor);
+    actor.cash += event.amount;
+    return event;
+  }
+
+  function applyBankLoan(actor) {
+    actor.cash += LOAN_CASH;
+    actor.bankDebt += LOAN_DEBT;
+  }
+
+  function applyEliteDividend(actor) {
+    actor.cash += ELITE_DIVIDEND;
   }
 
   function rollDestinyEvent(actor) {
@@ -1681,24 +1718,21 @@
     }
 
     if (tile.type === "income") {
-      const [title, amount] = rollIncomeEvent();
-      actor.cash += amount;
+      const [title, amount] = applyIncomeEvent(actor);
       addLog(`${title}，現金 ${formatSigned(amount)}。`);
       presentContinue(tile, title, `機會能量轉為現金，你獲得 ${formatMoney(amount)}。`, [["現金變動", formatSigned(amount)]]);
       return;
     }
 
     if (tile.type === "expense") {
-      const { title, amount, reduction } = rollExpenseEvent(actor);
-      actor.cash -= amount;
+      const { title, amount, reduction } = applyExpenseEvent(actor);
       addLog(`${title}，現金 ${formatSigned(-amount)}。`);
       presentContinue(tile, title, `突發支出已支付${reduction ? "，能力降低了損失" : ""}。`, [["現金變動", formatSigned(-amount)]]);
       return;
     }
 
     if (tile.type === "risk") {
-      const { success, amount, successChance } = rollRiskEvent(actor);
-      actor.cash += amount;
+      const { success, amount, successChance } = applyRiskEvent(actor);
       const title = success ? "風險轉為紅利" : "市場能量逆流";
       addLog(`${title}，現金 ${formatSigned(amount)}。`);
       presentContinue(tile, title, success ? "判斷成功，高風險行動帶來額外報酬。" : "市場走勢反轉，你承擔了這次損失。", [["現金變動", formatSigned(amount)], ["成功機率", `${Math.round(successChance * 100)}%`]]);
@@ -1706,7 +1740,7 @@
     }
 
     if (tile.type === "learn") {
-      const cost = actor.circle === "elite" ? 5000 : 2500;
+      const cost = actor.circle === "elite" ? LEARN_COST_ELITE : LEARN_COST_BASIC;
       showEvent({ type: tile.type, title: "商業奧術課程", description: "提升能力會增加風險事件成功率、降低突發支出，並讓資產買入最多享 10% 折扣。" }, [
         { label: `進修 ${formatMoney(cost)}`, disabled: actor.cash < cost, run: () => { actor.cash -= cost; actor.skill += 1; addLog(`${actorDisplayName(actor)}進修完成，能力提升至 ${actor.skill}。`); finishHumanTurn(); } },
         { label: "這次跳過", run: finishHumanTurn }
@@ -1761,14 +1795,14 @@
   }
 
   function presentBank(actor) {
-    const canRepay = actor.bankDebt > 0 && actor.cash >= 5000;
+    const canRepay = actor.bankDebt > 0 && actor.cash >= LOAN_REPAYMENT;
     showEvent({
       type: "loan",
       title: "星鑄銀行",
       description: "可借入 $15,000，帳面負債增加 $18,000，並產生每月信用成本；也可優先償還既有信用貸款。"
     }, [
-      { label: "借入 $15,000", disabled: creditAvailable(actor) < 18000, run: () => { actor.cash += 15000; actor.bankDebt += 18000; addLog(`${actorDisplayName(actor)}向星鑄銀行借入 $15,000。`); finishHumanTurn(); } },
-      { label: "償還 $5,000", disabled: !canRepay, run: () => { repayBankDebt(actor, 5000); finishHumanTurn(); } },
+      { label: "借入 $15,000", disabled: creditAvailable(actor) < LOAN_DEBT, run: () => { applyBankLoan(actor); addLog(`${actorDisplayName(actor)}向星鑄銀行借入 $15,000。`); finishHumanTurn(); } },
+      { label: "償還 $5,000", disabled: !canRepay, run: () => { repayBankDebt(actor, LOAN_REPAYMENT); finishHumanTurn(); } },
       { label: "離開銀行", run: finishHumanTurn }
     ], [["銀行負債", formatMoney(actor.bankDebt)], ["可用信用", formatMoney(creditAvailable(actor))]]);
   }
@@ -1782,7 +1816,7 @@
 
   function presentGate(actor) {
     if (actor.circle === "elite") {
-      actor.cash += 6000;
+      applyEliteDividend(actor);
       presentContinue({ type: "gate" }, "精英議會分紅", "你已在精英圈，議會依本期成果發放紅利。", [["現金變動", "+$6,000"]]);
       return;
     }
@@ -1985,11 +2019,11 @@
       if (shouldAiBuy(actor, asset, price)) {
         if (actor.cash < price && actor.strategy === "aggressive") {
           const needed = price - actor.cash + 5000;
-          const credit = Math.min(creditAvailable(actor), Math.ceil(needed / 15000) * 18000);
+          const credit = Math.min(creditAvailable(actor), Math.ceil(needed / LOAN_CASH) * LOAN_DEBT);
           if (credit > 0) {
             borrowed = credit;
             actor.bankDebt += credit;
-            actor.cash += Math.round(credit * (15000 / 18000));
+            actor.cash += Math.round(credit * (LOAN_CASH / LOAN_DEBT));
           }
         }
         if (actor.cash >= price) {
@@ -2013,8 +2047,7 @@
     }
 
     if (tile.type === "income") {
-      const [, amount] = rollIncomeEvent();
-      actor.cash += amount;
+      const [, amount] = applyIncomeEvent(actor);
       addLog(`${actorDisplayName(actor)}取得收入 ${formatMoney(amount)}。`);
       return {
         title: "收入入帳",
@@ -2024,8 +2057,7 @@
     }
 
     if (tile.type === "expense") {
-      const { amount } = rollExpenseEvent(actor);
-      actor.cash -= amount;
+      const { amount } = applyExpenseEvent(actor);
       addLog(`${actorDisplayName(actor)}支付突發支出 ${formatMoney(amount)}。`);
       return {
         title: "突發支出",
@@ -2035,8 +2067,7 @@
     }
 
     if (tile.type === "risk") {
-      const { success, amount } = rollRiskEvent(actor);
-      actor.cash += amount;
+      const { success, amount } = applyRiskEvent(actor);
       addLog(`${actorDisplayName(actor)}的風險行動${success ? "獲利" : "失利"} ${formatMoney(amount)}。`);
       return {
         title: success ? "風險獲利" : "風險失利",
@@ -2046,8 +2077,8 @@
     }
 
     if (tile.type === "learn") {
-      const cost = actor.circle === "elite" ? 5000 : 2500;
-      if (actor.cash > cost + (actor.strategy === "conservative" ? 18000 : 7000)) {
+      const cost = actor.circle === "elite" ? LEARN_COST_ELITE : LEARN_COST_BASIC;
+      if (actor.cash > cost + (actor.strategy === "conservative" ? AI_LEARN_RESERVE_CONSERVATIVE : AI_LEARN_RESERVE_OTHER)) {
         actor.cash -= cost;
         actor.skill += 1;
         addLog(`${actorDisplayName(actor)}進修，能力提升至 ${actor.skill}。`);
@@ -2065,8 +2096,8 @@
     }
 
     if (tile.type === "loan") {
-      if (actor.bankDebt > 0 && actor.cash > 25000) {
-        repayBankDebt(actor, 5000);
+      if (actor.bankDebt > 0 && actor.cash > AI_REPAY_CASH_THRESHOLD) {
+        repayBankDebt(actor, LOAN_REPAYMENT);
         return {
           title: "償還信用",
           description: `${actorDisplayName(actor)}償還部分銀行負債，降低每月信用壓力。`,
@@ -2074,9 +2105,8 @@
           detail: ["銀行負債", formatMoney(actor.bankDebt)]
         };
       }
-      if (actor.strategy === "aggressive" && actor.cash < 16000 && creditAvailable(actor) >= 18000) {
-        actor.cash += 15000;
-        actor.bankDebt += 18000;
+      if (actor.strategy === "aggressive" && actor.cash < AI_BORROW_CASH_THRESHOLD && creditAvailable(actor) >= LOAN_DEBT) {
+        applyBankLoan(actor);
         addLog(`${actorDisplayName(actor)}借入進攻資金 $15,000。`);
         return {
           title: "借入資金",
@@ -2104,10 +2134,10 @@
         };
       }
       if (actor.circle === "elite") {
-        actor.cash += 6000;
+        applyEliteDividend(actor);
         return {
           title: "精英分紅",
-          description: `${actorDisplayName(actor)}在精英圈取得額外分紅 ${formatMoney(6000)}。`,
+          description: `${actorDisplayName(actor)}在精英圈取得額外分紅 ${formatMoney(ELITE_DIVIDEND)}。`,
           stat: ["分紅", "+$6,000"]
         };
       }
@@ -2151,7 +2181,7 @@
       return actor.cash - price >= 20000 && netYield >= 0.035;
     }
     if (actor.strategy === "aggressive") {
-      return netYield >= 0.045 && actor.cash + Math.round(creditAvailable(actor) * (15000 / 18000)) >= price + 4000;
+      return netYield >= 0.045 && actor.cash + Math.round(creditAvailable(actor) * (LOAN_CASH / LOAN_DEBT)) >= price + 4000;
     }
     return actor.cash - price >= 10000 && netYield >= 0.035;
   }
