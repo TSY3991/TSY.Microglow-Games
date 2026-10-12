@@ -1,0 +1,5 @@
+img.game-thumb-image {
+  display: block;
+  object-fit: contain;
+  background: #030616;
+}
