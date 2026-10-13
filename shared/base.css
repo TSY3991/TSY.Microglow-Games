@@ -887,3 +887,42 @@ p {
     transition: none !important;
   }
 }
+
+/* Keyboard navigation uses the existing neon cyan without altering hover. */
+html body :is(a[href], button, [role="button"]):focus-visible,
+html body .game-card:has(:focus-visible) {
+  outline: 3px solid var(--cyan);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--cyan), transparent 82%),
+    0 0 22px color-mix(in srgb, var(--cyan), transparent 58%);
+}
+
+.skip-link {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 2147483647;
+  max-width: calc(100% - 24px);
+  padding: 12px 18px;
+  border: 1px solid var(--cyan);
+  border-radius: var(--radius);
+  color: #eaffff;
+  background: #10232b;
+  font-weight: 900;
+  transform: translateY(calc(-100% - 24px));
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+#main-content:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}

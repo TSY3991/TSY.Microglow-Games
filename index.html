@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8">
+    <meta name="theme-color" content="#10232b">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
@@ -28,11 +29,14 @@
     <link rel="canonical" href="https://tsy3991.github.io/TSY.Microglow-Games/">
     <title>TSY.Microglow 遊戲大廳</title>
     <link rel="icon" href="./assets/favicon.png?v=20261012a" type="image/png">
-    <link rel="stylesheet" href="./shared/base.css?v=20260727a">
+    <link rel="stylesheet" href="./shared/base.css?v=20261013a">
     <link rel="stylesheet" href="./shared/lobby-previews.css?v=20261012a">
+    <link rel="manifest" href="./manifest.webmanifest?v=20261013a">
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png?v=20261013a">
   </head>
   <body>
-    <main class="lobby-shell">
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
+    <main class="lobby-shell" id="main-content" tabindex="-1">
       <header class="lobby-hero" aria-labelledby="page-title">
         <a class="back-link" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>回入口網站</a>
         <a class="account-status-link" href="https://tsy3991.github.io/TSY.Microglow-Website/auth/login.html" data-portal-auth>
@@ -143,6 +147,7 @@
         </div>
       </section>
     </main>
+    <script src="./shared/skip-link.js?v=20261013a"></script>
     <script>
       document.querySelectorAll("[data-sort-by-updated]").forEach((grid) => {
         const cards = Array.from(grid.children).map((card, index) => {
