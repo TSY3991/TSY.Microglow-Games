@@ -47,7 +47,6 @@
   let particles = [];
   let angle = 0;
   let targetAngle = 0;
-  let targetPoint = null;
   let score = 0;
   ensurePortalStats();
   let best = readBestScore();
@@ -77,7 +76,7 @@
     head = { x: boardSize / 2, y: boardSize / 2 };
     angle = 0;
     targetAngle = 0;
-    targetPoint = null;
+    touchStart = null;
     targetLength = 210;
     score = 0;
     paused = false;
@@ -148,7 +147,6 @@
   }
 
   function moveSnake(delta) {
-    updateTargetAngle();
     angle = turnToward(angle, targetAngle, turnRate * delta);
     const currentSpeed = baseSpeed + Math.min(42, score * 0.22);
     const distance = currentSpeed * delta;
@@ -169,11 +167,6 @@
     }
 
     trimSnake();
-  }
-
-  function updateTargetAngle() {
-    if (!targetPoint) return;
-    targetAngle = Math.atan2(shortestDelta(targetPoint.y, head.y), shortestDelta(targetPoint.x, head.x));
   }
 
   function turnToward(current, target, maxTurn) {
@@ -236,6 +229,7 @@
 
     paused = !paused;
     if (paused) {
+      releaseSteering();
       stopLoop();
       showOverlay("已暫停", "按空白鍵、繼續或開始按鈕回到遊戲", "繼續遊戲");
     } else {
@@ -469,19 +463,31 @@
   }
 
   function setTargetFromPoint(clientX, clientY) {
-    const rect = boardCanvas.getBoundingClientRect();
-    targetPoint = {
-      x: clamp((clientX - rect.left) * (boardSize / rect.width), 0, boardSize),
-      y: clamp((clientY - rect.top) * (boardSize / rect.height), 0, boardSize)
-    };
     if (!running) startGame();
+    const rect = boardCanvas.getBoundingClientRect();
+    const dx = (clientX - rect.left) * (boardSize / rect.width) - head.x;
+    const dy = (clientY - rect.top) * (boardSize / rect.height) - head.y;
+    // Input sets a heading once; a stationary finger is not a point to orbit.
+    if (Math.hypot(dx, dy) > headRadius) targetAngle = Math.atan2(dy, dx);
     hasControl = true;
+  }
+
+  function releaseSteering() {
+    if (!touchStart) return;
+    const pointerId = touchStart.pointerId;
+    touchStart = null;
+    targetAngle = angle;
+    try {
+      boardCanvas.releasePointerCapture?.(pointerId);
+    } catch {
+      // Capture may already be lost when the gesture is interrupted.
+    }
   }
 
   function setKeyboardAngle(key) {
     if (!(key in keys)) return false;
     if (!running) startGame();
-    targetPoint = null;
+    releaseSteering();
     targetAngle = keys[key];
     hasControl = true;
     return true;
@@ -489,14 +495,6 @@
 
   function wrap(value) {
     return (value + boardSize) % boardSize;
-  }
-
-  function shortestDelta(target, current) {
-    let delta = target - current;
-    if (Math.abs(delta) > boardSize / 2) {
-      delta -= Math.sign(delta) * boardSize;
-    }
-    return delta;
   }
 
   function directDistanceBetween(a, b) {
@@ -561,9 +559,10 @@
   });
 
   boardCanvas.addEventListener("pointerdown", (event) => {
+    if (touchStart || event.button !== 0 || isInstructionOpen() || paused) return;
     event.preventDefault();
-    touchStart = { pointerId: event.pointerId };
     setTargetFromPoint(event.clientX, event.clientY);
+    touchStart = { pointerId: event.pointerId };
     try {
       boardCanvas.setPointerCapture?.(event.pointerId);
     } catch {
@@ -580,17 +579,16 @@
   boardCanvas.addEventListener("pointerup", (event) => {
     if (!touchStart || event.pointerId !== touchStart.pointerId) return;
     event.preventDefault();
-    try {
-      boardCanvas.releasePointerCapture?.(event.pointerId);
-    } catch {
-      // Ignore if the pointer was not captured.
-    }
-    touchStart = null;
+    releaseSteering();
   }, { passive: false });
 
-  boardCanvas.addEventListener("pointercancel", () => {
-    touchStart = null;
+  ["pointercancel", "lostpointercapture"].forEach((eventName) => {
+    boardCanvas.addEventListener(eventName, (event) => {
+      if (touchStart && event.pointerId === touchStart.pointerId) releaseSteering();
+    });
   });
+
+  window.addEventListener("blur", releaseSteering);
 
   gameShell?.addEventListener("touchmove", (event) => {
     event.preventDefault();
@@ -630,14 +628,16 @@
     const style = getComputedStyle(wrap);
     const availableWidth = wrap.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
     const availableHeight = wrap.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-    const side = Math.max(140, Math.min(480, availableWidth, availableHeight));
+    const side = Math.max(1, Math.min(480, availableWidth, availableHeight));
     if (Number.isFinite(side) && side > 0) {
-      boardCanvas.style.width = `${Math.floor(side)}px`;
-      boardCanvas.style.height = `${Math.floor(side)}px`;
+      const size = `${Math.floor(side)}px`;
+      if (boardCanvas.style.width !== size) boardCanvas.style.width = size;
+      if (boardCanvas.style.height !== size) boardCanvas.style.height = size;
     }
   }
 
   fitBoardCanvas();
   window.addEventListener("resize", fitBoardCanvas);
   window.addEventListener("orientationchange", fitBoardCanvas);
+  new ResizeObserver(fitBoardCanvas).observe(boardCanvas.parentElement);
 })();
