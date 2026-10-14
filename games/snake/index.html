@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8">
-    <meta name="theme-color" content="#10232b">
+    <meta name="theme-color" content="#fbf7ee">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta
       name="description"
@@ -26,36 +26,46 @@
     <title>微光貪吃蛇｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/favicon.png?v=20261012a" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20261013a">
-    <link rel="stylesheet" href="./snake.css?v=20261014a">
-    <link rel="stylesheet" href="../../shared/gem-game-theme.css?v=20260704e">
+    <link rel="stylesheet" href="./snake.css?v=20261014b">
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要內容</a>
     <main class="snake-shell" id="main-content" tabindex="-1">
       <header class="game-topbar">
+        <a class="brand" href="https://tsy3991.github.io/TSY.Microglow-Website/" aria-label="TSY 微光創作室">
+          <img src="../../assets/logo-mark.png?v=20261012a" alt="TSY 微光創作室" width="92" height="92">
+        </a>
         <nav class="return-nav" aria-label="返回連結">
-          <a class="back-link compact-back" href="../../">回遊戲大廳</a>
-          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>返回入口網站</a>
+          <a class="back-link compact-back" href="../../" aria-label="回遊戲大廳" title="回遊戲大廳">
+            <img src="./assets/layout-grid.svg?v=20261014b" alt="" width="20" height="20">
+            <span>回遊戲大廳</span>
+          </a>
+          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" aria-label="返回入口網站" title="返回入口網站" data-portal-return>
+            <img src="./assets/house.svg?v=20261014b" alt="" width="20" height="20">
+            <span>返回入口網站</span>
+          </a>
         </nav>
-        <div>
-          <p class="eyebrow">Microglow Snake</p>
+        <div class="game-heading">
+          <p class="eyebrow">MICROGLOW GAMES</p>
           <h1>微光貪吃蛇</h1>
         </div>
         <div class="top-actions" aria-label="遊戲控制">
-          <button type="button" data-action="instructions">玩法</button>
-          <button type="button" data-action="start">開始</button>
-          <button type="button" data-action="pause">暫停</button>
-          <button type="button" data-action="restart">重開</button>
+          <button type="button" data-action="instructions" aria-label="玩法說明" title="玩法說明"><img src="./assets/hand.svg?v=20261014b" alt="" width="20" height="20"></button>
+          <button type="button" data-action="start" aria-label="開始遊戲" title="開始遊戲"><img src="./assets/arrow-right.svg?v=20261014b" alt="" width="20" height="20"></button>
+          <button type="button" data-action="pause" aria-label="暫停或繼續" title="暫停或繼續"><img src="./assets/pause.svg?v=20261014b" alt="" width="20" height="20"></button>
+          <button type="button" data-action="restart" aria-label="重新開始" title="重新開始"><img src="./assets/rotate-ccw.svg?v=20261014b" alt="" width="20" height="20"></button>
         </div>
       </header>
 
       <section class="snake-layout" aria-label="微光貪吃蛇遊戲區">
-        <div class="board-wrap">
-          <canvas id="snakeBoard" width="480" height="480" aria-label="貪吃蛇主遊戲區"></canvas>
-          <div class="game-overlay" data-overlay>
-            <strong data-overlay-title>準備開始</strong>
-            <span data-overlay-message>開始後按住棋盤才會滑行，或用方向鍵 / WASD 控制方向</span>
-            <button type="button" data-action="overlay-start">開始遊戲</button>
+        <div class="board-stage">
+          <div class="board-wrap">
+            <canvas id="snakeBoard" width="480" height="480" aria-label="貪吃蛇主遊戲區"></canvas>
+            <div class="game-overlay" data-overlay>
+              <strong data-overlay-title>準備開始</strong>
+              <span data-overlay-message>按住棋盤調整方向，或用方向鍵 / WASD 開始滑行</span>
+              <button type="button" data-action="overlay-start">開始遊戲</button>
+            </div>
           </div>
         </div>
 
@@ -79,21 +89,14 @@
             </div>
           </div>
 
-          <div class="help-card">
-            <h2>操作</h2>
-            <p>桌機：滑鼠按住棋盤導向，或用方向鍵 / WASD 控制方向，空白鍵暫停。</p>
-            <p>手機：按住或拖曳棋盤調整方向，放開後沿目前方向前進。</p>
-          </div>
         </aside>
       </section>
 
       <section class="touch-controls" aria-label="手機觸控控制">
-        <span></span>
-        <button type="button" data-control="up">上</button>
-        <span></span>
-        <button type="button" data-control="left">左</button>
-        <button type="button" data-control="down">下</button>
-        <button type="button" data-control="right">右</button>
+        <button type="button" data-control="up" aria-label="向上" title="向上"><img class="arrow-up" src="./assets/arrow-down.svg?v=20261014b" alt="" width="22" height="22"></button>
+        <button type="button" data-control="left" aria-label="向左" title="向左"><img src="./assets/arrow-left.svg?v=20261014b" alt="" width="22" height="22"></button>
+        <button type="button" data-control="down" aria-label="向下" title="向下"><img src="./assets/arrow-down.svg?v=20261014b" alt="" width="22" height="22"></button>
+        <button type="button" data-control="right" aria-label="向右" title="向右"><img src="./assets/arrow-right.svg?v=20261014b" alt="" width="22" height="22"></button>
       </section>
 
       <div class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="instruction-title" data-instruction-modal>
@@ -130,6 +133,6 @@
     <script src="../../shared/skip-link.js?v=20261013a"></script>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./snake.js?v=20261014a"></script>
+    <script src="./snake.js?v=20261014b"></script>
   </body>
 </html>

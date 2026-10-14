@@ -212,7 +212,7 @@
     paused = false;
     stopLoop();
     snake.forEach((part, index) => {
-      if (index % 3 === 0) spawnParticles(part.x, part.y, index < 18 ? "#2fd7ff" : "#8df45f", 2);
+      if (index % 3 === 0) spawnParticles(part.x, part.y, index < 18 ? "#118e87" : "#64bcaa", 2);
     });
     best = Math.max(best, score);
     plays = writePortalStats(score, best).plays;
@@ -240,7 +240,7 @@
   }
 
   function createFood() {
-    const palette = ["#ff5ebc", "#ffd84d", "#8df45f", "#2fd7ff"];
+    const palette = ["#218d7e", "#d6ae47", "#5dab8b", "#3b99aa"];
     let food = null;
     for (let attempt = 0; attempt < 20; attempt += 1) {
       food = {
@@ -298,9 +298,9 @@
     backgroundCanvas.width = boardSize;
     backgroundCanvas.height = boardSize;
     const bg = backgroundCanvas.getContext("2d");
-    bg.fillStyle = "#07171f";
+    bg.fillStyle = "#edf5ec";
     bg.fillRect(0, 0, boardSize, boardSize);
-    bg.fillStyle = "rgba(141, 244, 95, 0.08)";
+    bg.fillStyle = "#d3e4d8";
     for (let index = 0; index < 70; index += 1) {
       const x = (index * 71) % boardSize;
       const y = (index * 43) % boardSize;
@@ -317,7 +317,7 @@
     foods.forEach((food) => {
       food.pulse += 0.035;
       const radius = foodRadius + Math.sin(food.pulse) * 1.4;
-      drawGlowCircle(food.x, food.y, radius, food.color, 20);
+      drawGlowCircle(food.x, food.y, radius, food.color, 6);
       context.fillStyle = "rgba(255, 255, 255, 0.42)";
       context.beginPath();
       context.arc(food.x - 2.5, food.y - 2.5, 2.2, 0, Math.PI * 2);
@@ -330,8 +330,8 @@
       const part = snake[index];
       const progress = 1 - index / Math.max(1, snake.length);
       const radius = index === 0 ? headRadius : bodyRadius * (0.72 + progress * 0.32);
-      const color = index === 0 ? "#2fd7ff" : index < 12 ? "#54f1ff" : "#8df45f";
-      drawGlowCircle(part.x, part.y, radius, color, index === 0 ? 20 : 12);
+      const color = index === 0 ? "#118e87" : index < 12 ? "#35a995" : "#64bcaa";
+      drawGlowCircle(part.x, part.y, radius, color, index === 0 ? 4 : 3);
     }
 
     drawEyes();
@@ -342,7 +342,7 @@
     const normal = angle + Math.PI / 2;
     const frontX = head.x + Math.cos(angle) * 4;
     const frontY = head.y + Math.sin(angle) * 4;
-    context.fillStyle = "#07242b";
+    context.fillStyle = "#164b43";
     [-1, 1].forEach((side) => {
       const eyeX = frontX + Math.cos(normal) * eyeOffset * side;
       const eyeY = frontY + Math.sin(normal) * eyeOffset * side;
@@ -356,7 +356,7 @@
     particles.forEach((particle) => {
       const alpha = Math.max(0, particle.life / particle.maxLife);
       context.globalAlpha = alpha;
-      drawGlowCircle(particle.x, particle.y, 3.2, particle.color, 9);
+      drawGlowCircle(particle.x, particle.y, 3.2, particle.color, 3);
       context.globalAlpha = 1;
     });
   }
@@ -619,18 +619,22 @@
     }
   });
 
-  // The page is locked (no scrolling), so the square board scales itself to
-  // whatever space board-wrap has left instead of relying on CSS aspect-ratio
-  // alone (which only shrinks height to match width, not the other way).
+  // Measure the available stage independently so both the board and its frame
+  // remain square without feeding their own dimensions back into the layout.
   function fitBoardCanvas() {
     const wrap = boardCanvas.parentElement;
-    if (!wrap) return;
+    const stage = wrap?.parentElement;
+    if (!stage) return;
     const style = getComputedStyle(wrap);
-    const availableWidth = wrap.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-    const availableHeight = wrap.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    const frameWidth = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+    const frameHeight = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+    const availableWidth = stage.clientWidth - frameWidth;
+    const availableHeight = stage.clientHeight - frameHeight;
     const side = Math.max(1, Math.min(480, availableWidth, availableHeight));
     if (Number.isFinite(side) && side > 0) {
       const size = `${Math.floor(side)}px`;
+      wrap.style.width = `${Math.floor(side) + frameWidth}px`;
+      wrap.style.height = `${Math.floor(side) + frameHeight}px`;
       if (boardCanvas.style.width !== size) boardCanvas.style.width = size;
       if (boardCanvas.style.height !== size) boardCanvas.style.height = size;
     }
@@ -639,5 +643,5 @@
   fitBoardCanvas();
   window.addEventListener("resize", fitBoardCanvas);
   window.addEventListener("orientationchange", fitBoardCanvas);
-  new ResizeObserver(fitBoardCanvas).observe(boardCanvas.parentElement);
+  new ResizeObserver(fitBoardCanvas).observe(boardCanvas.parentElement.parentElement);
 })();
