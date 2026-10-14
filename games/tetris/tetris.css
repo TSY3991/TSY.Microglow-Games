@@ -1,891 +1,331 @@
+@font-face { font-family: 'Zen Maru'; src: url('./assets/rounded.ttf?v=20261014a') format('truetype'); font-weight: 700 900; font-display: swap; }
+:root { color-scheme: light; --ink: #264b45; --muted: #718079; --app-height: var(--tetris-app-height, 100dvh); }
+* { box-sizing: border-box; letter-spacing: 0; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+body { color: var(--ink); background: #fbf7ee; font: 700 14px 'Zen Maru', 'Arial Rounded MT Bold', 'Microsoft JhengHei', sans-serif; -webkit-text-size-adjust: 100%; }
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button { font: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+button:focus-visible, a:focus-visible { outline: 3px solid #258b9b; outline-offset: 4px; }
+button:disabled { opacity: .45; cursor: default; }
+[hidden] { display: none !important; }
+.tetris-shell { width: min(1080px, 100% - 64px); height: var(--app-height); margin: auto; display: grid; grid-template-rows: 130px minmax(0, 1fr); gap: 18px; padding: 12px 0 26px; }
+.game-topbar { position: relative; display: grid; grid-template-columns: 108px 1fr auto; grid-template-rows: 32px 64px; align-items: center; gap: 12px 16px; border-bottom: 2px solid #dce7dc; padding-bottom: 16px; }
+.brand { grid-row: 1 / 3; display: grid; place-items: center; }
+.brand img { display: block; width: 90px; height: 90px; object-fit: contain; }
+.return-nav { grid-column: 2; grid-row: 1; display: flex; gap: 18px; font-size: 12px; color: #55776b; }
+.return-nav a { display: inline-flex; align-items: center; min-height: 32px; }
+.compact-back::before { content: ''; width: 16px; height: 16px; margin-right: 4px; background: url('./assets/arrow-left.svg?v=20261014a') center / contain no-repeat; opacity: .7; }
+.game-topbar > div:not(.top-actions) { grid-column: 2; grid-row: 2; }
+.eyebrow { margin: 0 0 4px; font: 800 10px Arial, sans-serif; color: #338f7d; }
+h1 { margin: 0; font-size: 30px; line-height: 1.4; font-weight: 800; }
+.top-actions { grid-column: 3; grid-row: 2; display: flex; gap: 8px; align-items: center; }
+.top-actions button, .touch-controls button, .game-overlay button, .instruction-actions button { position: relative; border: 1px solid #cbded1; border-radius: 15px; background: linear-gradient(#fff, #f1f6ed); color: #385f53; box-shadow: 0 4px 0 #bfd4c6, inset 0 2px 0 #fff; min-height: 44px; padding: 0 13px; font-size: 12px; }
+.top-actions button::before, .touch-controls button::before { content: ''; display: inline-block; width: 18px; height: 18px; margin-right: 5px; vertical-align: middle; background: var(--icon) center / contain no-repeat; opacity: .65; }
+[data-action='sound'] { --icon: url('./assets/volume-2.svg?v=20261014a'); }
+[data-action='gesture'] { --icon: url('./assets/hand.svg?v=20261014a'); }
+[data-action='swap'], [data-control='swap'] { --icon: url('./assets/refresh-cw.svg?v=20261014a'); }
+[data-action='pause'] { --icon: url('./assets/pause.svg?v=20261014a'); }
+[data-action='restart'] { --icon: url('./assets/rotate-ccw.svg?v=20261014a'); }
+[data-control='left'] { --icon: url('./assets/arrow-left.svg?v=20261014a'); }
+[data-control='right'] { --icon: url('./assets/arrow-right.svg?v=20261014a'); }
+[data-control='rotate'] { --icon: url('./assets/rotate-cw.svg?v=20261014a'); }
+[data-control='down'] { --icon: url('./assets/arrow-down.svg?v=20261014a'); }
+[data-control='drop'] { --icon: url('./assets/arrow-down-to-line.svg?v=20261014a'); }
+.top-actions [data-action='pause'], .touch-controls [data-control='drop'], .game-overlay button, .instruction-actions button:first-child { color: #fff; border-color: #187f75; background: linear-gradient(#31b5a3, #0e8f88); box-shadow: 0 4px 0 #08766e, inset 0 2px 0 #a1e5d2; }
+button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #aac7b6; }
+.top-actions button[aria-pressed='false'] { color: #7b8b80; background: #e8eee6; }
+.game-layout { min-height: 0; display: grid; grid-template-columns: 230px 414px; gap: 54px; justify-content: center; align-items: start; }
+.game-panel { order: -1; padding-top: 12px; }
+.score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.score-grid > div { border: 1px solid #d6e2d5; border-radius: 16px; background: #fff; min-height: 86px; padding: 13px 15px; box-shadow: 0 4px 0 #ceddd0; display: grid; gap: 7px; }
+.score-grid > div:first-child { grid-column: 1 / -1; min-height: 102px; background: #e0f1e8; border-color: #b1dac7; box-shadow: 0 4px 0 #b8d8c3; }
+.score-grid > div:nth-child(2) { grid-column: 1 / -1; }
+.score-grid span { font-size: 12px; color: var(--muted); }
+.score-grid strong { font: 800 26px 'Zen Maru', sans-serif; line-height: 1.1; font-variant-numeric: tabular-nums; color: #3a6053; }
+.score-grid > div:first-child strong { font-size: 40px; color: #117e72; }
+.mascot { margin: 12px 0 0; display: grid; justify-items: center; gap: 0; }
+.mascot img { width: 132px; height: 132px; object-fit: contain; }
+.mascot figcaption { font-size: 12px; color: #648476; }
+.piece-palette { display: block; width: 220px; height: 36px; margin-top: 10px; }
+.help-card { display: none; }
+.playfield { display: grid; grid-template-columns: 310px 90px; gap: 14px; min-height: 0; }
+.board-wrap { position: relative; width: fit-content; padding: 12px; border: 2px solid #fff; border-radius: 22px; background: #c4ddd1; box-shadow: 0 7px 0 #9dbdac, 0 12px 20px #566c8a18, inset 0 2px 0 #e9f7ed; }
+#gameBoard { display: block; width: 282px; height: 564px; border-radius: 7px; touch-action: none; box-shadow: 0 0 0 2px #a0c1ae, inset 0 3px 5px #7189a14d; }
+.next-card { min-width: 0; padding: 4px 0 0; }
+.next-heading { display: grid; gap: 6px; text-align: center; margin-bottom: 12px; }
+.next-heading > span { font-size: 13px; }
+.next-heading small { font-size: 10px; line-height: 1.5; color: #75859a; }
+.next-stack { display: grid; gap: 12px; }
+.next-slot { position: relative; width: 90px; height: 86px; border-radius: 13px; border: 1px solid #d0e0d2; background: #fffdf5; box-shadow: 0 3px 0 #c9dccc; display: flex; align-items: center; justify-content: center; }
+.next-slot canvas { width: 65px; height: 65px; border-radius: 5px; }
+.next-slot small { position: absolute; top: 3px; left: 6px; font: 700 10px Arial; color: #748476; }
+.next-slot.is-locked canvas { display: none; }
+.next-slot.is-locked { background: #e5eee3; box-shadow: inset 0 2px 0 #d0ddce; }
+.next-slot.is-locked::after { content: ''; width: 18px; height: 18px; background: url('./assets/lock-keyhole.svg?v=20261014a') center / contain no-repeat; opacity: .4; }
+.next-slot.is-locked::before { content: 'Lv.' attr(data-unlock); position: absolute; bottom: 9px; color: #71846e; font: 700 10px Arial; }
+.next-slot:nth-child(2) { --unlock: 6; }
+.game-overlay { position: absolute; inset: 12px; background: #edf4facf; border-radius: 7px; display: grid; align-content: center; justify-items: center; gap: 14px; padding: 20px; text-align: center; z-index: 2; backdrop-filter: blur(3px); }
+.game-overlay strong { font-size: 26px; }
+.game-overlay span { font-size: 13px; line-height: 1.7; }
+.game-overlay button { padding: 0 26px; }
+.touch-controls { display: none; }
+.instruction-modal { position: fixed; inset: 0; z-index: 30; background: #3a526c65; display: grid; place-items: center; padding: 16px; }
+.instruction-card { width: min(480px, 100%); max-height: calc(var(--app-height) - 32px); overflow: auto; padding: 28px; border-radius: 24px; background: #fffdf5; border: 3px solid #fff; box-shadow: 0 8px 0 #bcd1bf; }
+.instruction-kicker { color: #389c91; margin: 0 0 8px; font-size: 12px; }
+.instruction-card h2 { font-size: 23px; margin: 0 0 18px; }
+.instruction-list { display: grid; gap: 12px; }
+.instruction-list div { display: grid; gap: 3px; padding-bottom: 10px; border-bottom: 1px solid #dbe7d8; }
+.instruction-list span { color: #63758b; font-size: 13px; line-height: 1.6; }
+.instruction-note:empty { display: none; }
+.instruction-actions { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-height: 760px) and (min-width: 701px) {
+  .tetris-shell { grid-template-rows: 110px minmax(0, 1fr); gap: 12px; }
+  #gameBoard { width: calc((var(--app-height) - 178px) / 2); height: calc(var(--app-height) - 178px); }
+  .playfield { grid-template-columns: auto 80px; }
+  .next-slot { width: 80px; height: 70px; }
+  .next-slot canvas { width: 56px; height: 56px; }
+  .next-stack { gap: 10px; }
+  .mascot img { width: 100px; height: 100px; }
+}
+@media (max-width: 700px) {
+  body { touch-action: none; }
+  .tetris-shell { width: 100%; padding: max(6px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); grid-template-rows: 112px minmax(0, 1fr) 108px; gap: 10px; }
+  .game-topbar { padding: 0 0 6px; grid-template-columns: 44px minmax(0, 1fr) 88px; grid-template-rows: 52px 44px; gap: 8px; }
+  .brand { grid-column: 1; grid-row: 1; }
+  .brand img { width: 44px; height: 44px; }
+  .game-topbar > div:not(.top-actions) { grid-column: 2; grid-row: 1; }
+  .eyebrow { font-size: 8px; margin-bottom: 2px; }
+  h1 { font-size: 21px; }
+  .return-nav { grid-column: 3; grid-row: 1; align-self: center; gap: 0; }
+  .return-nav a { width: 44px; height: 44px; min-height: 44px; font-size: 0; justify-content: center; border-radius: 12px; }
+  .return-nav a:hover { background: #e2efdf; }
+  .return-nav a::before { content: ''; display: block; width: 20px; height: 20px; margin: 0; opacity: .65; }
+  .return-nav .compact-back::before { background: url('./assets/layout-grid.svg?v=20261014a') center / contain no-repeat; }
+  .return-nav .portal-return::before { background: url('./assets/house.svg?v=20261014a') center / contain no-repeat; }
+  .top-actions { position: static; grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: repeat(5, minmax(44px, 1fr)); gap: 5px; }
+  .top-actions button { min-width: 44px; min-height: 44px; padding: 0 8px; font-size: 10px; border-radius: 10px; white-space: nowrap; }
+  .top-actions button::before { width: 13px; height: 13px; margin-right: 3px; }
+  .game-layout { display: grid; grid-template-columns: 1fr; grid-template-rows: 58px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .game-panel { padding: 0; }
+  .score-grid { grid-template-columns: 1.3fr 1.3fr .8fr .8fr; gap: 7px; }
+  .score-grid > div, .score-grid > div:first-child, .score-grid > div:nth-child(2) { grid-column: auto; min-height: 55px; padding: 7px 9px; border-radius: 12px; gap: 5px; }
+  .score-grid span { font-size: 10px; white-space: nowrap; }
+  .score-grid strong, .score-grid > div:first-child strong { font-size: 20px; }
+  .mascot, .piece-palette, .help-card { display: none; }
+  .playfield { height: 100%; grid-template-columns: auto 64px; gap: 10px; justify-content: center; align-items: start; }
+  .board-wrap { padding: 7px; border-radius: 16px; }
+  #gameBoard { width: min(calc((var(--app-height) - 348px) / 2), calc((100vw - 118px)), 250px); height: auto; aspect-ratio: 1 / 2; }
+  .next-card { padding-top: 0; }
+  .next-heading { margin-bottom: 8px; gap: 3px; }
+  .next-heading > span { font-size: 11px; }
+  .next-heading small { font-size: 9px; line-height: 1.35; }
+  .next-stack { gap: 8px; }
+  .next-slot { width: 64px; height: 59px; border-radius: 10px; }
+  .next-slot canvas { width: 46px; height: 46px; }
+  .next-slot small { font-size: 8px; top: 2px; left: 4px; }
+  .next-slot.is-locked::before { bottom: 5px; font-size: 9px; }
+  .next-slot.is-locked::after { width: 15px; height: 15px; margin-bottom: 7px; }
+  .touch-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: 46px 46px; gap: 10px 8px; margin: 0; align-self: end; padding-bottom: 4px; }
+  .touch-controls button { min-height: 46px; font-size: 12px; padding: 0 5px; border-radius: 13px; touch-action: none; }
+  .touch-controls button::before { width: 19px; height: 19px; margin-right: 6px; }
+  .touch-controls button:nth-child(1), .touch-controls button:nth-child(3) { background: linear-gradient(#edf5e9, #d2e7d7); border-color: #b3d1bb; box-shadow: 0 4px 0 #aecab6, inset 0 2px 0 #f9fdf3; }
+  .game-overlay { inset: 7px; padding: 12px; }
+  .game-overlay strong { font-size: 21px; }
+  .instruction-card { padding: 20px; }
+}
+@media (max-width: 350px), (max-width: 700px) and (max-height: 700px) {
+  .tetris-shell { padding-left: 8px; padding-right: 8px; gap: 8px; grid-template-rows: 112px minmax(0, 1fr) 103px; }
+  h1 { font-size: 18px; }
+  .top-actions { gap: 4px; }
+  .top-actions button { padding: 0 6px; font-size: 9px; }
+  .top-actions button::before { width: 12px; height: 12px; }
+  .score-grid { gap: 5px; }
+  .score-grid > div { padding: 6px !important; }
+  .score-grid strong, .score-grid > div:first-child strong { font-size: 17px; }
+  .game-layout { grid-template-rows: 52px minmax(0, 1fr); gap: 10px; }
+  .score-grid > div, .score-grid > div:first-child, .score-grid > div:nth-child(2) { min-height: 51px; }
+  #gameBoard { width: min(calc((var(--app-height) - 329px) / 2), calc(100vw - 104px), 240px); }
+  .playfield { grid-template-columns: auto 54px; gap: 8px; }
+  .next-slot { width: 54px; height: clamp(34px, calc((var(--app-height) - 405px) / 5), 52px); }
+  .next-slot canvas { width: 34px; height: 34px; }
+  .next-heading { margin-bottom: 6px; }
+  .next-heading small { font-size: 8px; }
+  .next-stack { gap: 6px; }
+  .next-slot.is-locked::before { right: 3px; bottom: 4px; font-size: 8px; }
+  .touch-controls { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* 微光配色草稿：暖白、青綠、少量金色，版面沿用已驗收草稿。 */
+.score-grid > div:nth-child(2) { background:#fff9e9; border-color:#e6d5a8; box-shadow:0 4px 0 #dfd0aa; }
+.score-grid > div:nth-child(2) strong { color:#80652f; }
+
+/* Selected warm-white / teal / gold palette is inherited without replacement. */
+.top-actions button,
+.touch-controls button,
+.game-overlay button,
+.instruction-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  line-height: 18px;
+  text-align: center;
+}
+.top-actions button { font-size: 13px; }
+.top-actions button::before,
+.touch-controls button::before {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.score-grid > div {
+  min-width: 0;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 7px;
+}
+.score-grid span { line-height: 16px; }
+.score-grid strong { line-height: 1.15; }
+.next-card { display: grid; justify-items: center; }
+.next-heading { width: 100%; }
+.next-slot {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  isolation: isolate;
+}
+.next-slot small {
+  top: -5px;
+  left: 50%;
+  width: 16px;
+  height: 12px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  background: #fffdf5;
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 12px;
+}
+.next-slot canvas {
+  display: block;
+  width: 65px;
+  height: 65px;
+  max-width: 100%;
+  max-height: 100%;
+}
+.next-slot.is-locked small { background: #e5eee3; }
+.next-slot.is-locked::before,
+.next-slot.is-locked::after { display: none; }
+.preview-lock { display: none; }
+.next-slot.is-locked .preview-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  color: #526d52;
+  font: 700 11px/14px Arial, sans-serif;
+  white-space: nowrap;
+}
+.preview-lock img { display: block; width: 14px; height: 14px; opacity: .55; }
+.next-slot.is-locked canvas { display: none; }
+.piece-palette { margin-left: auto; margin-right: auto; }
+@media (max-width: 700px) {
+  .tetris-shell { grid-template-rows: 104px minmax(0, 1fr) 108px; }
+  .game-topbar { grid-template-rows: 48px 44px; gap: 4px 8px; padding-bottom: 4px; }
+  .top-actions { gap: 6px; }
+  .top-actions button {
+    flex-direction: column;
+    min-width: 44px;
+    min-height: 44px;
+    gap: 2px;
+    padding: 4px 6px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .top-actions button::before { flex-basis: 14px; width: 14px; height: 14px; margin: 0; }
+  .score-grid { gap: 7px; }
+  .score-grid > div,
+  .score-grid > div:first-child,
+  .score-grid > div:nth-child(2) {
+    min-height: 55px;
+    gap: 5px;
+    padding: 7px 6px;
+  }
+  .score-grid span { font-size: 11px; line-height: 14px; }
+  .score-grid strong,
+  .score-grid > div:first-child strong { font-size: 20px; line-height: 22px; }
+  #gameBoard { width: min(calc((var(--app-height) - 340px) / 2), calc(100vw - 118px), 250px); }
+  .next-heading > span { font-size: 12px; line-height: 16px; }
+  .next-heading small { font-size: 10px; line-height: 14px; }
+  .next-stack { gap: 9px; }
+  .next-slot { padding: 3px; }
+  .next-slot canvas { width: 46px; height: 46px; }
+  .next-slot small { font-size: 10px; }
+  .next-slot.is-locked .preview-lock { gap: 3px; font-size: 10px; line-height: 14px; }
+  .preview-lock img { width: 12px; height: 12px; }
+  .touch-controls button { gap: 6px; padding: 8px 6px; font-size: 13px; line-height: 18px; }
+  .touch-controls button::before { width: 18px; height: 18px; margin: 0; }
+}
+@media (max-width: 350px), (max-width: 700px) and (max-height: 700px) {
+  .tetris-shell { grid-template-rows: 104px minmax(0, 1fr) 103px; }
+  h1 { font-size: 18px; }
+  .top-actions { gap: 5px; }
+  .top-actions button { padding: 4px 5px; font-size: 12px; }
+  .top-actions button::before { width: 14px; height: 14px; }
+  .score-grid { gap: 5px; }
+  .score-grid > div,
+  .score-grid > div:first-child,
+  .score-grid > div:nth-child(2) { padding: 6px 5px !important; gap: 4px; min-height: 51px; }
+  .score-grid strong,
+  .score-grid > div:first-child strong { font-size: 18px; line-height: 21px; }
+  #gameBoard { width: min(calc((var(--app-height) - 329px) / 2), calc(100vw - 104px), 240px); }
+  .next-heading small { display: none; }
+  .next-heading { margin-bottom: 8px; }
+  .next-stack { gap: 6px; }
+  .next-slot { height: clamp(38px, calc((var(--app-height) - 405px) / 5), 52px); padding: 2px; }
+  .next-slot canvas { width: 32px; height: 32px; }
+  .next-slot small { top: -5px; left: 50%; font-size: 10px; }
+  .next-slot.is-locked .preview-lock { gap: 3px; font-size: 10px; }
+  .preview-lock img { width: 11px; height: 11px; }
+}
+
+/* Keep shared navigation and accessibility rules while isolating this theme. */
 html,
 body {
-  width: 100%;
-  min-height: 100%;
-  min-height: var(--tetris-app-height, 100svh);
-  overflow-x: hidden;
+  min-height: 0;
+  height: var(--tetris-app-height, 100dvh);
   overscroll-behavior: none;
-  touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
 }
-
-body {
-  background:
-    radial-gradient(circle at 20% 12%, rgba(47, 215, 255, 0.18), transparent 28%),
-    radial-gradient(circle at 84% 22%, rgba(255, 94, 188, 0.16), transparent 30%),
-    linear-gradient(135deg, #0d2229 0%, #102f35 45%, #f6fff8 45.2%, #f4fbf6 100%);
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.tetris-shell {
-  width: min(1180px, calc(100% - 28px));
-  margin: 0 auto;
-  padding: 24px 0 34px;
-}
-
-.game-topbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: end;
-  margin-bottom: 16px;
-  color: #ffffff;
-}
-
-.return-nav {
-  position: relative;
-  z-index: 10;
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  pointer-events: auto;
-}
-
-.portal-return {
-  display: inline-flex;
-  min-height: 38px;
-  align-items: center;
-  padding: 0 14px;
-  border: 1px solid rgba(47, 215, 255, 0.28);
-  border-radius: var(--radius);
-  color: #092f36;
-  background: linear-gradient(135deg, var(--cyan), var(--lime));
-  font-size: 0.92rem;
-  font-weight: 950;
-  touch-action: manipulation;
-  -webkit-touch-callout: none;
-}
-
-.game-topbar .eyebrow {
-  margin-bottom: 10px;
-}
-
-.game-topbar h1 {
-  margin-bottom: 0;
-  font-size: clamp(2rem, 6vw, 4.8rem);
-  font-weight: 950;
-  line-height: 0.98;
-  letter-spacing: 0;
-}
-
-.top-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: end;
-}
-
-.top-actions button,
-.game-overlay button,
-.touch-controls button {
-  min-height: 44px;
-  border: 0;
-  border-radius: var(--radius);
-  font: inherit;
-  font-weight: 950;
-  cursor: pointer;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
-.top-actions button,
-.game-overlay button {
-  padding: 0 14px;
-  color: #09343a;
-  background: linear-gradient(135deg, var(--cyan), var(--lime));
-}
-
-.top-actions button[aria-pressed="false"] {
-  color: rgba(255, 255, 255, 0.78);
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.top-actions button:disabled,
-.touch-controls button:disabled {
-  cursor: not-allowed;
-  opacity: 0.48;
-  filter: grayscale(0.6);
-}
-
-.game-layout {
-  display: grid;
-  grid-template-columns: minmax(430px, 560px) minmax(260px, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-
-.playfield {
-  display: grid;
-  grid-template-columns: minmax(300px, 420px) 116px;
-  gap: 12px;
-  align-items: start;
-  min-width: 0;
-}
-
-.board-wrap {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  padding: 16px;
-  border: 1px solid rgba(47, 215, 255, 0.28);
-  border-radius: var(--radius);
-  background:
-    linear-gradient(135deg, rgba(7, 21, 28, 0.94), rgba(14, 42, 49, 0.92)),
-    #0a1d24;
-  box-shadow:
-    0 22px 60px rgba(7, 18, 24, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-
-#gameBoard {
+.eyebrow {
   display: block;
-  width: min(100%, 360px);
-  aspect-ratio: 1 / 2;
-  height: auto;
-  border-radius: 6px;
-  background: #07171f;
-  box-shadow:
-    inset 0 0 0 1px rgba(47, 215, 255, 0.2),
-    0 0 28px rgba(47, 215, 255, 0.14);
-  touch-action: none;
-  -webkit-touch-callout: none;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
 }
-
-.game-overlay {
-  position: absolute;
-  inset: 16px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 12px;
-  padding: 22px;
-  border-radius: 6px;
-  color: #ffffff;
-  background: rgba(4, 14, 20, 0.76);
-  text-align: center;
-  backdrop-filter: blur(8px);
-}
-
-.game-overlay[hidden] {
-  display: none;
-}
-
-.game-overlay strong {
-  font-size: 1.72rem;
-  line-height: 1.2;
-}
-
-.game-overlay span {
-  color: rgba(255, 255, 255, 0.78);
-  font-weight: 800;
-  line-height: 1.45;
-}
-
-.game-panel {
-  display: grid;
-  gap: 14px;
-}
-
-.next-card,
-.score-grid > div,
-.help-card {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 14px 34px rgba(20, 46, 50, 0.08);
-}
-
-.next-card {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-  padding: 10px;
-  align-self: start;
-}
-
-.next-heading {
-  display: grid;
-  align-items: center;
-  gap: 3px;
-}
-
-.next-heading small {
-  color: var(--teal-deep);
-  font-size: 0.7rem;
-  font-weight: 950;
-  line-height: 1.25;
-}
-
-.next-stack {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-.next-slot {
-  position: relative;
-  display: grid;
-  gap: 5px;
-  align-items: center;
-  justify-items: center;
-  min-width: 0;
-  padding: 6px;
-  border: 1px solid rgba(21, 39, 43, 0.08);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.48);
-}
-
-.next-slot canvas {
-  width: min(100%, 72px);
-  aspect-ratio: 1;
-  height: auto;
-  border-radius: 6px;
-  background: #0a1d24;
-}
-
-.next-slot small {
-  color: rgba(56, 80, 84, 0.72);
-  font-size: 0.82rem;
-  font-weight: 950;
-}
-
-.next-slot.is-locked canvas {
-  opacity: 0.42;
-  filter: grayscale(0.85);
-}
-
-.next-slot.is-locked::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 0.7rem;
-  font-weight: 950;
-  transform: translate(-50%, -58%);
-  content: "LOCK";
-}
-
-.next-card span,
-.score-grid span {
-  color: var(--muted);
-  font-size: 0.86rem;
-  font-weight: 900;
-}
-
-.score-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.score-grid > div {
-  display: grid;
-  gap: 7px;
-  min-height: 92px;
-  align-content: center;
-  padding: 14px;
-}
-
-.score-grid strong {
-  color: var(--teal-deep);
-  font-size: 1.8rem;
-  line-height: 1;
-}
-
-.help-card {
-  padding: 16px;
-}
-
-.help-card h2 {
-  margin-bottom: 8px;
-  font-size: 1.12rem;
-}
-
-.help-card p {
-  margin-bottom: 8px;
-  color: var(--ink-soft);
-  font-weight: 760;
-  line-height: 1.55;
-}
-
-.help-card p:last-child {
-  margin-bottom: 0;
-}
-
-.touch-controls {
-  display: none;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.touch-controls button {
-  min-width: 0;
-  padding: 0 8px;
-  color: #ffffff;
-  background: linear-gradient(135deg, var(--teal-deep), var(--teal));
-  box-shadow: 0 10px 22px rgba(13, 148, 136, 0.2);
-}
-
-.instruction-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: rgba(4, 14, 20, 0.74);
-  backdrop-filter: blur(10px);
-}
-
-.instruction-modal[hidden] {
-  display: none;
-}
-
-.instruction-card {
-  width: min(520px, 100%);
-  max-height: min(90dvh, 660px);
-  overflow: hidden;
-  padding: 22px;
-  border: 1px solid rgba(47, 215, 255, 0.28);
-  border-radius: var(--radius);
-  color: #ffffff;
-  background:
-    linear-gradient(135deg, rgba(9, 34, 42, 0.96), rgba(16, 55, 62, 0.94)),
-    #0d2229;
-  box-shadow: 0 24px 70px rgba(3, 12, 16, 0.46);
-}
-
-.instruction-kicker {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 0 10px;
-  border-radius: var(--radius);
-  color: #09343a;
-  background: linear-gradient(135deg, var(--cyan), var(--lime));
-  font-size: 0.82rem;
-  font-weight: 950;
-}
-
-.instruction-card h2 {
-  margin-bottom: 14px;
-  font-size: 1.62rem;
-  line-height: 1.18;
-}
-
-.instruction-list {
-  display: grid;
-  gap: 8px;
-}
-
-.instruction-list div {
-  display: grid;
-  gap: 3px;
-  padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.instruction-list strong {
-  color: #d9fff3;
-  font-size: 0.98rem;
-}
-
-.instruction-list span,
-.instruction-note {
-  color: rgba(255, 255, 255, 0.78);
-  font-weight: 760;
-  line-height: 1.45;
-}
-
-.instruction-note {
-  margin: 12px 0 0;
-  font-size: 0.9rem;
-}
-
-.instruction-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.instruction-actions button {
-  min-height: 46px;
+.return-nav a {
+  padding: 0;
   border: 0;
-  border-radius: var(--radius);
+  color: inherit;
+  background: none;
   font: inherit;
-  font-weight: 950;
-  cursor: pointer;
-  touch-action: none;
 }
-
-.instruction-actions button:first-child {
-  color: #09343a;
-  background: linear-gradient(135deg, var(--cyan), var(--lime));
-}
-
-.instruction-actions button:last-child {
-  color: rgba(255, 255, 255, 0.86);
-  background: rgba(255, 255, 255, 0.14);
-}
-
-@media (max-width: 820px) {
-  html {
-    height: 100%;
-    height: var(--tetris-app-height, 100svh);
-    overflow: hidden;
-    touch-action: none;
-  }
-
+@media (max-width: 700px) {
   body {
     position: fixed;
     inset: 0;
-    height: 100svh;
-    height: 100dvh;
-    height: var(--tetris-app-height, 100svh);
     overflow: hidden;
-    touch-action: none;
-    background:
-      radial-gradient(circle at 28% 8%, rgba(47, 215, 255, 0.16), transparent 26%),
-      linear-gradient(180deg, #0d2229 0 300px, #f4fbf6 300px 100%);
-  }
-
-  .tetris-shell {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: 5px;
-    height: 100svh;
-    height: 100dvh;
-    height: var(--tetris-app-height, 100svh);
-    width: min(100% - 18px, 1180px);
-    padding-top: max(8px, env(safe-area-inset-top));
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
-    overflow: hidden;
-    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
     -webkit-touch-callout: none;
   }
-
-  .game-topbar {
-    grid-template-columns: 1fr;
-    gap: 7px;
-    margin-bottom: 5px;
-    color: #ffffff;
-  }
-
-  .top-actions {
-    justify-content: start;
-  }
-
-  .return-nav {
-    gap: 6px;
-    align-items: stretch;
-  }
-
-  .compact-back,
-  .portal-return {
-    min-height: 32px;
-    padding: 0 10px;
-    font-size: 0.78rem;
-  }
-
-  .game-topbar .eyebrow {
-    display: none;
-  }
-
-  .game-topbar h1 {
-    font-size: clamp(1.05rem, 5.2vw, 1.56rem);
-    line-height: 1.08;
-  }
-
-  .game-layout {
-    grid-template-columns: 1fr;
-    align-content: start;
-    gap: 5px;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .playfield {
-    grid-template-columns: minmax(0, 1fr) 58px;
-    gap: 6px;
-    min-height: 0;
-  }
-
-  .board-wrap {
-    min-width: 0;
-    padding: 8px;
-  }
-
-  #gameBoard {
-    width: min(100%, 230px, calc((var(--tetris-app-height, 100svh) - 286px) / 2), calc(100vw - 100px));
-    min-width: 138px;
-    touch-action: none;
-  }
-
-  .game-overlay {
-    inset: 8px;
-  }
-
-  .game-panel {
-    grid-template-columns: 1fr;
-    gap: 5px;
-    min-height: 0;
-  }
-
-  .help-card {
-    display: none;
-  }
-
-  .touch-controls {
-    display: grid;
-    position: static;
-    z-index: 4;
-    gap: 5px;
-    margin-top: 0;
-    padding: 5px;
-    border: 1px solid rgba(21, 39, 43, 0.12);
-    border-radius: var(--radius);
-    background: rgba(255, 255, 255, 0.92);
-    touch-action: none;
-  }
-
-  .top-actions {
-    gap: 5px;
-  }
-
-  .top-actions button {
-    min-height: 32px;
-    padding: 0 8px;
-    font-size: 0.74rem;
-  }
-
-  .next-card {
-    display: grid;
-    gap: 5px;
-    padding: 5px;
-    border-radius: 6px;
-  }
-
-  .next-heading {
-    gap: 2px;
-  }
-
-  .next-heading span {
-    font-size: 0.68rem;
-    line-height: 1.1;
-  }
-
-  .next-heading small {
-    display: none;
-  }
-
-  .next-stack {
-    gap: 5px;
-  }
-
-  .next-slot {
-    gap: 2px;
-    padding: 3px;
-    border-radius: 5px;
-  }
-
-  .next-slot canvas {
-    width: 42px;
-    border-radius: 5px;
-  }
-
-  .next-slot small {
-    font-size: 0.62rem;
-    line-height: 1;
-  }
-
-  .next-slot.is-locked::after {
-    font-size: 0.48rem;
-  }
-
-  .score-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 5px;
-  }
-
-  .score-grid > div {
-    min-height: 42px;
-    padding: 6px 5px;
-  }
-
-  .score-grid span {
-    font-size: 0.66rem;
-  }
-
-  .score-grid strong {
-    font-size: 0.94rem;
-  }
-
-  .touch-controls button {
-    min-height: 42px;
-    padding: 0 2px;
-    font-size: 0.68rem;
-    touch-action: none;
-    -webkit-touch-callout: none;
-  }
-}
-
-@media (max-width: 520px) {
-  html {
-    height: 100%;
-    height: var(--tetris-app-height, 100svh);
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  body {
-    position: fixed;
-    inset: 0;
-    height: var(--tetris-app-height, 100svh);
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  .tetris-shell {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: 6px;
-    height: var(--tetris-app-height, 100svh);
-    width: min(100% - 18px, 1180px);
-    padding-top: max(8px, env(safe-area-inset-top));
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-    overflow: hidden;
-    touch-action: none;
-    -webkit-touch-callout: none;
-  }
-
-  .game-topbar {
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  .return-nav {
-    gap: 6px;
-  }
-
-  .compact-back,
-  .portal-return {
-    min-height: 34px;
-    padding: 0 10px;
-    font-size: 0.82rem;
-  }
-
-  .game-topbar .eyebrow {
-    display: none;
-  }
-
-  .game-topbar h1 {
-    font-size: 1.34rem;
-    line-height: 1.12;
-  }
-
-  .top-actions {
-    gap: 6px;
-  }
-
-  .top-actions button {
-    min-height: 36px;
-    padding: 0 8px;
-    font-size: 0.78rem;
-  }
-
-  .game-layout {
-    align-content: start;
-    gap: 6px;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .playfield {
-    grid-template-columns: minmax(0, 1fr) 58px;
-    gap: 6px;
-    min-height: 0;
-  }
-
-  .board-wrap {
-    padding: 8px;
-    min-width: 0;
-  }
-
-  #gameBoard {
-    width: min(100%, 230px, calc((var(--tetris-app-height, 100svh) - 298px) / 2), calc(100vw - 100px));
-    min-width: 150px;
-    touch-action: none;
-  }
-
-  .game-overlay {
-    inset: 8px;
-  }
-
-  .game-panel {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    min-height: 0;
-  }
-
-  .help-card {
-    display: none;
-  }
-
-  .next-card {
-    display: grid;
-    gap: 5px;
-    padding: 5px;
-    border-radius: 6px;
-  }
-
-  .next-heading {
-    gap: 2px;
-  }
-
-  .next-heading span {
-    font-size: 0.68rem;
-    line-height: 1.1;
-  }
-
-  .next-heading small {
-    display: none;
-  }
-
-  .next-stack {
-    gap: 5px;
-  }
-
-  .next-slot {
-    gap: 2px;
-    padding: 3px;
-    border-radius: 5px;
-  }
-
-  .next-slot canvas {
-    width: 42px;
-    border-radius: 5px;
-  }
-
-  .next-slot small {
-    font-size: 0.62rem;
-    line-height: 1;
-  }
-
-  .next-slot.is-locked::after {
-    font-size: 0.48rem;
-  }
-
-  .score-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .score-grid > div {
-    min-height: 54px;
-    padding: 8px 6px;
-  }
-
-  .score-grid span {
-    font-size: 0.7rem;
-  }
-
-  .score-grid strong {
-    font-size: 1rem;
-  }
-
-  .touch-controls {
-    position: static;
-    z-index: 4;
-    gap: 6px;
-    margin-top: 0;
-    padding: 6px;
-    border: 1px solid rgba(21, 39, 43, 0.12);
-    border-radius: var(--radius);
-    background: rgba(255, 255, 255, 0.92);
-    touch-action: none;
-  }
-
-  .touch-controls button {
-    min-height: 48px;
-    padding: 0 3px;
-    font-size: 0.74rem;
-    touch-action: none;
-    -webkit-touch-callout: none;
-  }
-
-  .instruction-modal {
-    padding: 10px;
-  }
-
-  .instruction-card {
-    max-height: calc(var(--tetris-app-height, 100svh) - 20px);
-    padding: 16px;
-  }
-
-  .instruction-card h2 {
-    margin-bottom: 10px;
-    font-size: 1.34rem;
-  }
-
-  .instruction-list {
-    gap: 6px;
-  }
-
-  .instruction-list div {
-    padding: 8px;
-  }
-
-  .instruction-note {
-    margin-top: 10px;
-    font-size: 0.82rem;
-  }
-
-  .instruction-actions {
-    margin-top: 10px;
-  }
-
-  .instruction-actions button {
-    min-height: 44px;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 380px) {
-  .tetris-shell {
-    width: min(100% - 12px, 1180px);
-  }
-
-  #gameBoard {
-    width: min(100%, 210px, calc((var(--tetris-app-height, 100svh) - 286px) / 2), calc(100vw - 88px));
-    min-width: 138px;
-  }
-
-  .playfield {
-    grid-template-columns: minmax(0, 1fr) 52px;
-    gap: 5px;
-  }
-
-  .next-card {
-    padding: 4px;
-  }
-
-  .next-slot canvas {
-    width: 38px;
-  }
-
-  .touch-controls button {
-    min-height: 46px;
-    padding: 0 2px;
-    font-size: 0.68rem;
-  }
+  .return-nav a { font-size: 0; }
 }

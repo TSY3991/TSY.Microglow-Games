@@ -2,15 +2,15 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8">
-    <meta name="theme-color" content="#10232b">
+    <meta name="theme-color" content="#fbf7ee">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta
       name="description"
-      content="TSY.Microglow 霓虹方塊俄羅斯小遊戲，支援桌機鍵盤與手機觸控。"
+      content="微光俄羅斯方塊，暖白青綠的休閒積木介面，支援桌機鍵盤、手機手勢與本機紀錄。"
     >
-    <meta property="og:title" content="霓虹方塊俄羅斯｜TSY.Microglow Games">
-    <meta property="og:description" content="TSY.Microglow 霓虹方塊俄羅斯小遊戲，支援桌機鍵盤與手機觸控。">
+    <meta property="og:title" content="微光俄羅斯方塊｜TSY.Microglow Games">
+    <meta property="og:description" content="微光俄羅斯方塊，支援桌機鍵盤、手機手勢與本機紀錄。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://tsy3991.github.io/TSY.Microglow-Games/games/tetris/">
     <meta property="og:image" content="https://tsy3991.github.io/TSY.Microglow-Games/assets/og-image.png?v=20261012a">
@@ -20,27 +20,29 @@
     <meta property="og:locale" content="zh_TW">
     <meta property="og:site_name" content="TSY.Microglow 遊戲大廳">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="霓虹方塊俄羅斯｜TSY.Microglow Games">
-    <meta name="twitter:description" content="TSY.Microglow 霓虹方塊俄羅斯小遊戲，支援桌機鍵盤與手機觸控。">
+    <meta name="twitter:title" content="微光俄羅斯方塊｜TSY.Microglow Games">
+    <meta name="twitter:description" content="微光俄羅斯方塊，支援桌機鍵盤、手機手勢與本機紀錄。">
     <meta name="twitter:image" content="https://tsy3991.github.io/TSY.Microglow-Games/assets/og-image.png?v=20261012a">
     <link rel="canonical" href="https://tsy3991.github.io/TSY.Microglow-Games/games/tetris/">
-    <title>霓虹方塊俄羅斯｜TSY.Microglow Games</title>
+    <title>微光俄羅斯方塊｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/favicon.png?v=20261012a" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20261013a">
-    <link rel="stylesheet" href="./tetris.css?v=20260704d">
-    <link rel="stylesheet" href="../../shared/gem-game-theme.css?v=20260704e">
+    <link rel="stylesheet" href="./tetris.css?v=20261014a">
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要內容</a>
     <main class="tetris-shell" id="main-content" tabindex="-1">
       <header class="game-topbar">
+        <a class="brand" href="https://tsy3991.github.io/TSY.Microglow-Website/" aria-label="TSY 微光創作室">
+          <img src="../../assets/logo-mark.png?v=20261012a" alt="TSY 微光創作室" width="92" height="92">
+        </a>
         <nav class="return-nav" aria-label="返回連結">
-          <a class="back-link compact-back" href="../../">回遊戲大廳</a>
-          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>返回入口網站</a>
+          <a class="back-link compact-back" href="../../" aria-label="回遊戲大廳" title="回遊戲大廳">回遊戲大廳</a>
+          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" aria-label="返回入口網站" title="返回入口網站" data-portal-return>返回入口網站</a>
         </nav>
         <div>
-          <p class="eyebrow">Neon Blocks</p>
-          <h1>霓虹方塊俄羅斯</h1>
+          <p class="eyebrow">MICROGLOW GAMES</p>
+          <h1>微光俄羅斯方塊</h1>
         </div>
         <div class="top-actions" aria-label="遊戲控制">
           <button type="button" data-action="sound" aria-pressed="true">音效開</button>
@@ -68,23 +70,28 @@
               <small data-preview-status>Lv.1-5 顯示 1 顆</small>
             </div>
             <div class="next-stack">
-              <div class="next-slot">
+              <div class="next-slot" data-unlock="1">
+                <span class="preview-lock" aria-hidden="true"><img src="./assets/lock-keyhole.svg?v=20261014a" alt="" width="14" height="14"><span>Lv.1</span></span>
                 <canvas width="92" height="92" aria-label="後續第 1 顆方塊" data-preview-canvas></canvas>
                 <small>1</small>
               </div>
-              <div class="next-slot">
+              <div class="next-slot" data-unlock="6">
+                <span class="preview-lock" aria-hidden="true"><img src="./assets/lock-keyhole.svg?v=20261014a" alt="" width="14" height="14"><span>Lv.6</span></span>
                 <canvas width="92" height="92" aria-label="後續第 2 顆方塊" data-preview-canvas></canvas>
                 <small>2</small>
               </div>
-              <div class="next-slot">
+              <div class="next-slot" data-unlock="11">
+                <span class="preview-lock" aria-hidden="true"><img src="./assets/lock-keyhole.svg?v=20261014a" alt="" width="14" height="14"><span>Lv.11</span></span>
                 <canvas width="92" height="92" aria-label="後續第 3 顆方塊" data-preview-canvas></canvas>
                 <small>3</small>
               </div>
-              <div class="next-slot">
+              <div class="next-slot" data-unlock="16">
+                <span class="preview-lock" aria-hidden="true"><img src="./assets/lock-keyhole.svg?v=20261014a" alt="" width="14" height="14"><span>Lv.16</span></span>
                 <canvas width="92" height="92" aria-label="後續第 4 顆方塊" data-preview-canvas></canvas>
                 <small>4</small>
               </div>
-              <div class="next-slot">
+              <div class="next-slot" data-unlock="21">
+                <span class="preview-lock" aria-hidden="true"><img src="./assets/lock-keyhole.svg?v=20261014a" alt="" width="14" height="14"><span>Lv.21</span></span>
                 <canvas width="92" height="92" aria-label="後續第 5 顆方塊" data-preview-canvas></canvas>
                 <small>5</small>
               </div>
@@ -99,7 +106,7 @@
               <strong data-score>0</strong>
             </div>
             <div>
-              <span>最高分</span>
+              <span>本機最佳</span>
               <strong data-best>0</strong>
             </div>
             <div>
@@ -112,6 +119,11 @@
             </div>
           </div>
 
+          <figure class="mascot">
+            <img src="./assets/explorer-mascot.png?v=20261014a" alt="小曜" width="160" height="160">
+            <figcaption>和小曜一起，疊出好心情。</figcaption>
+          </figure>
+          <canvas class="piece-palette" width="440" height="72" aria-label="七種方塊配色與形狀"></canvas>
           <div class="help-card">
             <h2>操作</h2>
             <p>鍵盤：左右移動、上鍵旋轉、下鍵加速、空白鍵硬降、C 換下顆、P 暫停。</p>
@@ -155,7 +167,6 @@
               <span>Lv.6 解鎖第 2 顆，之後每 5 級多看 1 顆，最多 5 顆。</span>
             </div>
           </div>
-          <p class="instruction-note">遊戲畫面已鎖定滑動與放大，方便單手操作。</p>
           <div class="instruction-actions">
             <button type="button" data-instruction-start>開始遊戲</button>
             <button type="button" data-instruction-close>先看看</button>
@@ -167,6 +178,6 @@
     <script src="../../shared/skip-link.js?v=20261013a"></script>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./tetris.js?v=20260706a"></script>
+    <script src="./tetris.js?v=20261014a"></script>
   </body>
 </html>

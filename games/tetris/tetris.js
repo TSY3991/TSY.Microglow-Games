@@ -41,21 +41,18 @@
   let controlRepeatDelay = 0;
   let controlRepeatInterval = 0;
   let lastMoveTone = 0;
-  // Grid backgrounds and glowing blocks are baked to offscreen canvases once —
-  // per-frame shadowBlur and line-by-line grid strokes were the hottest part of
-  // the old render path on mobile.
+  // Cache the board grid and plastic blocks instead of repainting their details.
   const backgroundCache = new Map();
   const blockSpriteCache = new Map();
-  const blockGlowPad = 12;
 
   const colors = {
-    I: "#2fd7ff",
-    J: "#3d75ff",
-    L: "#ff9f43",
-    O: "#ffd84d",
-    S: "#8df45f",
-    T: "#c77dff",
-    Z: "#ff5e9f"
+    I: "#33aabd",
+    J: "#5682e8",
+    L: "#f29642",
+    O: "#edc13c",
+    S: "#67b86d",
+    T: "#aa79d6",
+    Z: "#e87991"
   };
 
   const shapes = {
@@ -117,6 +114,7 @@
   syncViewportSize();
   draw();
   drawPreviews();
+  drawPiecePalette();
 
   function syncViewportSize() {
     const viewport = window.visualViewport;
@@ -408,6 +406,9 @@
     });
 
     if (current) {
+      const ghost = { ...current };
+      while (!collides(ghost, 0, 1)) ghost.y += 1;
+      if (ghost.y !== current.y) drawGhost(ghost);
       current.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value) {
@@ -439,8 +440,8 @@
       if (!type || locked) return;
 
       const matrix = shapes[type];
-      const offsetX = Math.floor((4 - matrix[0].length) / 2);
-      const offsetY = Math.floor((4 - matrix.length) / 2);
+      const offsetX = (4 - matrix[0].length) / 2;
+      const offsetY = (4 - matrix.length) / 2;
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value) drawBlock(context, offsetX + x, offsetY + y, colors[type], 23);
@@ -457,10 +458,10 @@
       cached.width = width;
       cached.height = height;
       const bg = cached.getContext("2d");
-      bg.fillStyle = "#07171f";
+      bg.fillStyle = "#edf3e9";
       bg.fillRect(0, 0, width, height);
-      bg.strokeStyle = "rgba(47, 215, 255, 0.1)";
-      bg.lineWidth = 1;
+      bg.strokeStyle = "#d6e1d2";
+      bg.lineWidth = 0.8;
       bg.beginPath();
       for (let x = 0; x <= width; x += size) {
         bg.moveTo(x, 0);
@@ -480,30 +481,79 @@
     const key = `${color}|${size}`;
     let sprite = blockSpriteCache.get(key);
     if (sprite) return sprite;
-    const inset = 2;
-    const blockSize = size - inset * 2;
     sprite = document.createElement("canvas");
-    sprite.width = blockSize + blockGlowPad * 2;
-    sprite.height = blockSize + blockGlowPad * 2;
-    const spriteContext = sprite.getContext("2d");
-    spriteContext.fillStyle = color;
-    spriteContext.shadowColor = color;
-    spriteContext.shadowBlur = 12;
-    spriteContext.fillRect(blockGlowPad, blockGlowPad, blockSize, blockSize);
-    spriteContext.shadowBlur = 0;
-    spriteContext.fillStyle = "rgba(255, 255, 255, 0.24)";
-    spriteContext.fillRect(blockGlowPad + 3, blockGlowPad + 3, blockSize - 6, 4);
-    spriteContext.strokeStyle = "rgba(255, 255, 255, 0.3)";
-    spriteContext.lineWidth = 1;
-    spriteContext.strokeRect(blockGlowPad + 0.5, blockGlowPad + 0.5, blockSize - 1, blockSize - 1);
+    sprite.width = sprite.height = size;
+    const context = sprite.getContext("2d");
+    const inset = size * 0.045;
+    const edge = size - 2 * inset;
+    const depth = size * 0.11;
+    roundedRect(context, inset, inset + 1, edge, edge, size * 0.17);
+    context.fillStyle = color;
+    context.fill();
+    context.fillStyle = "rgba(32,48,68,.24)";
+    context.fill();
+    roundedRect(context, inset, inset, edge, edge - depth, size * 0.17);
+    const gradient = context.createLinearGradient(0, 0, 0, size);
+    gradient.addColorStop(0, "#ffffff88");
+    gradient.addColorStop(0.18, "#ffffff22");
+    gradient.addColorStop(1, "#0000000d");
+    context.fillStyle = color;
+    context.fill();
+    context.fillStyle = gradient;
+    context.fill();
+    context.strokeStyle = "#ffffff77";
+    context.lineWidth = Math.max(0.8, size / 24);
+    roundedRect(context, inset + 1, inset + 1, edge - 2, edge - depth - 2, size * 0.15);
+    context.stroke();
+    roundedRect(context, size * 0.21, size * 0.17, size * 0.52, size * 0.085, size * 0.04);
+    context.fillStyle = "#ffffff90";
+    context.fill();
     blockSpriteCache.set(key, sprite);
     return sprite;
   }
 
   function drawBlock(context, x, y, color, size) {
-    const inset = 2;
     const sprite = getBlockSprite(color, size);
-    context.drawImage(sprite, x * size + inset - blockGlowPad, y * size + inset - blockGlowPad);
+    context.drawImage(sprite, x * size, y * size);
+  }
+
+  function roundedRect(context, x, y, width, height, radius) {
+    context.beginPath();
+    context.roundRect(x, y, width, height, radius);
+  }
+
+  function drawGhost(piece) {
+    piece.matrix.forEach((row, y) => row.forEach((value, x) => {
+      if (!value) return;
+      roundedRect(boardContext, (piece.x + x) * cellSize + 3, (piece.y + y) * cellSize + 3, cellSize - 6, cellSize - 6, cellSize * 0.12);
+      boardContext.fillStyle = "#ffffff90";
+      boardContext.fill();
+      boardContext.strokeStyle = "#527b69";
+      boardContext.lineWidth = 2;
+      boardContext.setLineDash([4, 3]);
+      boardContext.stroke();
+      boardContext.setLineDash([]);
+    }));
+  }
+
+  function drawPiecePalette() {
+    const canvas = document.querySelector(".piece-palette");
+    if (!canvas) return;
+    const context = canvas.getContext("2d");
+    Object.keys(shapes).forEach((type, index) => {
+      const matrix = shapes[type];
+      const size = 13;
+      context.save();
+      context.translate(index * 62 + (56 - matrix[0].length * size) / 2, 12);
+      matrix.forEach((row, y) => row.forEach((value, x) => {
+        if (value) drawBlock(context, x, y, colors[type], size);
+      }));
+      context.restore();
+      context.font = "bold 12px Arial";
+      context.fillStyle = "#657487";
+      context.textAlign = "center";
+      context.fillText(type, index * 62 + 28, 59);
+    });
   }
 
   function updateUi() {
