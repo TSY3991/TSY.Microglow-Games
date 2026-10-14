@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8">
-    <meta name="theme-color" content="#10232b">
+    <meta name="theme-color" content="#fcfcf8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta
       name="description"
@@ -26,26 +26,28 @@
     <title>小朋友下樓梯｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/favicon.png?v=20261012a" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20261013a">
-    <link rel="stylesheet" href="./downstairs.css?v=20260704e">
-    <link rel="stylesheet" href="../../shared/gem-game-theme.css?v=20260704e">
+    <link rel="stylesheet" href="./downstairs.css?v=20261014a">
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要內容</a>
     <main class="downstairs-shell" id="main-content" tabindex="-1">
       <header class="game-topbar">
+        <a class="brand" href="https://tsy3991.github.io/TSY.Microglow-Website/" aria-label="TSY 微光創作室">
+          <img src="../../assets/logo-mark.png?v=20261012a" alt="TSY 微光創作室" width="60" height="60">
+        </a>
         <nav class="return-nav" aria-label="返回連結">
-          <a class="back-link compact-back" href="../../">回遊戲大廳</a>
-          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" data-portal-return>返回入口網站</a>
+          <a class="back-link compact-back" href="../../" aria-label="回遊戲大廳" title="回遊戲大廳"><img src="../tetris/assets/layout-grid.svg?v=20261014a" alt="" width="18" height="18"><span>回遊戲大廳</span></a>
+          <a class="portal-return" href="https://tsy3991.github.io/TSY.Microglow-Website/" aria-label="返回入口網站" title="返回入口網站" data-portal-return><img src="../tetris/assets/house.svg?v=20261014a" alt="" width="18" height="18"><span>返回入口網站</span></a>
         </nav>
-        <div>
+        <div class="game-heading">
           <p class="eyebrow">100 Floor Challenge</p>
           <h1>小朋友下樓梯</h1>
         </div>
         <div class="top-actions" aria-label="遊戲控制">
-          <button type="button" data-action="instructions">玩法</button>
-          <button type="button" data-action="start">開始</button>
-          <button type="button" data-action="pause">暫停</button>
-          <button type="button" data-action="restart">重開</button>
+          <button type="button" data-action="instructions"><img src="../tetris/assets/layout-grid.svg?v=20261014a" alt="" width="18" height="18"><span>玩法</span></button>
+          <button type="button" data-action="start"><img src="../tetris/assets/arrow-right.svg?v=20261014a" alt="" width="18" height="18"><span>開始</span></button>
+          <button type="button" data-action="pause"><img src="../tetris/assets/pause.svg?v=20261014a" alt="" width="18" height="18"><span>暫停</span></button>
+          <button type="button" data-action="restart"><img src="../tetris/assets/refresh-cw.svg?v=20261014a" alt="" width="18" height="18"><span>重開</span></button>
         </div>
       </header>
 
@@ -99,10 +101,11 @@
       </section>
 
       <section class="touch-controls" aria-label="手機觸控控制">
-        <button type="button" data-control="left">左</button>
-        <button type="button" data-control="drop">下樓</button>
-        <button type="button" data-control="right">右</button>
+        <button type="button" data-control="left"><img src="../tetris/assets/arrow-left.svg?v=20261014a" alt="" width="22" height="22"><span>左</span></button>
+        <button type="button" data-control="drop"><img src="../tetris/assets/arrow-down.svg?v=20261014a" alt="" width="22" height="22"><span>下樓</span></button>
+        <button type="button" data-control="right"><img src="../tetris/assets/arrow-right.svg?v=20261014a" alt="" width="22" height="22"><span>右</span></button>
       </section>
+    </main>
 
       <div class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="instruction-title" data-instruction-modal>
         <div class="instruction-card">
@@ -130,14 +133,12 @@
               <span>每往下一層會加分，吃到星星可以再加分。</span>
             </div>
           </div>
-          <p class="instruction-note">微光科技樓梯風格，保留星星加分、危險平台與手機按鈕。</p>
           <div class="instruction-actions">
             <button type="button" data-instruction-start>開始遊戲</button>
             <button type="button" data-instruction-close>先看看</button>
           </div>
         </div>
       </div>
-    </main>
 
     <script src="../../shared/skip-link.js?v=20261013a"></script>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
