@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8">
-    <meta name="theme-color" content="#10232b">
+    <meta name="theme-color" content="#fffdf7">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta
       name="description"
@@ -26,7 +26,7 @@
     <title>微光連珠對戰｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/favicon.png?v=20261012a" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20261013a">
-    <link rel="stylesheet" href="./orbs.css?v=20260708b">
+    <link rel="stylesheet" href="./orbs.css?v=20261014a">
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要內容</a>
@@ -78,6 +78,7 @@
               <button type="button" data-action="daily-challenge">每日挑戰</button>
             </div>
           </div>
+          <div class="story-toast" data-story-toast hidden></div>
           <div class="combat-strip" aria-label="戰鬥狀態">
             <div class="hp-card player-hp-card" data-player-hp-card>
               <div class="hp-heading">
@@ -129,7 +130,6 @@
               <div class="combat-floats" data-combat-floats aria-hidden="true"></div>
             </div>
           </div>
-          <div class="story-toast" data-story-toast hidden></div>
           <div class="board-frame">
             <canvas id="orbsBoard" width="372" height="310" aria-label="連珠盤面"></canvas>
           </div>
@@ -219,7 +219,6 @@
               <span>等級、天賦、碎片與章節進度都只存在這台裝置的瀏覽器裡，沒有雲端備份。清除瀏覽器資料、換瀏覽器或換裝置都會讓進度歸零，請留意。</span>
             </div>
           </div>
-          <p class="instruction-note">微光霓虹風，轉珠、連段、怪物受擊與反擊會形成一回合戰鬥節奏。</p>
           <div class="instruction-actions">
             <button type="button" data-instruction-start>開始遊戲</button>
             <button type="button" data-instruction-close>先看看</button>

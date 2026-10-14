@@ -438,6 +438,7 @@ button {
     rgba(7, 18, 25, 0.66);
   color: #ffe9a8;
   font-size: 0.68rem;
+  letter-spacing: 0;
   font-weight: 950;
   text-shadow: 0 0 10px rgba(255, 216, 77, 0.28);
   box-shadow:
@@ -2945,5 +2946,771 @@ button {
   .enemy-stage img {
     width: min(90%, 206px);
     max-height: 118px;
+  }
+}
+
+/* Warm Microglow surfaces; combat state classes and animations remain active. */
+body {
+  background: #fffdf7;
+  color: #173d37;
+}
+
+body::before {
+  background: linear-gradient(180deg, #edf9f5, transparent 260px);
+}
+
+.orbs-shell,
+.orbs-shell * {
+  letter-spacing: 0;
+}
+
+.orbs-shell {
+  width: min(1120px, calc(100% - 32px));
+  padding: 14px 0 max(12px, env(safe-area-inset-bottom));
+}
+
+.game-topbar {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.return-nav {
+  grid-column: auto;
+}
+
+.back-link,
+.portal-return {
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid #a5cfc4;
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #17584e;
+  box-shadow: none;
+}
+
+.portal-return {
+  border-color: #176b5e;
+  background: #176b5e;
+  color: #fff;
+}
+
+.game-topbar .eyebrow {
+  display: block;
+  margin: 0 0 4px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: #48736a;
+  font-size: 0.68rem;
+}
+
+.game-topbar h1 {
+  background: none;
+  color: #173d37;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  text-shadow: none;
+}
+
+.orbs-layout {
+  grid-template-columns: minmax(320px, 640px) 240px;
+  gap: 24px;
+}
+
+.board-wrap {
+  padding: 12px;
+  border: 1px solid #93bfb1;
+  border-radius: 8px;
+  background: #f1f8f3;
+  box-shadow: 0 8px 28px rgba(23, 61, 55, 0.08);
+}
+
+.board-wrap::before {
+  content: none;
+}
+
+.play-hud {
+  grid-template-columns: minmax(150px, 0.7fr) minmax(0, 1.3fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.play-hud .top-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.top-actions button,
+.game-overlay button,
+.instruction-actions button,
+.skill-swap-btn,
+.instruction-list button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 5px 8px;
+  border: 1px solid #a5cfc4;
+  border-radius: 8px;
+  background: #fff;
+  color: #17584e;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  text-shadow: none;
+  white-space: normal;
+  box-shadow: none;
+}
+
+.top-actions button::after,
+.game-overlay button::after,
+.instruction-actions button::after {
+  content: none;
+}
+
+.top-actions button:nth-child(2),
+.game-overlay button,
+.instruction-actions button:first-child {
+  border-color: #176b5e;
+  background: #176b5e;
+  color: #fff;
+}
+
+.top-actions button:nth-child(3) {
+  border-color: #c6ad59;
+  background: #f6eac3;
+  color: #4c411d;
+}
+
+.instruction-actions button:last-child {
+  background: #fff;
+  color: #17584e;
+}
+
+.top-actions button:hover,
+.instruction-actions button:hover,
+.game-overlay button:hover,
+.return-nav a:hover,
+.skill-swap-btn:hover {
+  filter: brightness(0.96);
+  transform: none;
+}
+
+.orbs-shell a:focus-visible,
+.orbs-shell button:focus-visible,
+.orbs-shell canvas:focus-visible,
+.orbs-shell [tabindex]:focus-visible {
+  outline: 3px solid #176b5e;
+  outline-offset: 2px;
+}
+
+.score-grid > div,
+.play-hud .score-grid > div,
+.play-hud .score-grid .battle-timer {
+  width: auto;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 6px 4px;
+  border: 1px solid #d5e5dc;
+  border-radius: 8px;
+  background: #fffdf7;
+  text-align: center;
+  box-shadow: none;
+}
+
+.score-grid span,
+.battle-timer span {
+  color: #48736a;
+  font-size: 0.68rem;
+  letter-spacing: 0;
+}
+
+.score-grid .battle-timer span {
+  letter-spacing: 0;
+}
+
+.score-grid strong,
+.battle-timer strong {
+  color: #173d37;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+
+.play-hud .score-grid .battle-timer {
+  border-color: #c6ad59;
+  background: #fff8e3;
+}
+
+.play-hud .score-grid .battle-timer.is-low {
+  border-color: #b52b46;
+  background: #fff0f1;
+}
+
+.battle-timer.is-low strong,
+.battle-timer.is-low span {
+  color: #9b2037;
+  text-shadow: none;
+}
+
+.combat-strip {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hp-card,
+.combat-strip .hp-card {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #a5cfc4;
+  border-radius: 8px;
+  background: #fffdf7;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.hp-card .hp-heading {
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 5px;
+  color: #38675c;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.hp-heading span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hp-card .hp-heading strong {
+  flex: none;
+  min-width: 7ch;
+  color: #173d37;
+  font-size: 0.9rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+
+.hp-card.is-low .hp-heading strong,
+.hp-card.is-low .hp-heading span {
+  color: #984700;
+  text-shadow: none;
+}
+
+.hp-card.is-critical .hp-heading strong,
+.hp-card.is-critical .hp-heading span {
+  color: #a7233c;
+  text-shadow: none;
+}
+
+.hp-track {
+  height: 10px;
+  border-color: #cdded5;
+  background: #e6efe9;
+}
+
+.player-hp span {
+  background: linear-gradient(90deg, #176b5e, #32b4a0);
+  box-shadow: none;
+}
+
+.enemy-hp span {
+  background: linear-gradient(90deg, #da9362, #cf5873);
+  box-shadow: none;
+}
+
+.skill-row {
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.skill-bar {
+  justify-content: center;
+  align-items: stretch;
+  min-height: 44px;
+  padding: 5px 7px;
+  border: 1px solid #c6ad59;
+  border-radius: 8px;
+  background: #fff8e3;
+  color: #635225;
+  text-align: center;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+.skill-bar .skill-name {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.skill-bar .skill-track {
+  height: 6px;
+  background: #e8dfc6;
+  border-color: #d3c8a8;
+  box-shadow: none;
+}
+
+.skill-bar:disabled {
+  opacity: 1;
+  filter: none;
+  color: #716953;
+  background: #f5f3ea;
+  box-shadow: none;
+}
+
+.skill-bar[data-ready="true"] {
+  background: #f5e6ac;
+  color: #4c411d;
+}
+
+.battle-stage {
+  flex: 0 4 128px;
+  min-height: 104px;
+  margin-bottom: 8px;
+}
+
+.player-stage {
+  background: none;
+}
+
+.orbs-shell .board-wrap .player-stage img,
+.orbs-shell .board-wrap .enemy-stage img {
+  position: absolute;
+  inset: 28px 8px 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 36px);
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+
+.enemy-stage {
+  border-color: #b9c9ab;
+  border-radius: 8px;
+  background: #eaf4ee;
+}
+
+.enemy-badge,
+.enemy-attack,
+.player-level-badge {
+  border: 1px solid #9ec7b9;
+  border-radius: 6px;
+  background: #fffdf7;
+  color: #17584e;
+  text-align: center;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+.enemy-badge {
+  max-width: 90%;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.battle-vs {
+  color: #5c8276;
+}
+
+#orbsBoard {
+  border: 2px solid #176b5e;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(23, 61, 55, 0.12);
+}
+
+.orbs-panel {
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.help-card {
+  padding: 0 0 0 16px;
+  border: 0;
+  border-left: 2px solid #c6ad59;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.help-card h2,
+.instruction-card h2 {
+  color: #173d37;
+}
+
+.help-card p,
+.instruction-list span,
+.instruction-note,
+.game-overlay span {
+  color: #38675c;
+}
+
+.story-toast {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inset: auto;
+  width: 100%;
+  height: 38px;
+  margin-bottom: 6px;
+  padding: 3px 8px;
+  border-color: #9ec7b9;
+  border-radius: 6px;
+  background: rgba(255, 253, 247, 0.96);
+  color: #173d37;
+  font-size: 0.72rem;
+  box-shadow: none;
+  transform: none;
+}
+
+.story-toast[hidden] {
+  display: flex;
+  visibility: hidden;
+}
+
+.story-toast.is-show {
+  animation: orbs-status-in 180ms ease-out;
+}
+
+@keyframes orbs-status-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.game-overlay {
+  inset: 8px;
+  z-index: 5;
+  padding: 18px;
+  border: 1px solid #a5cfc4;
+  border-radius: 8px;
+  background: rgba(255, 253, 247, 0.95);
+  color: #173d37;
+  box-shadow: none;
+}
+
+.game-overlay strong {
+  font-size: 1.65rem;
+  text-shadow: none;
+}
+
+.instruction-modal {
+  background: rgba(23, 61, 55, 0.45);
+}
+
+.instruction-card {
+  border-color: #a5cfc4;
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #173d37;
+  box-shadow: 0 12px 40px rgba(23, 61, 55, 0.2);
+}
+
+.instruction-kicker,
+.instruction-list strong {
+  color: #176b5e;
+}
+
+.instruction-list div {
+  border-color: #d5e5dc;
+  border-radius: 6px;
+  background: #f1f8f3;
+}
+
+.instruction-list button {
+  grid-column: 2;
+  justify-self: end;
+  cursor: pointer;
+}
+
+.instruction-list button:disabled {
+  border-color: #d5dcd5;
+  background: #f0f1eb;
+  color: #667265;
+  cursor: default;
+}
+
+@media (max-width: 860px) {
+  .orbs-shell {
+    width: 100%;
+    padding: max(5px, env(safe-area-inset-top)) max(5px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(5px, env(safe-area-inset-left));
+  }
+
+  .game-topbar {
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .return-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .back-link,
+  .portal-return {
+    min-height: 44px;
+    padding: 4px 7px;
+    font-size: 0.78rem;
+    line-height: 1.2;
+  }
+
+  .orbs-layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .board-wrap {
+    padding: 6px;
+  }
+
+  .play-hud {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  .play-hud .score-grid > div,
+  .play-hud .score-grid .battle-timer {
+    min-height: 34px;
+    padding: 3px 4px;
+  }
+
+  .score-grid span,
+  .battle-timer span {
+    font-size: 0.62rem;
+  }
+
+  .play-hud .score-grid strong {
+    font-size: 1.05rem;
+  }
+
+  .play-hud .top-actions button {
+    min-height: 44px;
+    padding: 4px;
+    font-size: 0.74rem;
+  }
+
+  .combat-strip {
+    margin: 0 0 5px;
+    gap: 5px;
+  }
+
+  .combat-strip .hp-card {
+    padding: 5px;
+  }
+
+  .hp-card .hp-heading {
+    font-size: 0.62rem;
+  }
+
+  .hp-card .hp-heading strong {
+    min-width: 7ch;
+    font-size: 0.8rem;
+  }
+
+  .skill-bar,
+  .skill-swap-btn {
+    min-height: 44px;
+  }
+
+  .skill-swap-btn {
+    padding: 4px;
+    font-size: 0.66rem;
+  }
+
+  .skill-bar .skill-name {
+    font-size: 0.66rem;
+  }
+
+  .battle-stage {
+    grid-template-columns: minmax(80px, 0.36fr) minmax(0, 1fr);
+    flex: 0 4 176px;
+    min-height: 100px;
+    gap: 5px;
+    padding: 4px;
+    margin-bottom: 5px;
+    border: 1px solid #b9d3c7;
+    border-radius: 8px;
+    background: #eef6f1;
+    box-shadow: none;
+  }
+
+  .story-toast {
+    margin-bottom: 5px;
+    font-size: 0.66rem;
+  }
+
+  .battle-stage .player-stage {
+    border-radius: 8px;
+    background: #eaf4ee;
+    box-shadow: none;
+  }
+
+  .enemy-badge {
+    top: 5px;
+    max-width: 94%;
+    padding: 3px 5px;
+    font-size: 0.64rem;
+  }
+
+  .enemy-attack,
+  .player-level-badge {
+    padding: 3px 5px;
+    font-size: 0.66rem;
+  }
+
+  .board-wrap.is-cinematic .battle-stage,
+  .board-wrap.is-ultimate-cinematic .battle-stage {
+    flex: 1 1 240px;
+    min-height: 110px;
+    grid-template-columns: minmax(90px, 0.4fr) minmax(0, 1fr);
+  }
+
+  .instruction-modal {
+    padding: 10px;
+  }
+
+  .instruction-card {
+    max-height: calc(100dvh - 20px);
+    padding: 14px;
+  }
+
+  .instruction-list div {
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .instruction-list span {
+    font-size: 0.84rem;
+    overflow-wrap: anywhere;
+  }
+
+  .instruction-actions {
+    position: sticky;
+    bottom: -14px;
+    padding: 10px 0;
+    background: #fffdf7;
+  }
+}
+
+@media (max-width: 860px) and (max-height: 700px) {
+  .battle-stage {
+    flex-basis: 96px;
+    min-height: 84px;
+  }
+}
+
+@media (max-width: 380px) {
+  .play-hud .top-actions button {
+    font-size: 0.68rem;
+  }
+
+  .hp-card .hp-heading {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+  }
+
+  .hp-heading span {
+    font-size: 0.58rem;
+  }
+
+  .battle-stage {
+    flex-basis: 100px;
+    min-height: 84px;
+  }
+}
+
+/* A side toolbar keeps all 44px controls reachable on the shortest phones. */
+@media (max-width: 540px) and (max-height: 700px) {
+  .game-overlay {
+    padding: 12px 76px 12px 12px;
+  }
+
+  .board-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 60px;
+    grid-template-rows: 34px auto 90px minmax(0, 1fr) 38px;
+    gap: 5px;
+  }
+
+  .play-hud {
+    display: contents;
+  }
+
+  .play-hud .score-grid {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .play-hud .top-actions {
+    position: relative;
+    z-index: 6;
+    grid-column: 2;
+    grid-row: 3 / 6;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(7, minmax(44px, 1fr));
+    gap: 3px;
+  }
+
+  .play-hud .top-actions button {
+    padding: 3px;
+    font-size: 0.66rem;
+  }
+
+  .combat-strip {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+  }
+
+  .battle-stage {
+    grid-column: 1;
+    grid-row: 3;
+    grid-template-columns: minmax(68px, 0.36fr) minmax(0, 1fr);
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .board-frame {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
+  .story-toast {
+    grid-column: 1;
+    grid-row: 5;
+    margin: 0;
+    height: 38px;
+    font-size: 0.62rem;
+  }
+
+  .board-wrap.is-cinematic .battle-stage,
+  .board-wrap.is-ultimate-cinematic .battle-stage {
+    min-height: 0;
+    grid-template-columns: minmax(68px, 0.4fr) minmax(0, 1fr);
+  }
+
+  .board-wrap.is-cinematic .board-frame,
+  .board-wrap.is-ultimate-cinematic .board-frame {
+    min-height: 0;
   }
 }
