@@ -13,6 +13,7 @@
   const gameShell = document.querySelector(".downstairs-shell");
   const touchControls = document.querySelector(".touch-controls");
   const instructionModal = document.querySelector("[data-instruction-modal]");
+  const mascotImage = document.querySelector("[data-mascot-image]");
   const gameId = "microglow-downstairs";
   const gameTitle = "小朋友下樓梯";
   const portalStats = window.MicroglowGameStats;
@@ -48,8 +49,7 @@
   let activePointerSide = null;
   let targetAnnounced = false;
   let lastTouchEnd = 0;
-  // Offscreen caches: shadowBlur and gradient creation per frame were the main
-  // sources of phone heat, so all glowing art is baked once and blitted.
+  // Bake the toy surfaces and mascot once, then reuse them on each frame.
   let skyCanvas = null;
   let playerSprite = null;
   let starSprite = null;
@@ -59,6 +59,11 @@
   // updateUi() runs every animation frame; cached values let it skip DOM
   // writes (textContent / style) when nothing changed.
   const uiCache = {};
+
+  mascotImage.addEventListener("load", () => {
+    playerSprite = null;
+    if (!running || paused) draw();
+  });
 
   resetState();
   updateUi();
@@ -232,7 +237,7 @@
       player.y = platform.y - playerHeight / 2;
       player.vy = 0;
       spawnParticles(player.x, platform.y, "#ff5ebc", 18);
-      endGame("踩到危險平台", "紅色警示階梯會讓微光小機器人短路");
+      endGame("踩到危險平台", "小曜踩到了紅色警示階梯");
       return;
     }
     player.y = platform.y - playerHeight / 2;
@@ -403,31 +408,37 @@
     skyCanvas.height = height;
     const bg = skyCanvas.getContext("2d");
     const sky = bg.createLinearGradient(0, 0, 0, height);
-    sky.addColorStop(0, "#e7fbff");
-    sky.addColorStop(0.48, "#bdf2f4");
-    sky.addColorStop(1, "#fff2bd");
+    sky.addColorStop(0, "#fbf8ef");
+    sky.addColorStop(1, "#edf4e9");
     bg.fillStyle = sky;
     bg.fillRect(0, 0, width, height);
+
+    // Recessed walls keep the platforms readable without a luminous grid.
+    bg.fillStyle = "#e1eadc";
+    bg.fillRect(0, 0, 14, height);
+    bg.fillRect(width - 14, 0, 14, height);
+    bg.fillStyle = "#ffffff";
+    bg.fillRect(14, 0, 2, height);
+    bg.fillRect(width - 16, 0, 2, height);
+    bg.fillStyle = "#d3e0cf";
+    for (let y = 70; y < height; y += 80) {
+      roundRectPath(bg, 3, y, 8, 4, 2);
+      bg.fill();
+      roundRectPath(bg, width - 11, y, 8, 4, 2);
+      bg.fill();
+    }
     return skyCanvas;
   }
 
   function drawBackground() {
     context.drawImage(getSkyCanvas(), 0, 0);
-
-    context.fillStyle = "rgba(13, 148, 136, 0.12)";
-    for (let index = 0; index < 52; index += 1) {
-      const x = (index * 61) % width;
-      const y = (index * 97 + floor * 9) % height;
-      context.fillRect(x, y, 2, 2);
-    }
-
-    context.strokeStyle = "rgba(47, 215, 255, 0.16)";
+    context.strokeStyle = "#e4ecdf";
     context.lineWidth = 1;
     context.beginPath();
-    const lineOffset = (floor * 5) % 32;
-    for (let y = -24; y < height; y += 32) {
-      context.moveTo(0, y + lineOffset);
-      context.lineTo(width, y + lineOffset);
+    const lineOffset = (floor * 5) % 80;
+    for (let y = -80; y < height; y += 80) {
+      context.moveTo(24, y + lineOffset);
+      context.lineTo(width - 24, y + lineOffset);
     }
     context.stroke();
   }
@@ -441,31 +452,45 @@
     sprite.height = platformHeight + spritePad * 2;
     const sc = sprite.getContext("2d");
     sc.translate(spritePad, spritePad);
+    const hazard = type === "hazard";
     const gradient = sc.createLinearGradient(0, 0, 0, platformHeight);
-    const topColor = type === "hazard" ? "#ff5ebc" : type === "start" ? "#8df45f" : "#2fd7ff";
-    const bottomColor = type === "hazard" ? "#ba285f" : "#0d9488";
-    gradient.addColorStop(0, topColor);
-    gradient.addColorStop(1, bottomColor);
+    gradient.addColorStop(0, hazard ? "#e78b78" : "#cae8d1");
+    gradient.addColorStop(1, hazard ? "#bd4e43" : "#78ae91");
     sc.fillStyle = gradient;
-    sc.shadowColor = type === "hazard" ? "rgba(255, 94, 188, 0.5)" : "rgba(47, 215, 255, 0.46)";
-    sc.shadowBlur = 12;
-    roundRectPath(sc, 0, 0, platformWidth, platformHeight, 6);
+    sc.shadowColor = "rgba(47, 78, 58, 0.16)";
+    sc.shadowBlur = 3;
+    sc.shadowOffsetY = 2;
+    roundRectPath(sc, 0, 0, platformWidth, platformHeight, 4);
     sc.fill();
     sc.shadowBlur = 0;
+    sc.shadowOffsetY = 0;
 
-    sc.fillStyle = "rgba(255, 255, 255, 0.46)";
-    roundRectPath(sc, 8, 3, Math.max(12, platformWidth - 16), 2, 2);
+    sc.strokeStyle = hazard ? "#a13e36" : "#4f8c72";
+    sc.lineWidth = 1;
+    roundRectPath(sc, 0.5, 0.5, platformWidth - 1, platformHeight - 1, 4);
+    sc.stroke();
+    sc.fillStyle = hazard ? "#ffe4d4" : "#eff9e9";
+    roundRectPath(sc, 4, 2, platformWidth - 8, 3, 1.5);
     sc.fill();
 
-    if (type === "hazard") {
-      sc.fillStyle = "rgba(255, 255, 255, 0.8)";
-      for (let x = 10; x < platformWidth - 8; x += 18) {
+    if (hazard) {
+      // The repeated slashes remain distinct even without red perception.
+      sc.fillStyle = "#fff3dc";
+      for (let x = 9; x < platformWidth - 12; x += 18) {
         sc.beginPath();
-        sc.moveTo(x, 2);
-        sc.lineTo(x + 7, platformHeight - 2);
-        sc.lineTo(x + 14, 2);
+        sc.moveTo(x, 6);
+        sc.lineTo(x + 4, 6);
+        sc.lineTo(x + 1, 10);
+        sc.lineTo(x - 3, 10);
+        sc.closePath();
         sc.fill();
       }
+    } else if (type === "start") {
+      sc.fillStyle = "#b18b36";
+      roundRectPath(sc, 8, 7, 10, 2, 1);
+      sc.fill();
+      roundRectPath(sc, platformWidth - 18, 7, 10, 2, 1);
+      sc.fill();
     }
     platformSpriteCache.set(key, sprite);
     return sprite;
@@ -485,9 +510,12 @@
     starSprite.height = spritePad * 2 + 20;
     const sc = starSprite.getContext("2d");
     sc.translate(spritePad + 10, spritePad + 10);
-    sc.fillStyle = "#ffd84d";
-    sc.shadowColor = "#ffd84d";
-    sc.shadowBlur = 18;
+    const gold = sc.createLinearGradient(0, -10, 0, 10);
+    gold.addColorStop(0, "#f4d67b");
+    gold.addColorStop(1, "#d7a442");
+    sc.fillStyle = gold;
+    sc.strokeStyle = "#a57b28";
+    sc.lineWidth = 1;
     sc.beginPath();
     for (let point = 0; point < 10; point += 1) {
       const radius = point % 2 === 0 ? 10 : 4.5;
@@ -499,6 +527,7 @@
     }
     sc.closePath();
     sc.fill();
+    sc.stroke();
     return starSprite;
   }
 
@@ -516,83 +545,54 @@
 
   function getPlayerSprite() {
     if (playerSprite) return playerSprite;
+    if (!mascotImage.complete || !mascotImage.naturalWidth) return null;
     playerSprite = document.createElement("canvas");
-    playerSprite.width = 34 + spritePad * 2;
-    playerSprite.height = 70 + spritePad * 2;
+    const resolution = 3;
+    playerSprite.width = playerWidth * resolution;
+    playerSprite.height = playerHeight * resolution;
     const sc = playerSprite.getContext("2d");
-    // Sprite origin matches the old translate(player.x, player.y) local space:
-    // art spans x −17..17 and y −33..27.
-    sc.translate(17 + spritePad, 33 + spritePad);
-
-    sc.fillStyle = "rgba(7, 36, 43, 0.26)";
-    sc.beginPath();
-    sc.ellipse(0, 22, 17, 5, 0, 0, Math.PI * 2);
-    sc.fill();
-
-    sc.fillStyle = "#eaffff";
-    sc.shadowColor = "rgba(47, 215, 255, 0.42)";
-    sc.shadowBlur = 12;
-    roundRectPath(sc, -13, -25, 26, 22, 8);
-    sc.fill();
-    sc.shadowBlur = 0;
-
-    sc.fillStyle = "#2fd7ff";
-    roundRectPath(sc, -12, -3, 24, 24, 7);
-    sc.fill();
-
-    sc.fillStyle = "#07343d";
-    roundRectPath(sc, -9, -20, 18, 11, 4);
-    sc.fill();
-
-    sc.fillStyle = "#8df45f";
-    sc.beginPath();
-    sc.arc(-4, -15, 1.8, 0, Math.PI * 2);
-    sc.arc(4, -15, 1.8, 0, Math.PI * 2);
-    sc.fill();
-
-    sc.strokeStyle = "#8df45f";
-    sc.lineWidth = 1.6;
-    sc.beginPath();
-    sc.moveTo(-4, -11);
-    sc.quadraticCurveTo(0, -8, 4, -11);
-    sc.stroke();
-
-    sc.strokeStyle = "#2fd7ff";
-    sc.lineWidth = 4;
-    sc.lineCap = "round";
-    sc.beginPath();
-    sc.moveTo(-9, 6);
-    sc.lineTo(-15, 15);
-    sc.moveTo(9, 6);
-    sc.lineTo(15, 15);
-    sc.stroke();
-
-    sc.fillStyle = "#ffd84d";
-    sc.beginPath();
-    sc.arc(0, -30, 3, 0, Math.PI * 2);
-    sc.fill();
-
+    sc.imageSmoothingQuality = "high";
+    // Original 256px PNG: trim only transparent margins when drawing.
+    // The full silhouette fits the unchanged 28x34 hitbox; feet end at its base.
+    const artWidth = playerHeight * 153 / 192;
+    sc.drawImage(mascotImage, 50, 27, 153, 192,
+      (playerWidth - artWidth) / 2 * resolution, 0,
+      artWidth * resolution, playerHeight * resolution);
     return playerSprite;
   }
 
   function drawPlayer() {
     const sprite = getPlayerSprite();
-    context.drawImage(sprite, player.x - 17 - spritePad, player.y - 33 - spritePad);
+    if (!sprite) return;
+    context.save();
+    context.translate(player.x, player.y + playerHeight / 2);
+    if (player.groundedPlatformId) {
+      context.fillStyle = "rgba(47, 78, 58, 0.16)";
+      context.beginPath();
+      context.ellipse(0, 1, 10, 2, 0, 0, Math.PI * 2);
+      context.fill();
+    }
+    if (player.vx < 0) context.scale(-1, 1);
+    context.drawImage(sprite, -playerWidth / 2, -playerHeight, playerWidth, playerHeight);
+    context.restore();
   }
 
   function getGlowSprite(color) {
     let sprite = glowSpriteCache.get(color);
     if (sprite) return sprite;
+    const tones = {
+      "#ff5ebc": "#bd4e43",
+      "#ffd84d": "#d7a442",
+      "#8df45f": "#78ae91",
+      "#2fd7ff": "#78ae91"
+    };
     const radius = 3.2;
-    const blur = 10;
-    const pad = Math.ceil(radius + blur);
+    const pad = 5;
     sprite = document.createElement("canvas");
     sprite.width = pad * 2;
     sprite.height = pad * 2;
     const sc = sprite.getContext("2d");
-    sc.fillStyle = color;
-    sc.shadowColor = color;
-    sc.shadowBlur = blur;
+    sc.fillStyle = tones[color] || color;
     sc.beginPath();
     sc.arc(pad, pad, radius, 0, Math.PI * 2);
     sc.fill();
@@ -612,18 +612,23 @@
 
   function drawProgressHud() {
     const progress = Math.min(1, floor / targetFloor);
-    context.fillStyle = "rgba(4, 14, 20, 0.5)";
-    roundRect(12, 12, 138, 32, 8);
-    context.fill();
-    context.fillStyle = "rgba(255, 255, 255, 0.28)";
-    roundRect(24, 36, 102, 5, 3);
-    context.fill();
-    context.fillStyle = "#ffd84d";
-    roundRect(24, 36, 102 * progress, 5, 3);
-    context.fill();
     context.fillStyle = "#ffffff";
-    context.font = "900 13px Microsoft JhengHei, sans-serif";
-    context.fillText(`100 層 ${floor}/${targetFloor}`, 24, 29);
+    context.strokeStyle = "#d2e2dc";
+    context.lineWidth = 1;
+    roundRect(12.5, 12.5, 158, 43, 6);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#e1eadc";
+    roundRect(24, 40, 134, 5, 2.5);
+    context.fill();
+    if (progress > 0) {
+      context.fillStyle = "#b18b36";
+      roundRect(24, 40, 134 * progress, 5, 2.5);
+      context.fill();
+    }
+    context.fillStyle = "#173c37";
+    context.font = "800 13px Microsoft JhengHei, sans-serif";
+    context.fillText(`100 層挑戰 ${floor}/${targetFloor}`, 24, 31);
   }
 
   function roundRectPath(ctx, x, y, rectWidth, rectHeight, radius) {

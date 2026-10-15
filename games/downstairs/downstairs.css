@@ -182,7 +182,7 @@ button img {
   max-height: 100%;
   aspect-ratio: 9 / 14;
   border-radius: var(--radius);
-  background: #e7fbff;
+  background: #fbf8ef;
   box-shadow: 0 0 0 1px #b3d6ce, 0 8px 24px rgba(23, 60, 55, 0.09);
   touch-action: none;
 }
@@ -209,6 +209,13 @@ button img {
 .game-overlay strong {
   font-size: 24px;
   line-height: 32px;
+}
+
+.overlay-mascot {
+  display: block;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
 }
 
 .game-overlay span {
@@ -676,6 +683,184 @@ button:active {
 
   .touch-controls button {
     min-height: 48px;
+  }
+}
+
+@media (min-width: 520px) and (max-height: 520px) {
+  .downstairs-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 20px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .game-topbar {
+    grid-column: 1 / -1;
+    grid-template-columns: 44px minmax(120px, 1fr) auto 92px;
+    gap: 6px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .brand {
+    grid-row: 1;
+    width: 44px;
+    height: 44px;
+  }
+
+  .game-heading {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .game-topbar .eyebrow {
+    display: none;
+  }
+
+  .game-topbar h1 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .return-nav {
+    grid-column: 4;
+    grid-row: 1;
+    gap: 4px;
+  }
+
+  .return-nav a {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+  }
+
+  .return-nav a span {
+    display: none;
+  }
+
+  .top-actions {
+    grid-column: 3;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(56px, 1fr));
+    gap: 4px;
+  }
+
+  .top-actions button {
+    padding: 8px 4px;
+    gap: 4px;
+    font-size: 13px;
+  }
+
+  .top-actions button img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .downstairs-layout {
+    display: contents;
+  }
+
+  .board-wrap {
+    grid-column: 1;
+    grid-row: 2 / 4;
+  }
+
+  .downstairs-panel {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 0;
+    overflow: auto;
+  }
+
+  .score-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .score-grid > div {
+    min-height: 64px;
+    gap: 4px;
+    padding: 6px;
+  }
+
+  .score-grid strong {
+    font-size: 22px;
+    line-height: 26px;
+  }
+
+  .challenge-card,
+  .help-card {
+    display: none;
+  }
+
+  .touch-controls {
+    grid-column: 2;
+    grid-row: 3;
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .touch-controls button {
+    flex-direction: column;
+    gap: 4px;
+    min-height: 64px;
+    padding: 8px 4px;
+    font-size: 14px;
+  }
+
+  .game-overlay {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .overlay-mascot {
+    width: 48px;
+    height: 48px;
+  }
+
+  .game-overlay strong {
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .game-overlay span {
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .game-overlay button {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+}
+
+@media (min-width: 520px) and (max-width: 639px) and (max-height: 520px) {
+  .game-topbar {
+    grid-template-columns: 44px minmax(0, 1fr) 92px;
+  }
+
+  .return-nav {
+    grid-column: 3;
+  }
+
+  .top-actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .touch-controls button {
+    flex-direction: row;
+    min-height: 48px;
+    font-size: 13px;
+  }
+
+  .touch-controls button img {
+    width: 16px;
+    height: 16px;
   }
 }
 

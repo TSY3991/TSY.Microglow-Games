@@ -26,7 +26,8 @@
     <title>小朋友下樓梯｜TSY.Microglow Games</title>
     <link rel="icon" href="../../assets/favicon.png?v=20261012a" type="image/png">
     <link rel="stylesheet" href="../../shared/base.css?v=20261013a">
-    <link rel="stylesheet" href="./downstairs.css?v=20261014a">
+    <link rel="stylesheet" href="./downstairs.css?v=20261015a">
+    <link rel="preload" as="image" href="./assets/explorer-mascot.png?v=20261015a">
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要內容</a>
@@ -55,8 +56,9 @@
         <div class="board-wrap">
           <canvas id="downstairsBoard" width="360" height="560" aria-label="下樓梯主遊戲區"></canvas>
           <div class="game-overlay" data-overlay>
+            <img class="overlay-mascot" src="./assets/explorer-mascot.png?v=20261015a" alt="小曜" width="80" height="80" data-mascot-image>
             <strong data-overlay-title>準備開始</strong>
-            <span data-overlay-message>控制微光小機器人，挑戰下到 100 層</span>
+            <span data-overlay-message>和小曜一起，挑戰下到 100 層</span>
             <button type="button" data-action="overlay-start">開始遊戲</button>
           </div>
         </div>
@@ -89,7 +91,7 @@
             <div class="target-track" aria-hidden="true">
               <span data-target-progress></span>
             </div>
-            <p>控制微光小機器人下到第 100 層，之後可以繼續往更深樓層衝高分。</p>
+            <p>帶著小曜下到第 100 層，之後可以繼續往更深樓層衝高分。</p>
           </div>
 
           <div class="help-card">
@@ -114,7 +116,7 @@
           <div class="instruction-list">
             <div>
               <strong>左右移動</strong>
-              <span>控制微光小機器人踩到下一層平台，平台會慢慢往上移動。</span>
+              <span>控制小曜踩到下一層平台，平台會慢慢往上移動。</span>
             </div>
             <div>
               <strong>下樓按鈕</strong>
@@ -143,6 +145,6 @@
     <script src="../../shared/skip-link.js?v=20261013a"></script>
     <script src="../../shared/portal-return.js?v=20260704c"></script>
     <script src="../../shared/game-stats.js?v=20260704c"></script>
-    <script src="./downstairs.js?v=20260706a"></script>
+    <script src="./downstairs.js?v=20261015a"></script>
   </body>
 </html>
