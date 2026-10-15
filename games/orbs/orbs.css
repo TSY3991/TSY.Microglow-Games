@@ -3714,3 +3714,236 @@ body::before {
     min-height: 0;
   }
 }
+
+/* 20261015a: the play surface continues the warm, rounded Microglow palette. */
+#orbsBoard {
+  border-color: #83ad98;
+  border-radius: 12px;
+  background: #edf4e9;
+  box-shadow: 0 3px 8px rgba(45, 77, 59, 0.1);
+}
+
+.orbs-shell .player-stage,
+.orbs-shell .enemy-stage {
+  border: 1px solid #d1dfce;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffdf7, #ecf4e8);
+  box-shadow: inset 0 -20px 35px var(--stage-tint, rgba(74, 135, 106, 0.05));
+}
+
+.enemy-stage.element-fire { --stage-tint: rgba(209, 116, 90, 0.1); }
+.enemy-stage.element-water { --stage-tint: rgba(88, 156, 183, 0.1); }
+.enemy-stage.element-wood { --stage-tint: rgba(112, 157, 83, 0.1); }
+.enemy-stage.element-earth { --stage-tint: rgba(190, 158, 74, 0.1); }
+.enemy-stage.element-metal { --stage-tint: rgba(125, 145, 174, 0.1); }
+
+.enemy-stage::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  opacity: 0.25;
+}
+
+.enemy-stage::after {
+  bottom: 8px;
+  height: 20px;
+  background: radial-gradient(ellipse, rgba(135, 164, 115, 0.12), transparent 70%);
+  opacity: 0.6;
+}
+
+.player-aura,
+.enemy-aura {
+  background: radial-gradient(ellipse, rgba(80, 166, 139, 0.17), rgba(218, 198, 123, 0.05) 50%, transparent 72%);
+  filter: blur(10px);
+}
+
+.player-shadow,
+.enemy-shadow {
+  height: 8px;
+  background: rgba(47, 79, 61, 0.12);
+  filter: blur(4px);
+}
+
+.orbs-shell .player-stage img,
+.orbs-shell .enemy-stage img {
+  filter: drop-shadow(0 4px 3px rgba(38, 74, 59, 0.18));
+}
+
+.orbs-shell .enemy-stage img.tier-1 {
+  filter: hue-rotate(35deg) drop-shadow(0 4px 3px rgba(96, 144, 74, 0.24));
+}
+
+.orbs-shell .enemy-stage img.tier-2 {
+  filter: hue-rotate(200deg) drop-shadow(0 4px 3px rgba(66, 133, 160, 0.24));
+}
+
+.orbs-shell .enemy-stage img.tier-3 {
+  filter: hue-rotate(300deg) drop-shadow(0 4px 3px rgba(173, 95, 145, 0.24));
+}
+
+.orbs-shell .enemy-stage.is-berserk img {
+  filter: saturate(1.15) drop-shadow(0 0 5px rgba(188, 66, 91, 0.45));
+}
+
+.orbs-shell .enemy-stage.is-hit,
+.orbs-shell .player-stage.is-critical {
+  border-color: #c67f83;
+  box-shadow: inset 0 0 18px rgba(198, 127, 131, 0.12);
+}
+
+.orbs-shell .combat-projectile,
+.orbs-shell .combat-impact {
+  mix-blend-mode: normal;
+  filter: saturate(0.65);
+  box-shadow: 0 0 8px rgba(50, 153, 131, 0.25);
+}
+
+.orbs-shell .combat-projectile.is-enemy,
+.orbs-shell .combat-impact.is-enemy {
+  box-shadow: 0 0 8px rgba(191, 99, 128, 0.25);
+}
+
+.orbs-shell .combat-projectile.is-ultimate,
+.orbs-shell .combat-impact.is-ultimate {
+  box-shadow: 0 0 12px rgba(180, 147, 59, 0.35);
+}
+
+.combat-floats span,
+.combat-floats span.is-strong,
+.combat-floats span.is-weak,
+.combat-floats span.is-ultimate,
+.combat-floats.is-player span.is-skill {
+  color: #285c4b;
+  -webkit-text-stroke: 0;
+  text-shadow: 0 1px 0 #fffdf7, 0 -1px 0 #fffdf7, 1px 0 #fffdf7, -1px 0 #fffdf7;
+}
+
+.combat-floats span.is-attack,
+.combat-floats.is-player span.is-hit { color: #a8405c; }
+.combat-floats span.is-strong,
+.combat-floats span.is-ultimate,
+.combat-floats.is-player span.is-skill { color: #876622; }
+.combat-floats span.is-weak { color: #626d77; }
+.combat-floats.is-player span.is-heal { color: #31735b; }
+
+/* Landscape uses a separate board column instead of shrinking below the HUD. */
+@media (orientation: landscape) and (max-width: 860px) and (max-height: 500px) {
+  .orbs-shell {
+    display: grid;
+    grid-template-columns: minmax(230px, 0.75fr) minmax(0, 1.25fr) 60px;
+    grid-template-rows: 44px minmax(0, 1fr) 38px;
+    gap: 5px;
+    padding: max(5px, env(safe-area-inset-top)) max(5px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(5px, env(safe-area-inset-left));
+  }
+
+  .game-topbar {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    align-self: stretch;
+  }
+
+  .return-nav { height: 100%; }
+  .return-nav a { padding: 4px; font-size: 0.7rem; }
+  .orbs-layout,
+  .board-wrap,
+  .play-hud { display: contents; }
+
+  .play-hud .score-grid {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .play-hud .score-grid > div,
+  .play-hud .score-grid .battle-timer { min-height: 44px; }
+
+  .play-hud .top-actions {
+    position: relative;
+    z-index: 6;
+    grid-column: 3;
+    grid-row: 1 / 4;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(7, minmax(44px, 1fr));
+    gap: 4px;
+    align-self: stretch;
+  }
+
+  .play-hud .top-actions button { min-height: 44px; font-size: 0.66rem; }
+
+  .combat-strip {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    margin: 0;
+  }
+
+  .orbs-shell .battle-stage,
+  .orbs-shell .board-wrap.is-cinematic .battle-stage,
+  .orbs-shell .board-wrap.is-ultimate-cinematic .battle-stage {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+    min-height: 0;
+    margin: 98px 0 0;
+    padding: 4px;
+    grid-template-columns: minmax(65px, 0.4fr) minmax(0, 1fr);
+  }
+
+  .orbs-shell .board-frame,
+  .orbs-shell .board-wrap.is-cinematic .board-frame,
+  .orbs-shell .board-wrap.is-ultimate-cinematic .board-frame {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    min-height: 0;
+    align-items: center;
+  }
+
+  .story-toast {
+    grid-column: 1;
+    grid-row: 3;
+    height: 38px;
+    margin: 0;
+    font-size: 0.63rem;
+  }
+
+  .game-overlay {
+    inset: 54px 70px 5px 5px;
+    padding: 12px;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 860px) and (max-height: 360px) {
+  .orbs-shell {
+    grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1fr) 116px;
+  }
+
+  .play-hud .top-actions {
+    grid-template-columns: repeat(2, minmax(44px, 1fr));
+    grid-template-rows: repeat(4, minmax(44px, 1fr));
+  }
+
+  .combat-strip { padding-bottom: 49px; }
+  .combat-strip .player-hp-card { position: static; }
+  .combat-strip .skill-row {
+    position: absolute;
+    inset: auto 0 0;
+    margin: 0;
+  }
+
+  .combat-strip .hp-heading {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .combat-strip .hp-heading span {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .orbs-shell .battle-stage,
+  .orbs-shell .board-wrap.is-cinematic .battle-stage,
+  .orbs-shell .board-wrap.is-ultimate-cinematic .battle-stage { margin-top: 110px; }
+
+  .game-overlay { right: 126px; }
+}

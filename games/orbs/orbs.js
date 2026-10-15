@@ -79,19 +79,6 @@
   // `art` is the base filename in assets/monsters/ (no extension): the loader
   // tries the Codex-generated .webp first and falls back to the bundled .svg
   // placeholder, so new art drops in without code changes.
-  const ORB_ART_FILES = ["fire.webp", "water.webp", "wood.webp", "earth.webp", "metal.webp", "heal.png"];
-  const orbArtImages = ORB_ART_FILES.map((file) => {
-    if (!file) return null;
-    const image = new Image();
-    image.decoding = "async";
-    image.src = `./assets/orbs/${file}`;
-    image.addEventListener("load", () => {
-      orbSpriteCache.clear();
-      draw();
-      wake();
-    });
-    return image;
-  });
   const ENEMIES = [
     { name: "濁光史萊姆", art: "slime", element: 1 },
     { name: "微光哨兵", art: "sentinel", element: 4 },
@@ -1639,29 +1626,18 @@
     backgroundCanvas.width = boardPxWidth;
     backgroundCanvas.height = boardPxHeight;
     const bg = backgroundCanvas.getContext("2d");
-    const base = bg.createLinearGradient(0, 0, 0, boardPxHeight);
-    base.addColorStop(0, "#241a34");
-    base.addColorStop(0.5, "#141123");
-    base.addColorStop(1, "#0a1320");
-    bg.fillStyle = base;
+    bg.fillStyle = "#edf4e9";
     bg.fillRect(0, 0, boardPxWidth, boardPxHeight);
-
     for (let r = 0; r < ROWS; r += 1) {
       for (let c = 0; c < COLS; c += 1) {
-        const x = c * CELL + 5;
-        const y = r * CELL + 5;
-        drawRoundRect(bg, x, y, CELL - 10, CELL - 10, 11);
-        bg.fillStyle = "rgba(0, 0, 0, 0.25)";
+        drawRoundRect(bg, c * CELL + 4, r * CELL + 4, CELL - 8, CELL - 8, 15);
+        bg.fillStyle = (r + c) % 2 ? "#f8faf2" : "#fffdf6";
         bg.fill();
-        bg.strokeStyle = "rgba(255, 225, 150, 0.12)";
-        bg.lineWidth = 1.2;
+        bg.strokeStyle = "#d5e2ce";
+        bg.lineWidth = 1;
         bg.stroke();
       }
     }
-
-    bg.strokeStyle = "rgba(255, 216, 120, 0.18)";
-    bg.lineWidth = 2;
-    bg.strokeRect(1, 1, boardPxWidth - 2, boardPxHeight - 2);
     return backgroundCanvas;
   }
 
@@ -1680,56 +1656,31 @@
     ctx.closePath();
   }
 
-  function hexToRgb(hex) {
-    const clean = hex.replace("#", "");
-    const value = Number.parseInt(clean, 16);
-    return {
-      r: (value >> 16) & 255,
-      g: (value >> 8) & 255,
-      b: value & 255
-    };
+  // Paint-only colors: combat IDs, values and random weights stay unchanged.
+  function orbSurface(colorIndex) {
+    return [
+      { fill: "#edaa95", edge: "#bc715c", mark: "#873e30" },
+      { fill: "#9bcfdc", edge: "#659bad", mark: "#285e75" },
+      { fill: "#acd09a", edge: "#78a36a", mark: "#3d6836" },
+      { fill: "#efd593", edge: "#c1a05e", mark: "#7b5c25" },
+      { fill: "#c7d0dd", edge: "#97a3b6", mark: "#4a5d78" },
+      { fill: "#efb5ca", edge: "#c77f9e", mark: "#903a60" }
+    ][colorIndex];
   }
 
-  function rgbaFromHex(hex, alpha) {
-    const rgb = hexToRgb(hex);
-    return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-  }
-  function stonePoints(colorIndex) {
-    const shapes = [
-      [[-0.88, -0.4], [-0.58, -0.84], [-0.06, -0.94], [0.5, -0.82], [0.86, -0.42], [0.9, 0.2], [0.56, 0.72], [0.04, 0.92], [-0.58, 0.76], [-0.9, 0.18]],
-      [[-0.78, -0.72], [-0.18, -0.86], [0.58, -0.76], [0.86, -0.28], [0.76, 0.58], [0.3, 0.86], [-0.54, 0.76], [-0.88, 0.28]],
-      [[0, -0.96], [0.28, -0.6], [0.78, -0.56], [0.56, -0.1], [0.9, 0.28], [0.34, 0.36], [0.12, 0.88], [-0.24, 0.44], [-0.76, 0.56], [-0.54, 0.06], [-0.88, -0.34], [-0.36, -0.46]],
-      [[-0.58, -0.84], [0.52, -0.84], [0.84, -0.48], [0.78, 0.52], [0.34, 0.9], [-0.48, 0.82], [-0.84, 0.36], [-0.78, -0.46]],
-      [[-0.7, -0.78], [-0.08, -0.9], [0.66, -0.74], [0.9, -0.16], [0.64, 0.6], [0.12, 0.92], [-0.54, 0.76], [-0.88, 0.22]],
-      [[0, -0.9], [0.42, -0.66], [0.84, -0.3], [0.7, 0.3], [0.3, 0.82], [-0.3, 0.82], [-0.7, 0.3], [-0.84, -0.3], [-0.42, -0.66]]
-    ];
-    return shapes[colorIndex] || shapes[0];
-  }
 
-  function traceStonePath(ctx, points, cx, cy, radius, scale = 1) {
-    const scaled = points.map(([x, y]) => ({ x: cx + x * radius * scale, y: cy + y * radius * scale }));
-    ctx.beginPath();
-    for (let i = 0; i < scaled.length; i += 1) {
-      const current = scaled[i];
-      const next = scaled[(i + 1) % scaled.length];
-      const mid = { x: (current.x + next.x) / 2, y: (current.y + next.y) / 2 };
-      if (i === 0) ctx.moveTo(mid.x, mid.y);
-      ctx.quadraticCurveTo(next.x, next.y, (next.x + scaled[(i + 2) % scaled.length].x) / 2, (next.y + scaled[(i + 2) % scaled.length].y) / 2);
-    }
-    ctx.closePath();
-  }
 
   function drawRockCell(gem, r, c) {
     const x = c * CELL + CELL / 2;
     const y = r * CELL + CELL / 2;
     context.save();
-    context.fillStyle = "#5a6270";
-    context.strokeStyle = "rgba(255, 255, 255, 0.18)";
+    context.fillStyle = "#b4b8a8";
+    context.strokeStyle = "#7c8974";
     context.lineWidth = 2;
     drawRoundRect(context, x - CELL * 0.38, y - CELL * 0.38, CELL * 0.76, CELL * 0.76, 10);
     context.fill();
     context.stroke();
-    context.fillStyle = "rgba(255, 255, 255, 0.85)";
+    context.fillStyle = "#364b3c";
     context.font = "900 16px 'Noto Sans TC', 'Microsoft JhengHei', sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
@@ -1738,112 +1689,44 @@
     context.restore();
   }
 
-  function drawFacet(ctx, cx, cy, radius, points, fill) {
-    ctx.beginPath();
-    points.forEach(([x, y], index) => {
-      const px = cx + x * radius;
-      const py = cy + y * radius;
-      if (index === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    });
-    ctx.closePath();
-    ctx.fillStyle = fill;
-    ctx.fill();
-  }
 
   function getOrbSprite(colorIndex) {
     let sprite = orbSpriteCache.get(colorIndex);
     if (sprite) return sprite;
-    const color = COLORS[colorIndex];
-    const artImage = orbArtImages[colorIndex];
-    if (artImage?.complete && artImage.naturalWidth > 0) {
-      sprite = document.createElement("canvas");
-      const size = CELL + 14;
-      sprite.width = size;
-      sprite.height = size;
-      const sc = sprite.getContext("2d");
-      sc.imageSmoothingEnabled = true;
-      sc.imageSmoothingQuality = "high";
-      sc.drawImage(artImage, 0, 0, size, size);
-      drawOrbMark(sc, size / 2, size / 2, CELL * 0.24, colorIndex);
-      orbSpriteCache.set(colorIndex, sprite);
-      return sprite;
-    }
-    const radius = CELL * 0.41;
-    const pad = 17;
-    const points = stonePoints(colorIndex);
+    const surface = orbSurface(colorIndex);
+    const edge = CELL * 0.77;
     sprite = document.createElement("canvas");
-    sprite.width = Math.ceil(radius * 2 + pad * 2);
-    sprite.height = Math.ceil(radius * 2 + pad * 2);
+    sprite.width = sprite.height = CELL + 12;
     const sc = sprite.getContext("2d");
     const cx = sprite.width / 2;
     const cy = sprite.height / 2;
+    const x = cx - edge / 2;
+    const y = cy - edge / 2;
+    const radius = edge * 0.31;
 
     sc.save();
-    sc.scale(1, 0.36);
-    const shadow = sc.createRadialGradient(cx, (cy + radius * 1.18) / 0.36, radius * 0.18, cx, (cy + radius * 1.18) / 0.36, radius * 1.08);
-    shadow.addColorStop(0, "rgba(0, 0, 0, 0.52)");
-    shadow.addColorStop(1, "rgba(0, 0, 0, 0)");
-    sc.fillStyle = shadow;
-    sc.beginPath();
-    sc.arc(cx, (cy + radius * 1.18) / 0.36, radius * 1.08, 0, Math.PI * 2);
+    sc.shadowColor = "rgba(42, 76, 57, 0.14)";
+    sc.shadowBlur = 3;
+    sc.shadowOffsetY = 2;
+    drawRoundRect(sc, x, y + 2, edge, edge, radius);
+    sc.fillStyle = surface.edge;
     sc.fill();
     sc.restore();
 
-    sc.save();
-    sc.shadowColor = color.glow;
-    sc.shadowBlur = 10;
-    traceStonePath(sc, points, cx, cy, radius, 1.03);
-    sc.fillStyle = "rgba(7, 7, 13, 0.92)";
+    drawRoundRect(sc, x, y, edge, edge - 1, radius);
+    sc.fillStyle = surface.fill;
     sc.fill();
-    sc.restore();
-
-    sc.save();
-    traceStonePath(sc, points, cx, cy, radius, 0.93);
-    sc.clip();
-    const fill = sc.createRadialGradient(cx - radius * 0.35, cy - radius * 0.45, radius * 0.08, cx + radius * 0.12, cy + radius * 0.12, radius * 1.1);
-    fill.addColorStop(0, rgbaFromHex(color.mark, 0.94));
-    fill.addColorStop(0.24, rgbaFromHex(color.fill, 0.98));
-    fill.addColorStop(0.62, rgbaFromHex(color.fill, 0.78));
-    fill.addColorStop(1, "rgba(6, 7, 12, 0.86)");
-    sc.fillStyle = fill;
-    sc.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-
-    drawFacet(sc, cx, cy, radius, [[-0.82, -0.24], [-0.34, -0.86], [0.06, -0.22], [-0.2, 0.08]], "rgba(255,255,255,0.24)");
-    drawFacet(sc, cx, cy, radius, [[0.08, -0.24], [0.58, -0.72], [0.82, -0.14], [0.32, 0.08]], "rgba(255,255,255,0.15)");
-    drawFacet(sc, cx, cy, radius, [[-0.78, -0.1], [-0.2, 0.12], [-0.58, 0.72], [-0.9, 0.22]], "rgba(0,0,0,0.2)");
-    drawFacet(sc, cx, cy, radius, [[-0.14, 0.12], [0.34, 0.04], [0.72, 0.58], [0.08, 0.82], [-0.28, 0.56]], "rgba(0,0,0,0.28)");
-    drawFacet(sc, cx, cy, radius, [[-0.16, -0.1], [0.14, -0.28], [0.42, -0.02], [0.1, 0.26]], "rgba(255,255,255,0.16)");
-
-    sc.strokeStyle = "rgba(255,255,255,0.18)";
+    const light = sc.createLinearGradient(0, y, 0, y + edge);
+    light.addColorStop(0, "rgba(255, 255, 255, 0.4)");
+    light.addColorStop(0.35, "rgba(255, 255, 255, 0.08)");
+    light.addColorStop(1, "rgba(255, 255, 255, 0)");
+    sc.fillStyle = light;
+    sc.fill();
+    drawRoundRect(sc, x + 1.5, y + 1.5, edge - 3, edge - 5, radius - 1);
+    sc.strokeStyle = "rgba(255, 255, 255, 0.58)";
     sc.lineWidth = 1.2;
-    for (const angle of [-0.95, -0.35, 0.22, 0.78]) {
-      sc.beginPath();
-      sc.moveTo(cx + Math.cos(angle) * radius * 0.16, cy + Math.sin(angle) * radius * 0.16);
-      sc.lineTo(cx + Math.cos(angle) * radius * 0.78, cy + Math.sin(angle) * radius * 0.78);
-      sc.stroke();
-    }
-
-    const gloss = sc.createRadialGradient(cx - radius * 0.42, cy - radius * 0.46, 0, cx - radius * 0.36, cy - radius * 0.4, radius * 0.5);
-    gloss.addColorStop(0, "rgba(255,255,255,0.5)");
-    gloss.addColorStop(1, "rgba(255,255,255,0)");
-    sc.fillStyle = gloss;
-    sc.beginPath();
-    sc.ellipse(cx - radius * 0.24, cy - radius * 0.26, radius * 0.36, radius * 0.18, -0.62, 0, Math.PI * 2);
-    sc.fill();
-    sc.restore();
-
-    drawOrbMark(sc, cx, cy, radius * 0.6, colorIndex);
-
-    traceStonePath(sc, points, cx, cy, radius, 1.03);
-    sc.strokeStyle = "rgba(1, 3, 7, 0.96)";
-    sc.lineWidth = 4.4;
     sc.stroke();
-    traceStonePath(sc, points, cx, cy, radius, 0.94);
-    sc.strokeStyle = "rgba(255, 245, 218, 0.34)";
-    sc.lineWidth = 1.3;
-    sc.stroke();
-
+    drawOrbMark(sc, cx, cy, edge * 0.33, colorIndex);
     orbSpriteCache.set(colorIndex, sprite);
     return sprite;
   }
@@ -1852,18 +1735,25 @@
     sc.save();
     sc.lineCap = "round";
     sc.lineJoin = "round";
-    sc.shadowColor = "rgba(0, 0, 0, 0.54)";
-    sc.shadowBlur = 3;
-    sc.strokeStyle = "rgba(5, 8, 14, 0.72)";
-    sc.fillStyle = "rgba(5, 8, 14, 0.66)";
-    sc.lineWidth = Math.max(4, r * 0.18);
+    sc.strokeStyle = orbSurface(colorIndex).mark;
+    sc.fillStyle = orbSurface(colorIndex).mark;
+    sc.lineWidth = Math.max(2.6, r * 0.18);
     if (colorIndex === 0) {
       sc.beginPath();
-      sc.moveTo(cx + r * 0.42, cy - r * 0.34);
-      sc.bezierCurveTo(cx + r * 0.05, cy - r * 0.52, cx - r * 0.5, cy - r * 0.26, cx - r * 0.5, cy + r * 0.12);
-      sc.bezierCurveTo(cx - r * 0.48, cy + r * 0.52, cx + r * 0.02, cy + r * 0.68, cx + r * 0.38, cy + r * 0.34);
-      sc.bezierCurveTo(cx + r * 0.06, cy + r * 0.42, cx - r * 0.18, cy + r * 0.16, cx - r * 0.06, cy - r * 0.08);
-      sc.bezierCurveTo(cx + r * 0.04, cy - r * 0.26, cx + r * 0.22, cy - r * 0.3, cx + r * 0.42, cy - r * 0.34);
+      sc.moveTo(cx + r * 0.08, cy - r * 0.82);
+      sc.bezierCurveTo(cx + r * 0.42, cy - r * 0.44, cx + r * 0.68, cy - r * 0.05, cx + r * 0.54, cy + r * 0.35);
+      sc.bezierCurveTo(cx + r * 0.38, cy + r * 0.77, cx - r * 0.41, cy + r * 0.77, cx - r * 0.56, cy + r * 0.3);
+      sc.bezierCurveTo(cx - r * 0.68, cy - r * 0.07, cx - r * 0.38, cy - r * 0.32, cx - r * 0.29, cy - r * 0.54);
+      sc.bezierCurveTo(cx - r * 0.28, cy - r * 0.3, cx - r * 0.14, cy - r * 0.17, cx - r * 0.04, cy - r * 0.26);
+      sc.bezierCurveTo(cx + r * 0.1, cy - r * 0.4, cx + r * 0.11, cy - r * 0.62, cx + r * 0.08, cy - r * 0.82);
+      sc.closePath();
+      sc.fill();
+      sc.fillStyle = orbSurface(colorIndex).fill;
+      sc.beginPath();
+      sc.moveTo(cx + r * 0.04, cy - r * 0.08);
+      sc.bezierCurveTo(cx + r * 0.34, cy + r * 0.2, cx + r * 0.28, cy + r * 0.54, cx, cy + r * 0.54);
+      sc.bezierCurveTo(cx - r * 0.28, cy + r * 0.54, cx - r * 0.24, cy + r * 0.21, cx + r * 0.04, cy - r * 0.08);
+      sc.closePath();
       sc.fill();
     } else if (colorIndex === 1) {
       sc.beginPath();
@@ -1879,7 +1769,7 @@
       sc.beginPath();
       sc.ellipse(cx, cy, r * 0.38, r * 0.62, Math.PI / 4, 0, Math.PI * 2);
       sc.fill();
-      sc.strokeStyle = "rgba(255,255,255,0.14)";
+      sc.strokeStyle = "rgba(255,255,255,0.66)";
       sc.lineWidth = 2;
       sc.beginPath();
       sc.moveTo(cx - r * 0.2, cy + r * 0.28);
@@ -1912,7 +1802,7 @@
       sc.lineTo(cx - r * 0.46, cy - r * 0.02);
       sc.closePath();
       sc.fill();
-      sc.strokeStyle = "rgba(255,255,255,0.22)";
+      sc.strokeStyle = "rgba(255,255,255,0.62)";
       sc.lineWidth = Math.max(2, r * 0.1);
       sc.stroke();
     }
@@ -1930,7 +1820,7 @@
       context.globalAlpha = alpha;
       context.lineWidth = 2 + progress * 3;
       context.shadowColor = ripple.color;
-      context.shadowBlur = 12;
+      context.shadowBlur = 3;
       context.beginPath();
       context.arc(ripple.x, ripple.y, CELL * (0.28 + progress * 0.2), 0, Math.PI * 2);
       context.stroke();
@@ -1968,8 +1858,8 @@
         context.restore();
         if (gem.poisoned) {
           context.save();
-          context.globalAlpha = 0.34;
-          context.fillStyle = "rgba(168, 46, 224, 0.95)";
+          context.globalAlpha = 0.28;
+          context.fillStyle = "#a15ab8";
           context.beginPath();
           context.arc(position.x, position.y, CELL * 0.44, 0, Math.PI * 2);
           context.fill();
@@ -1978,10 +1868,10 @@
         if (gem.reinforced) {
           context.save();
           context.globalAlpha = 0.55;
-          context.strokeStyle = "rgba(255, 216, 77, 0.95)";
+          context.strokeStyle = "#a47c27";
           context.lineWidth = 3;
-          context.shadowColor = "rgba(255, 216, 77, 0.8)";
-          context.shadowBlur = 10;
+          context.shadowColor = "rgba(173, 131, 40, 0.25)";
+          context.shadowBlur = 3;
           context.beginPath();
           context.arc(position.x, position.y, CELL * 0.46, 0, Math.PI * 2);
           context.stroke();
@@ -1989,10 +1879,10 @@
         }
         if (gem.locked) {
           context.save();
-          context.strokeStyle = "rgba(190, 210, 255, 0.92)";
+          context.strokeStyle = "#505c75";
           context.lineWidth = 2.4;
-          context.shadowColor = "rgba(120, 160, 255, 0.6)";
-          context.shadowBlur = 4;
+          context.shadowColor = "rgba(80, 92, 117, 0.15)";
+          context.shadowBlur = 1;
           context.setLineDash([3, 3]);
           context.strokeRect(position.x - CELL * 0.42, position.y - CELL * 0.42, CELL * 0.84, CELL * 0.84);
           context.setLineDash([]);
@@ -2056,7 +1946,7 @@
     context.save();
     context.globalAlpha = 0.98;
     context.shadowColor = COLORS[gem.color].glow;
-    context.shadowBlur = 24;
+    context.shadowBlur = 5;
     context.translate(x, y);
     context.scale(1.16, 1.16);
     context.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
@@ -2077,30 +1967,30 @@
     if (!keyboardHolding && Number.isFinite(dragging.pointerX) && Number.isFinite(dragging.pointerY)) {
       context.lineTo(dragging.pointerX, dragging.pointerY);
     }
-    context.strokeStyle = "rgba(47, 215, 255, 0.24)";
+    context.strokeStyle = "rgba(23, 107, 94, 0.18)";
     context.lineWidth = 12;
-    context.shadowColor = "rgba(47, 215, 255, 0.72)";
-    context.shadowBlur = 18;
+    context.shadowColor = "rgba(23, 107, 94, 0.12)";
+    context.shadowBlur = 3;
     context.stroke();
-    context.strokeStyle = "rgba(255, 244, 210, 0.92)";
+    context.strokeStyle = "#176b5e";
     context.lineWidth = 3;
-    context.shadowColor = "rgba(255, 216, 120, 0.58)";
-    context.shadowBlur = 7;
+    context.shadowColor = "rgba(23, 107, 94, 0.12)";
+    context.shadowBlur = 1;
     context.stroke();
     context.restore();
 
     const last = dragging.path[dragging.path.length - 1];
     context.save();
-    context.strokeStyle = "rgba(255, 216, 120, 0.96)";
+    context.strokeStyle = "#8b6a28";
     context.lineWidth = 3;
-    context.shadowColor = "rgba(255, 216, 120, 0.7)";
-    context.shadowBlur = 10;
+    context.shadowColor = "rgba(139, 106, 40, 0.15)";
+    context.shadowBlur = 2;
     context.strokeRect(last.c * CELL + 4, last.r * CELL + 4, CELL - 8, CELL - 8);
     context.restore();
   }
 
   function drawCursor() {
-    context.strokeStyle = keyboardHolding ? "rgba(255,255,255,0.9)" : "rgba(47,215,255,0.75)";
+    context.strokeStyle = keyboardHolding ? "#8b6a28" : "#176b5e";
     context.lineWidth = 2.4;
     context.setLineDash([4, 4]);
     context.strokeRect(cursor.c * CELL + 3, cursor.r * CELL + 3, CELL - 6, CELL - 6);
@@ -2148,7 +2038,7 @@
       context.globalAlpha = alpha;
       context.fillStyle = p.color;
       context.shadowColor = p.color;
-      context.shadowBlur = 8;
+      context.shadowBlur = 2;
       context.beginPath();
       context.arc(p.x, p.y, 3, 0, Math.PI * 2);
       context.fill();
@@ -2167,10 +2057,10 @@
       context.font = "900 20px 'Noto Sans TC', 'Microsoft JhengHei', sans-serif";
       context.textAlign = "center";
       context.textBaseline = "middle";
-      context.lineWidth = 3.5;
-      context.strokeStyle = "rgba(5,18,24,0.75)";
+      context.lineWidth = 4;
+      context.strokeStyle = "#fffdf7";
       context.strokeText(p.text, p.x, y);
-      context.fillStyle = p.color;
+      context.fillStyle = "#295c4b";
       context.fillText(p.text, p.x, y);
       context.restore();
     });
