@@ -763,47 +763,42 @@
   // The board glow/checkerboard/grid never change shape or position, so they're rendered once to
   // an offscreen canvas and blitted every frame instead of rebuilding gradients on every paint
   // (this was a big chunk of the per-frame CPU/GPU cost that made phones run hot).
+  // Display colors are independent of matching IDs and color-count progression.
+  function gemSurface(colorIndex) {
+    if (!gemSurface.palette) {
+      gemSurface.palette = [
+        { fill: "#97cbb6", mark: "#346957", glow: "rgba(72, 137, 108, 0.18)" },
+        { fill: "#eab3cf", mark: "#943e70", glow: "rgba(170, 94, 139, 0.18)" },
+        { fill: "#ecd181", mark: "#806421", glow: "rgba(169, 143, 55, 0.18)" },
+        { fill: "#bdaddc", mark: "#634d8c", glow: "rgba(131, 104, 175, 0.18)" },
+        { fill: "#9bcfdd", mark: "#356a81", glow: "rgba(77, 146, 167, 0.18)" },
+        { fill: "#e9b083", mark: "#91572d", glow: "rgba(180, 122, 70, 0.18)" },
+        { fill: "#bad58e", mark: "#5b792d", glow: "rgba(139, 167, 76, 0.18)" },
+        { fill: "#e7a09f", mark: "#984b4b", glow: "rgba(177, 95, 94, 0.18)" }
+      ];
+    }
+    return gemSurface.palette[colorIndex] || gemSurface.palette[0];
+  }
+
   function getBackgroundCanvas() {
     if (backgroundCanvas) return backgroundCanvas;
-    const w = boardCanvas.width;
-    const h = boardCanvas.height;
     backgroundCanvas = document.createElement("canvas");
-    backgroundCanvas.width = w;
-    backgroundCanvas.height = h;
+    backgroundCanvas.width = boardCanvas.width;
+    backgroundCanvas.height = boardCanvas.height;
     const bg = backgroundCanvas.getContext("2d");
-    const boardGlow = bg.createRadialGradient(w * 0.28, h * 0.18, 20, w * 0.5, h * 0.45, w * 0.85);
-    boardGlow.addColorStop(0, "rgba(47, 215, 255, 0.18)");
-    boardGlow.addColorStop(0.45, "rgba(13, 148, 136, 0.11)");
-    boardGlow.addColorStop(1, "rgba(6, 18, 24, 0.98)");
-    bg.fillStyle = boardGlow;
-    bg.fillRect(0, 0, w, h);
-    bg.save();
-    bg.globalAlpha = 0.62;
-    bg.fillStyle = "rgba(255,255,255,0.035)";
+    bg.fillStyle = "#edf4e9";
+    bg.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
     for (let r = 0; r < ROWS; r += 1) {
       for (let c = 0; c < COLS; c += 1) {
-        if ((r + c) % 2 === 0) bg.fillRect(c * CELL + 2, r * CELL + 2, CELL - 4, CELL - 4);
+        bg.beginPath();
+        bg.roundRect(c * CELL + 3, r * CELL + 3, CELL - 6, CELL - 6, 11);
+        bg.fillStyle = (r + c) % 2 ? "#f8faf2" : "#fffdf6";
+        bg.fill();
+        bg.strokeStyle = "#d5e2ce";
+        bg.lineWidth = 0.8;
+        bg.stroke();
       }
     }
-    bg.restore();
-    bg.save();
-    bg.shadowColor = "rgba(47, 215, 255, 0.55)";
-    bg.shadowBlur = 12;
-    bg.strokeStyle = "rgba(147, 244, 255, 0.13)";
-    bg.lineWidth = 1;
-    for (let i = 0; i <= COLS; i += 1) {
-      bg.beginPath();
-      bg.moveTo(i * CELL, 0);
-      bg.lineTo(i * CELL, h);
-      bg.stroke();
-    }
-    for (let i = 0; i <= ROWS; i += 1) {
-      bg.beginPath();
-      bg.moveTo(0, i * CELL);
-      bg.lineTo(w, i * CELL);
-      bg.stroke();
-    }
-    bg.restore();
     return backgroundCanvas;
   }
 
@@ -842,7 +837,7 @@
       context.lineWidth = Math.max(1, p.size * 0.72);
       context.lineCap = "round";
       context.shadowColor = p.color;
-      context.shadowBlur = 13;
+      context.shadowBlur = 3;
       context.beginPath();
       context.moveTo(p.x - p.vx * 0.006 * p.trail, p.y - p.vy * 0.006 * p.trail);
       context.lineTo(p.x, p.y);
@@ -862,19 +857,19 @@
       const y = popup.y - t * 48;
       const scale = 0.82 + Math.sin(Math.min(1, t) * Math.PI) * 0.34 + t * 0.18;
       const gradient = context.createLinearGradient(popup.x - 66, y - 16, popup.x + 66, y + 16);
-      gradient.addColorStop(0, "#2fd7ff");
-      gradient.addColorStop(0.28, "#8df45f");
-      gradient.addColorStop(0.54, "#ffd84d");
-      gradient.addColorStop(0.78, "#ff5ebc");
-      gradient.addColorStop(1, "#9b6bff");
+      gradient.addColorStop(0, "#286b59");
+      gradient.addColorStop(0.28, "#3b7457");
+      gradient.addColorStop(0.54, "#8b6b27");
+      gradient.addColorStop(0.78, "#94506d");
+      gradient.addColorStop(1, "#695086");
       context.save();
       context.globalAlpha = alpha;
       context.translate(popup.x, y);
       context.scale(scale, scale);
-      context.shadowColor = "rgba(255, 216, 77, 0.9)";
-      context.shadowBlur = 18;
+      context.shadowColor = "rgba(57, 103, 79, 0.12)";
+      context.shadowBlur = 2;
       context.lineWidth = 4;
-      context.strokeStyle = "rgba(5, 18, 24, 0.72)";
+      context.strokeStyle = "#fffdf7";
       context.font = "900 23px 'Noto Sans TC', 'Microsoft JhengHei', sans-serif";
       context.textAlign = "center";
       context.textBaseline = "middle";
@@ -887,7 +882,7 @@
   }
 
   function drawGem(x, y, gem, selected, cursor, hint) {
-    const color = COLORS[gem.color] || COLORS[0];
+    const color = gemSurface(gem.color);
     const r = CELL * 0.34;
     const now = performance.now();
     const pulse = 0.5 + Math.sin(now / 150) * 0.5;
@@ -896,76 +891,31 @@
 
     function makeGemPath(radius, inset = 0) {
       const rr = radius - inset;
+      const shapes = gemSurface.shapes || (gemSurface.shapes = [
+        [[0,-1],[0.82,-0.46],[0.82,0.46],[0,1],[-0.82,0.46],[-0.82,-0.46]],
+        [[0,-1.05],[0.86,0],[0,1.05],[-0.86,0]],
+        [[-0.62,-0.8],[0.62,-0.8],[1,0],[0.62,0.8],[-0.62,0.8],[-1,0]],
+        [[0,-1.08],[0.95,-0.18],[0.48,1],[-0.48,1],[-0.95,-0.18]],
+        [[-0.5,-1],[0.5,-1],[1,-0.2],[0.72,0.86],[0,1.08],[-0.72,0.86],[-1,-0.2]],
+        [[0,-1],[0.72,-0.72],[1,0],[0.72,0.72],[0,1],[-0.72,0.72],[-1,0],[-0.72,-0.72]],
+        Array.from({ length: 10 }, (_, i) => {
+          const radius = i % 2 ? 0.46 : 1.05;
+          const angle = -Math.PI / 2 + i * Math.PI / 5;
+          return [Math.cos(angle) * radius, Math.sin(angle) * radius];
+        }),
+        [[-0.42,-1],[0.42,-1],[0.42,-0.42],[1,-0.42],[1,0.42],[0.42,0.42],[0.42,1],[-0.42,1],[-0.42,0.42],[-1,0.42],[-1,-0.42],[-0.42,-0.42]]
+      ]);
+      const points = shapes[shapeId];
       context.beginPath();
-      if (shapeId === 0) {
-        context.moveTo(x, y - rr);
-        context.lineTo(x + rr * 0.82, y - rr * 0.46);
-        context.lineTo(x + rr * 0.82, y + rr * 0.46);
-        context.lineTo(x, y + rr);
-        context.lineTo(x - rr * 0.82, y + rr * 0.46);
-        context.lineTo(x - rr * 0.82, y - rr * 0.46);
-      } else if (shapeId === 1) {
-        context.moveTo(x, y - rr * 1.05);
-        context.lineTo(x + rr * 0.86, y);
-        context.lineTo(x, y + rr * 1.05);
-        context.lineTo(x - rr * 0.86, y);
-      } else if (shapeId === 2) {
-        context.moveTo(x - rr * 0.62, y - rr * 0.8);
-        context.lineTo(x + rr * 0.62, y - rr * 0.8);
-        context.lineTo(x + rr, y);
-        context.lineTo(x + rr * 0.62, y + rr * 0.8);
-        context.lineTo(x - rr * 0.62, y + rr * 0.8);
-        context.lineTo(x - rr, y);
-      } else if (shapeId === 3) {
-        context.moveTo(x, y - rr * 1.08);
-        context.lineTo(x + rr * 0.95, y - rr * 0.18);
-        context.lineTo(x + rr * 0.48, y + rr);
-        context.lineTo(x - rr * 0.48, y + rr);
-        context.lineTo(x - rr * 0.95, y - rr * 0.18);
-      } else if (shapeId === 4) {
-        context.moveTo(x - rr * 0.5, y - rr);
-        context.lineTo(x + rr * 0.5, y - rr);
-        context.lineTo(x + rr, y - rr * 0.2);
-        context.lineTo(x + rr * 0.72, y + rr * 0.86);
-        context.lineTo(x, y + rr * 1.08);
-        context.lineTo(x - rr * 0.72, y + rr * 0.86);
-        context.lineTo(x - rr, y - rr * 0.2);
-      } else if (shapeId === 5) {
-        context.moveTo(x, y - rr);
-        context.lineTo(x + rr * 0.72, y - rr * 0.72);
-        context.lineTo(x + rr, y);
-        context.lineTo(x + rr * 0.72, y + rr * 0.72);
-        context.lineTo(x, y + rr);
-        context.lineTo(x - rr * 0.72, y + rr * 0.72);
-        context.lineTo(x - rr, y);
-        context.lineTo(x - rr * 0.72, y - rr * 0.72);
-      } else if (shapeId === 6) {
-        const spikes = 5;
-        const outerR = rr * 1.05;
-        const innerR = rr * 0.46;
-        for (let i = 0; i < spikes * 2; i += 1) {
-          const rad = i % 2 === 0 ? outerR : innerR;
-          const angle = -Math.PI / 2 + (i * Math.PI) / spikes;
-          const px = x + Math.cos(angle) * rad;
-          const py = y + Math.sin(angle) * rad;
-          if (i === 0) context.moveTo(px, py);
-          else context.lineTo(px, py);
-        }
-      } else {
-        const w1 = rr * 0.42;
-        context.moveTo(x - w1, y - rr);
-        context.lineTo(x + w1, y - rr);
-        context.lineTo(x + w1, y - w1);
-        context.lineTo(x + rr, y - w1);
-        context.lineTo(x + rr, y + w1);
-        context.lineTo(x + w1, y + w1);
-        context.lineTo(x + w1, y + rr);
-        context.lineTo(x - w1, y + rr);
-        context.lineTo(x - w1, y + w1);
-        context.lineTo(x - rr, y + w1);
-        context.lineTo(x - rr, y - w1);
-        context.lineTo(x - w1, y - w1);
-      }
+      points.forEach(([px, py], index) => {
+        const previous = points[(index + points.length - 1) % points.length];
+        const next = points[(index + 1) % points.length];
+        const ax = x + (px * 0.82 + previous[0] * 0.18) * rr;
+        const ay = y + (py * 0.82 + previous[1] * 0.18) * rr;
+        if (index === 0) context.moveTo(ax, ay);
+        else context.lineTo(ax, ay);
+        context.quadraticCurveTo(x + px * rr, y + py * rr, x + (px * 0.82 + next[0] * 0.18) * rr, y + (py * 0.82 + next[1] * 0.18) * rr);
+      });
       context.closePath();
     }
 
@@ -973,7 +923,7 @@
       context.save();
       makeGemPath(radius, 1);
       context.clip();
-      context.strokeStyle = "rgba(255,255,255,0.42)";
+      context.strokeStyle = "rgba(255,255,255,0.18)";
       context.lineWidth = 1.4;
       context.beginPath();
       context.moveTo(x, y - radius * 0.92);
@@ -995,13 +945,11 @@
 
     context.save();
     if (selected || hint || cursor) {
-      const ringRadius = r + 7 + pulse * 5;
-      context.strokeStyle = selected
-        ? `rgba(255,255,255,${0.58 + pulse * 0.32})`
-        : `rgba(47,215,255,${0.46 + pulse * 0.28})`;
+      const ringRadius = r + 5 + pulse * 1.5;
+      context.strokeStyle = selected ? "#176b5e" : hint ? "#99731e" : "#527b69";
       context.lineWidth = selected ? 3.2 : 2.2;
-      context.shadowColor = selected ? "rgba(255,255,255,0.9)" : "rgba(47,215,255,0.85)";
-      context.shadowBlur = 16 + pulse * 12;
+      context.shadowColor = "rgba(45, 92, 70, 0.16)";
+      context.shadowBlur = 2;
       context.beginPath();
       context.arc(x, y, ringRadius, 0, Math.PI * 2);
       context.stroke();
@@ -1010,12 +958,12 @@
     if (gem.special === SPECIAL_COLOR_BOMB) {
       context.translate(x, y);
       context.rotate(phase * 0.9);
-      const rainbow = ["#2fd7ff", "#8df45f", "#ffd84d", "#ff9a3d", "#ff5ebc", "#9b6bff"];
+      const rainbow = ["#91c6d3", "#b6cd8d", "#e4c573", "#e3ad83", "#dda6c5", "#b7a6d4"];
       for (let i = 0; i < 12; i += 1) {
         context.rotate(Math.PI / 6);
         context.fillStyle = rainbow[i % rainbow.length];
         context.shadowColor = rainbow[i % rainbow.length];
-        context.shadowBlur = 16;
+        context.shadowBlur = 3;
         context.beginPath();
         context.moveTo(0, -r * 1.35);
         context.lineTo(r * 0.16, -r * 0.35);
@@ -1027,9 +975,9 @@
       const bombGlow = context.createRadialGradient(0, 0, r * 0.1, 0, 0, r);
       bombGlow.addColorStop(0, "#ffffff");
       bombGlow.addColorStop(0.42, "#fff8bd");
-      bombGlow.addColorStop(1, "rgba(47,215,255,0.76)");
+      bombGlow.addColorStop(1, "#95cbb5");
       context.shadowColor = "#ffffff";
-      context.shadowBlur = 18;
+      context.shadowBlur = 4;
       context.fillStyle = bombGlow;
       context.beginPath();
       context.arc(0, 0, r * 0.72, 0, Math.PI * 2);
@@ -1044,13 +992,13 @@
     }
 
     context.shadowColor = color.glow;
-    context.shadowBlur = 16;
+    context.shadowBlur = 3;
     makeGemPath(r);
     const fill = context.createLinearGradient(x - r, y - r, x + r, y + r);
-    fill.addColorStop(0, "#ffffff");
+    fill.addColorStop(0, "#fff8ee");
     fill.addColorStop(0.16, color.fill);
     fill.addColorStop(0.58, color.fill);
-    fill.addColorStop(1, "rgba(5,18,24,0.72)");
+    fill.addColorStop(1, color.fill);
     context.fillStyle = fill;
     context.fill();
     context.strokeStyle = "rgba(255,255,255,0.5)";
@@ -1067,7 +1015,7 @@
     context.fill();
     context.restore();
 
-    context.strokeStyle = "rgba(5,18,24,0.58)";
+    context.strokeStyle = color.mark;
     context.lineWidth = 2;
     if (shapeId === 0) {
       context.beginPath();
@@ -1101,7 +1049,7 @@
       context.stroke();
       context.beginPath();
       context.arc(x, y, r * 0.16, 0, Math.PI * 2);
-      context.fillStyle = "rgba(5,18,24,0.5)";
+      context.fillStyle = color.mark;
       context.fill();
     } else if (shapeId === 5) {
       context.beginPath();
@@ -1126,10 +1074,10 @@
       context.save();
       context.translate(x, y);
       context.rotate(phase * 0.4);
-      context.strokeStyle = "rgba(255,255,255,0.85)";
+      context.strokeStyle = "#76633f";
       context.lineWidth = 1.6;
       context.shadowColor = "#ffffff";
-      context.shadowBlur = 10;
+      context.shadowBlur = 2;
       const nr = r * 0.98;
       context.beginPath();
       context.moveTo(-nr, -nr * 0.4);
@@ -1148,7 +1096,7 @@
       context.translate(x, y);
       if (!horizontal) context.rotate(Math.PI / 2);
       context.shadowColor = "#ffffff";
-      context.shadowBlur = 10;
+      context.shadowBlur = 2;
       context.fillStyle = "rgba(255,255,255,0.86)";
       for (let i = -1; i <= 1; i += 1) {
         context.beginPath();
@@ -1159,13 +1107,13 @@
         context.closePath();
         context.fill();
       }
-      context.fillStyle = "rgba(5,18,24,0.42)";
+      context.fillStyle = color.mark;
       context.fillRect(-r * 0.62, -2, r * 1.24, 4);
       context.restore();
     }
     context.restore();
     if (cursor) {
-      context.strokeStyle = "rgba(255,255,255,0.7)";
+      context.strokeStyle = "#527b69";
       context.lineWidth = 2;
       context.setLineDash([4, 4]);
       context.strokeRect(x - CELL / 2 + 2, y - CELL / 2 + 2, CELL - 4, CELL - 4);

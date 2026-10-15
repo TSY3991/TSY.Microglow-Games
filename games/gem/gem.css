@@ -839,3 +839,291 @@ button {
     align-items: baseline;
   }
 }
+
+/* 20261015a: warm Microglow toy surfaces, including the actual play canvas. */
+body {
+  background: #fffdf7;
+  color: #173d37;
+}
+
+body::before { background: linear-gradient(180deg, #edf9f5, transparent 260px); }
+
+.gem-shell {
+  width: min(1120px, calc(100% - 32px));
+  padding: 14px 0 max(12px, env(safe-area-inset-bottom));
+}
+
+.game-topbar {
+  gap: 10px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.game-topbar .eyebrow {
+  margin: 0 0 4px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: #48736a;
+  font-size: 0.68rem;
+  letter-spacing: 0;
+}
+
+.game-topbar h1 {
+  background: none;
+  color: #173d37;
+  font-size: 2rem;
+  line-height: 1.2;
+  text-shadow: none;
+}
+
+.back-link,
+.portal-return,
+.top-actions button,
+.game-overlay button,
+.instruction-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid #a5cfc4;
+  border-radius: 9px;
+  background: #fffdf7;
+  color: #17584e;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  text-shadow: none;
+  white-space: normal;
+  box-shadow: none;
+}
+
+.portal-return {
+  border-color: #176b5e;
+  background: #176b5e;
+  color: #fff;
+}
+
+.top-actions button:nth-child(n),
+.game-overlay button[data-overlay-secondary] {
+  background: #fffdf7;
+  color: #17584e;
+  box-shadow: none;
+}
+
+.top-actions button:nth-child(2),
+.game-overlay button:not([data-overlay-secondary]),
+.instruction-actions button:first-child {
+  border-color: #176b5e;
+  background: #176b5e;
+  color: #fff;
+}
+
+.top-actions button:nth-child(3) {
+  border-color: #c6ad59;
+  background: #f6eac3;
+  color: #625124;
+}
+
+.instruction-actions button:last-child { background: #fffdf7; color: #17584e; }
+.top-actions button::after,
+.game-overlay button::after,
+.instruction-actions button::after { content: none; }
+.top-actions button:hover,
+.game-overlay button:hover,
+.instruction-actions button:hover { transform: none; filter: brightness(0.96); }
+
+.gem-shell a:focus-visible,
+.gem-shell button:focus-visible,
+.gem-shell canvas:focus-visible,
+.gem-shell [tabindex]:focus-visible {
+  outline: 3px solid #176b5e;
+  outline-offset: 2px;
+}
+
+.gem-layout { grid-template-columns: minmax(320px, 580px) 280px; gap: 24px; }
+.board-wrap {
+  padding: 12px;
+  border: 1px solid #b9d1c0;
+  border-radius: 12px;
+  background: #f1f8ef;
+  box-shadow: 0 8px 28px rgba(23, 61, 55, 0.06);
+}
+
+.board-wrap::before,
+.board-wrap::after { content: none; }
+
+#gemBoard {
+  border: 1px solid #9ab79e;
+  border-radius: 12px;
+  background: #edf4e9;
+  box-shadow: 0 3px 8px rgba(45, 77, 59, 0.1);
+}
+
+.gem-panel {
+  padding: 0;
+  gap: 12px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.score-grid { gap: 6px; }
+.score-grid > div,
+.challenge-card {
+  min-width: 0;
+  border: 1px solid #d1dfce;
+  border-radius: 9px;
+  background: #fffdf7;
+  color: #173d37;
+  box-shadow: none;
+}
+
+.score-grid > div {
+  min-height: 60px;
+  padding: 6px 4px;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.score-grid span,
+.challenge-heading span {
+  color: #48736a;
+  font-size: 0.7rem;
+  letter-spacing: 0;
+}
+
+.score-grid strong,
+.challenge-heading strong {
+  color: #173d37;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  text-shadow: none;
+}
+
+.score-grid strong { font-size: 1.25rem; }
+.score-grid .moves-cell { border-color: #c6ad59; background: #fff8e3; }
+.moves-cell strong.is-low { color: #a23a50; text-shadow: none; }
+.challenge-card { padding: 10px 12px; }
+.challenge-heading { align-items: center; margin-bottom: 7px; }
+.target-track { height: 8px; margin-bottom: 7px; background: #e3ebdd; }
+.target-track span { background: linear-gradient(90deg, #4b9b7f, #b9bd77); box-shadow: none; }
+.challenge-card p,
+.help-card p { color: #38675c; font-size: 0.84rem; line-height: 1.45; }
+.help-card {
+  padding: 0 0 0 12px;
+  border: 0;
+  border-left: 2px solid #c6ad59;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.help-card h2 { color: #173d37; }
+
+.game-overlay {
+  inset: 8px;
+  justify-content: flex-start;
+  overflow-y: auto;
+  border-color: #a5cfc4;
+  border-radius: 10px;
+  background: rgba(255, 253, 247, 0.95);
+  color: #173d37;
+  box-shadow: none;
+}
+.game-overlay > * { flex-shrink: 0; }
+.game-overlay strong { margin-top: auto; text-shadow: none; }
+.game-overlay .overlay-actions { margin-bottom: auto; }
+.game-overlay span { color: #38675c; }
+.instruction-modal { padding: 10px; background: rgba(23, 61, 55, 0.45); }
+.instruction-card {
+  max-height: calc(100dvh - 20px);
+  padding: 18px;
+  border: 1px solid #a5cfc4;
+  border-radius: 12px;
+  background: #fffdf7;
+  color: #173d37;
+  box-shadow: 0 12px 40px rgba(23, 61, 55, 0.2);
+}
+.instruction-kicker,
+.instruction-list strong { color: #176b5e; letter-spacing: 0; }
+.instruction-card h2 { color: #173d37; }
+.instruction-list div { border-color: #d1dfce; background: #f1f8ef; border-radius: 8px; }
+.instruction-list span,
+.instruction-note { color: #38675c; }
+.instruction-actions { position: sticky; bottom: -18px; padding: 10px 0; background: #fffdf7; }
+
+@media (max-width: 860px) {
+  body { background: #fffdf7; }
+  .gem-shell {
+    width: min(100%, 520px);
+    padding: max(5px, env(safe-area-inset-top)) max(5px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(5px, env(safe-area-inset-left));
+  }
+  .game-topbar { gap: 5px; margin-bottom: 6px; }
+  .game-topbar h1 { font-size: 1.25rem; }
+  .return-nav { gap: 5px; }
+  .back-link,
+  .portal-return { min-height: 44px; padding: 5px 8px; font-size: 0.76rem; }
+  .top-actions { max-width: none; gap: 5px; }
+  .top-actions button { min-height: 44px; padding: 4px; font-size: 0.78rem; }
+  .gem-layout { gap: 6px; max-width: none; }
+  .score-grid { gap: 5px; }
+  .score-grid > div { min-height: 44px; padding: 3px 4px; gap: 2px; }
+  .score-grid span { font-size: 0.75rem; }
+  .score-grid strong { font-size: 1.05rem; }
+  .challenge-card { padding: 7px 10px; }
+  .challenge-heading { margin-bottom: 5px; }
+  .challenge-heading strong { font-size: 0.86rem; }
+  .challenge-card p { font-size: 0.74rem; }
+  .target-track { margin-bottom: 5px; }
+  .board-wrap { padding: 6px; max-width: none; background: #f1f8ef; }
+  .instruction-card { padding: 14px; }
+  .instruction-actions { bottom: -14px; }
+}
+
+@media (max-width: 860px) and (max-height: 700px) {
+  .challenge-card p { display: none; }
+  .target-track { margin-bottom: 0; }
+}
+
+@media (orientation: landscape) and (max-width: 860px) and (max-height: 500px) {
+  .gem-shell {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(236px, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: 44px 44px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .game-topbar,
+  .gem-layout { display: contents; }
+  .game-topbar > div:not(.top-actions) { display: none; }
+  .return-nav { grid-column: 1; grid-row: 1; }
+  .return-nav a { font-size: 0.7rem; }
+  .top-actions { grid-column: 1; grid-row: 2; align-self: stretch; gap: 3px; }
+  .top-actions button { padding: 3px; font-size: 0.72rem; }
+  .gem-panel {
+    display: flex;
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 0;
+    gap: 6px;
+  }
+  .score-grid,
+  .challenge-card { order: 0; }
+  .board-wrap {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    width: 100%;
+    height: 100%;
+    align-self: stretch;
+  }
+  .game-overlay { padding: 12px; overflow-y: auto; }
+  .game-overlay strong { font-size: 1.3rem; }
+  .game-overlay span { font-size: 0.82rem; }
+}
