@@ -1,0 +1,20 @@
+/* Lobby-only visual layer; individual game themes and gameplay are unchanged. */
+:root { --microglow-style-version: 20261016a; --radius: 14px; --ink: #173e37; --ink-soft: #426358; --muted: #65776d; --line: #c5d9cb; --shadow: inset 0 1px 0 #fff, 0 4px 0 #dce5d6, 0 10px 22px rgba(38, 75, 54, .055); }
+body { background: radial-gradient(ellipse at 12% 5%, rgba(181, 140, 66, .07), transparent 45%), radial-gradient(ellipse at 90% 20%, rgba(10, 136, 126, .07), transparent 50%), linear-gradient(#f5f6ed, #f9f8f0); }
+.lobby-hero { border-color: #c5d9cb; border-radius: 24px; background: linear-gradient(135deg, #fffdf5, #e6f2e9); box-shadow: inset 0 1px 0 #fff, 0 4px 0 #dce5d6, 0 10px 22px rgba(38, 75, 54, .055); }
+.lobby-hero::before { background-image: linear-gradient(90deg, rgba(10,136,126,.025) 1px, transparent 1px), linear-gradient(rgba(10,136,126,.025) 1px, transparent 1px); }
+.hero-copy { color: #173e37; }
+.hero-copy > p:not(.eyebrow) { color: #426358; }
+.eyebrow { color: #09665d; background: #e6f2e9; }
+.back-link, .account-status-link { border-color: #c5d9cb; color: #09665d; background: #fffdf5; box-shadow: 0 4px 12px rgba(38,75,54,.06); }
+.account-status-link small { color: #65776d; }
+.account-status-icon { color: #09665d; background: #e6f2e9; }
+.account-status-link.is-guest { border-color: #d8c599; background: #faf0d9; }
+.account-status-link.is-signed-in { border-color: #a9cfc1; background: #e6f2e9; }
+.hero-pixel span { background: #fffdf5; border-color: #c5d9cb; box-shadow: inset 0 1px 0 #fff, 0 4px 0 #dce5d6; }
+.hero-pixel span:nth-child(1), .hero-pixel span:nth-child(4), .hero-pixel span:nth-child(5), .hero-pixel span:nth-child(8) { background: linear-gradient(#77cbbb, #399e8f); }
+.hero-pixel span:nth-child(2), .hero-pixel span:nth-child(6) { background: linear-gradient(#e4eddf, #bdd7c6); }
+.hero-pixel span:nth-child(7), .hero-pixel span:nth-child(9) { background: linear-gradient(#f5e4b8, #ddc38b); }
+.game-card { border-color: #c5d9cb; border-radius: 24px; background: #fffdf5; box-shadow: inset 0 1px 0 #fff, 0 4px 0 #dce5d6, 0 10px 22px rgba(38, 75, 54, .055); }
+.primary-link { border-radius: 14px; background: linear-gradient(#118d80, #087c70); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 4px 0 #d4e3d7, 0 8px 16px rgba(38,75,54,.08); }
+html body :is(a[href],button,[role="button"]):focus-visible, html body .game-card:has(:focus-visible) { outline-color: #0a887e; box-shadow: 0 0 0 5px rgba(10,136,126,.14), 0 0 20px rgba(10,136,126,.15); }
