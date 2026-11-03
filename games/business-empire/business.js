@@ -2561,16 +2561,6 @@
       boardFrameEl.classList.add("has-scrolled");
     }, { passive: true, once: true });
 
-    document.addEventListener("touchstart", (event) => {
-      if (event.touches.length > 1) event.preventDefault();
-    }, { passive: false, capture: true });
-    document.addEventListener("dblclick", (event) => {
-      if (!event.target.closest("a")) event.preventDefault();
-    }, { passive: false, capture: true });
-    ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
-      document.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
-    });
-
     window.addEventListener("resize", scheduleViewportSync, { passive: true });
     window.addEventListener("orientationchange", () => {
       window.setTimeout(scheduleViewportSync, 100);

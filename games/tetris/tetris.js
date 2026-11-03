@@ -36,8 +36,6 @@
       // Ignore private-mode storage failures.
     }
   }
-  let lastTouchStart = 0;
-  let lastTouchEnd = 0;
   let controlRepeatDelay = 0;
   let controlRepeatInterval = 0;
   let lastMoveTone = 0;
@@ -864,31 +862,6 @@
     gestureStart = null;
   });
 
-  document.addEventListener("touchstart", (event) => {
-    const now = Date.now();
-    if (event.touches.length > 1) event.preventDefault();
-    if (now - lastTouchStart < 320 && !event.target.closest?.("a")) {
-      event.preventDefault();
-    }
-    lastTouchStart = now;
-  }, { passive: false, capture: true });
-
-  document.addEventListener("touchmove", (event) => {
-    if (event.target.closest?.(".tetris-shell")) event.preventDefault();
-  }, { passive: false, capture: true });
-
-  document.addEventListener("dblclick", (event) => {
-    if (!event.target.closest?.("a")) event.preventDefault();
-  }, { passive: false, capture: true });
-
-  document.addEventListener("touchend", (event) => {
-    const now = Date.now();
-    if (now - lastTouchEnd < 360 && !event.target.closest?.("a")) {
-      event.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, { passive: false, capture: true });
-
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && running && !paused) togglePause();
   });
@@ -899,12 +872,6 @@
   });
   window.visualViewport?.addEventListener("resize", syncViewportSize);
   window.visualViewport?.addEventListener("scroll", syncViewportSize);
-
-  ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
-    document.addEventListener(eventName, (event) => {
-      event.preventDefault();
-    }, { passive: false });
-  });
 
   window.addEventListener("pagehide", () => {
     if (animationFrameId) {

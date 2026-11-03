@@ -44,7 +44,6 @@ canvas {
   margin: 0 auto;
   padding: max(16px, env(safe-area-inset-top)) 0 max(16px, env(safe-area-inset-bottom));
   overflow: hidden;
-  touch-action: none;
 }
 
 .game-topbar {
@@ -872,3 +871,5 @@ button:active {
     transition: none !important;
   }
 }
+/* Keep gestures local to the play surface while leaving page zoom available. */
+.downstairs-shell #downstairsBoard, .downstairs-shell .touch-controls button { touch-action: none; }

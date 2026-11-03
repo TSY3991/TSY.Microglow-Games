@@ -387,3 +387,5 @@ button:active { transform: translateY(2px); box-shadow: 0 2px 0 #aac7b6; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+/* Keep gestures local to the play surface while leaving page zoom available. */
+.snake-shell #snakeBoard, .snake-shell .touch-controls button { touch-action: none; }

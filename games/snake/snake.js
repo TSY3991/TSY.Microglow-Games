@@ -8,7 +8,6 @@
   const bestEl = document.querySelector("[data-best]");
   const lengthEl = document.querySelector("[data-length]");
   const playsEl = document.querySelector("[data-plays]");
-  const gameShell = document.querySelector(".snake-shell");
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const gameId = "microglow-snake";
   const gameTitle = "微光貪吃蛇";
@@ -60,7 +59,6 @@
   let lastTime = 0;
   let distanceSincePoint = 0;
   let touchStart = null;
-  let lastTouchEnd = 0;
   let backgroundCanvas = null;
   const glowSpriteCache = new Map();
   const glowSpriteRadius = 16;
@@ -589,24 +587,6 @@
   });
 
   window.addEventListener("blur", releaseSteering);
-
-  gameShell?.addEventListener("touchmove", (event) => {
-    event.preventDefault();
-  }, { passive: false });
-
-  gameShell?.addEventListener("touchend", (event) => {
-    const now = Date.now();
-    if (now - lastTouchEnd < 360) {
-      event.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, { passive: false });
-
-  ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
-    document.addEventListener(eventName, (event) => {
-      event.preventDefault();
-    }, { passive: false });
-  });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && running && !paused) togglePause();

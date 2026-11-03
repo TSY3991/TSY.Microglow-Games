@@ -295,44 +295,7 @@
     if (boardWrapEl) boardResizeObserver.observe(boardWrapEl);
     if (combatStripEl) boardResizeObserver.observe(combatStripEl);
   }
-  lockPageGestures();
-
   /* ---------- layout ---------- */
-
-  function lockPageGestures() {
-    let lastTouchEnd = 0;
-    const preventBoardTouch = (event) => {
-      event.preventDefault();
-    };
-    ["touchstart", "touchmove", "touchend", "touchcancel"].forEach((type) => {
-      boardCanvas.addEventListener(type, preventBoardTouch, { passive: false });
-    });
-    document.addEventListener("touchmove", (event) => {
-      if (canScrollOverlay(event.target)) return;
-      event.preventDefault();
-    }, { passive: false });
-    document.addEventListener("touchend", (event) => {
-      const now = Date.now();
-      if (now - lastTouchEnd < 420) {
-        event.preventDefault();
-      }
-      lastTouchEnd = now;
-    }, { passive: false });
-    document.addEventListener("dblclick", (event) => {
-      event.preventDefault();
-    }, { passive: false });
-    ["gesturestart", "gesturechange", "gestureend"].forEach((type) => {
-      document.addEventListener(type, (event) => {
-        event.preventDefault();
-      }, { passive: false });
-    });
-  }
-
-  function canScrollOverlay(target) {
-    if (!(target instanceof Element)) return false;
-    const scrollHost = target.closest(".instruction-card, .game-overlay");
-    return Boolean(scrollHost && scrollHost.scrollHeight > scrollHost.clientHeight);
-  }
 
   // The page is locked (no scrolling), so the board scales itself to whatever
   // space .board-frame has left instead of relying on document flow.

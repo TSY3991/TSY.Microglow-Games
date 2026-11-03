@@ -202,3 +202,32 @@ body .board-camera .tile-inspector :is(strong, small, em) { color: #245747; text
     min-height: 44px !important;
   }
 }
+/* 20261103a: keep small informational copy legible on phone screens. */
+@media (max-width: 640px) {
+  #main-content :is(
+    .return-nav a, .top-actions button, .player-copy small, .player-copy span,
+    .resource small, .resource strong, .round-medallion small, .freedom-meter span, .freedom-meter strong,
+    .legend, .event-kicker span, .event-kicker strong, .offer-stats span, .offer-stats strong,
+    .panel-heading strong, .panel-heading span, .rival-board li, .rival-board li strong, .story-scroll ul,
+    .event-content h2, .event-content > p, .event-actions button, .modal-kicker, .modal-lead, .modal-note,
+    .character-card > p, .character-card > small, .instruction-list span, .instruction-list strong,
+    .asset-summary span, .asset-item-head small, .asset-metrics b, .asset-metrics strong, .asset-sale-note,
+    .turn-copy small, .turn-copy span, .turn-copy strong, .turn-clock small, .turn-clock span, .turn-clock strong,
+    .seat-copy small, .seat-copy strong, .seat-copy em, .roll-button span, .roll-button b,
+    .board-command > small, .board-command > strong, .board-event-copy small, .board-event-copy strong,
+    .board-event-copy p, .board-event-stats span, .board-event-stats strong, .board-event-actions button,
+    .setup-progress button, .setup-section-heading small, .setup-section-heading > span, .setup-section-heading h3,
+    .mode-card small, .mode-card > b, .mode-card strong, .mode-card em, .map-choice small, .map-choice p,
+    .difficulty-choice > small, .difficulty-choice p, .difficulty-buttons button, .setup-footer > span,
+    .setup-footer .primary-button, .setup-footer .secondary-button, .ready-map > small, .ready-map > p,
+    .ready-player-index, .ready-roster li strong, .ready-roster li small, .ready-roster li em,
+    .ready-settings span, .ready-settings strong, .account-benefits b, .account-form label, .account-form input,
+    .account-status, .account-divider, .guest-trial-panel small, .guest-trial-panel p, .account-hero > p,
+    .account-tabs button, .account-submit, .guest-trial-button, .guest-note, .nickname-lead,
+    .nickname-form > small, .nickname-status, .mp-gate-kicker, .mp-hero .eyebrow, .mp-gate-card p,
+    .mp-hint, .mp-guest-banner p, .mp-status, .mp-list-actions button, .mobile-stat small,
+    .mobile-goal-meter small, .mobile-goal-meter span, .orientation-card p, .orientation-card > small, .board-drag-hint
+  ) {
+    font-size: max(12px, 0.75rem) !important;
+  }
+}

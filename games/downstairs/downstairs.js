@@ -10,7 +10,6 @@
   const floorProgressEl = document.querySelector("[data-floor-progress]");
   const targetProgressEl = document.querySelector("[data-target-progress]");
   const playsEl = document.querySelector("[data-plays]");
-  const gameShell = document.querySelector(".downstairs-shell");
   const touchControls = document.querySelector(".touch-controls");
   const instructionModal = document.querySelector("[data-instruction-modal]");
   const mascotImage = document.querySelector("[data-mascot-image]");
@@ -48,7 +47,6 @@
   let keys = { left: false, right: false, drop: false };
   let activePointerSide = null;
   let targetAnnounced = false;
-  let lastTouchEnd = 0;
   // Bake the toy surfaces and mascot once, then reuse them on each frame.
   let skyCanvas = null;
   let playerSprite = null;
@@ -761,12 +759,6 @@
     if (control === "drop") keys.drop = false;
   }
 
-  function blockPageZoom(event) {
-    if (event.touches && event.touches.length > 1) {
-      event.preventDefault();
-    }
-  }
-
   document.addEventListener("keydown", (event) => {
     if (isInstructionOpen()) {
       if (event.key === "Enter" || isSpaceKey(event.key)) {
@@ -909,30 +901,7 @@
     }, { passive: false });
   });
 
-  document.addEventListener("touchstart", blockPageZoom, { passive: false, capture: true });
-  document.addEventListener("touchmove", blockPageZoom, { passive: false, capture: true });
   touchControls?.addEventListener("touchmove", preventDefaultTouch, { passive: false });
-
-  gameShell?.addEventListener("touchmove", (event) => {
-    event.preventDefault();
-  }, { passive: false });
-
-  gameShell?.addEventListener("touchend", (event) => {
-    const now = Date.now();
-    if (now - lastTouchEnd < 360) {
-      event.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, { passive: false });
-
-  ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
-    document.addEventListener(eventName, (event) => {
-      event.preventDefault();
-    }, { passive: false });
-    window.addEventListener(eventName, (event) => {
-      event.preventDefault();
-    }, { passive: false });
-  });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && running && !paused) togglePause();

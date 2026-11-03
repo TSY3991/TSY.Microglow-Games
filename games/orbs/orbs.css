@@ -3947,3 +3947,16 @@ body::before {
 
   .game-overlay { right: 126px; }
 }
+/* 20261103a: keep game instructions and status text readable at phone widths. */
+@media (max-width: 640px) {
+  .orbs-shell :is(
+    .skill-bar .skill-name, .skill-swap-btn, .battle-timer span, .score-grid span,
+    .hp-card .hp-heading, .top-actions button, .player-level-badge, .back-link, .portal-return,
+    .play-hud .top-actions button, .game-topbar .eyebrow, .enemy-badge, .story-toast, .hp-heading span, .return-nav a
+  ) {
+    font-size: max(12px, 0.75rem) !important;
+  }
+}
+
+/* Restrict gesture suppression to the game surface; leave page zoom enabled elsewhere. */
+.orbs-shell #orbsBoard, .orbs-shell .touch-controls button { touch-action: none; }

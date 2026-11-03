@@ -89,7 +89,6 @@ button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #
   .mascot img { width: 100px; height: 100px; }
 }
 @media (max-width: 700px) {
-  body { touch-action: none; }
   .tetris-shell { width: 100%; padding: max(6px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); grid-template-rows: 112px minmax(0, 1fr) 108px; gap: 10px; }
   .game-topbar { padding: 0 0 6px; grid-template-columns: 44px minmax(0, 1fr) 88px; grid-template-rows: 52px 44px; gap: 8px; }
   .brand { grid-column: 1; grid-row: 1; }
@@ -328,4 +327,13 @@ body {
     -webkit-touch-callout: none;
   }
   .return-nav a { font-size: 0; }
+}
+/* 20261103a: readable game instructions and status labels at phone widths. */
+@media (max-width: 700px) {
+  .tetris-shell :is(
+    .eyebrow, .top-actions button, .score-grid span, .next-heading > span, .next-heading small,
+    .game-overlay span, .instruction-kicker, .instruction-list span, .preview-lock, .next-slot.is-locked::before, .touch-controls button
+  ) {
+    font-size: max(12px, 0.75rem) !important;
+  }
 }
